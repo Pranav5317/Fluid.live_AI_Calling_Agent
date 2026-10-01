@@ -1,0 +1,266 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Business {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  plan      String
+  timezone  String
+  createdAt DateTime @default(now())
+
+  leads          Lead[]
+  campaigns      Campaign[]
+  agents         Agent[]
+  phoneNumbers   PhoneNumber[]
+  knowledgeBases KnowledgeBase[]
+  calls          Call[]
+
+  @@map("businesses")
+}
+
+model Lead {
+  id         String   @id @default(cuid())
+  businessId String?
+  name       String
+  phone      String
+  email      String?
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  business      Business?      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaignLeads CampaignLead[]
+  calls         Call[]
+
+  @@map("leads")
+}
+
+model Agent {
+  id               String   @id @default(cuid())
+  businessId       String?
+  name             String
+  useCase          String
+  status           String   @default("active")
+  currentVersionId String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  business Business?      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  versions AgentVersion[]
+  campaigns Campaign[]
+  calls     Call[]
+
+  @@map("agents")
+}
+
+model AgentVersion {
+  id            String   @id @default(cuid())
+  agentId       String
+  versionNumber Int
+  notes         String?
+  config        Json
+  createdAt     DateTime @default(now())
+
+  agent     Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  campaigns Campaign[]
+  calls     Call[]
+
+  @@unique([agentId, versionNumber])
+  @@map("agent_versions")
+}
+
+model PhoneNumber {
+  id                 String   @id @default(cuid())
+  businessId         String?
+  phoneNumber        String   @unique
+  status             String   @default("unassigned")
+  provider           String   @default("Sarvam Telephony Infrastructure")
+  providerId         String?
+  assignedAgentId    String?
+  assignedCampaignId String?
+  createdAt          DateTime @default(now())
+
+  business  Business?  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaigns Campaign[]
+  calls     Call[]
+
+  @@map("phone_numbers")
+}
+
+model Campaign {
+  id             String    @id @default(cuid())
+  businessId     String?
+  name           String
+  agentId        String
+  agentVersionId String
+  phoneNumberId  String
+  status         String    @default("draft")
+  scheduledAt    DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  totalLeads     Int       @default(0)
+  completedCalls Int       @default(0)
+  callsAttempted Int       @default(0)
+  minutesUsed    Float     @default(0.0)
+  createdAt      DateTime  @default(now())
+
+  business      Business?      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  agent         Agent          @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentVersion  AgentVersion   @relation(fields: [agentVersionId], references: [id], onDelete: Cascade)
+  phoneNumber   PhoneNumber    @relation(fields: [phoneNumberId], references: [id], onDelete: Cascade)
+  campaignLeads CampaignLead[]
+  calls         Call[]
+  usageEvents   UsageEvent[]
+
+  @@map("campaigns")
+}
+
+model CampaignLead {
+  id            String    @id @default(cuid())
+  campaignId    String
+  leadId        String
+  status        String    @default("untouched")
+  attemptCount  Int       @default(0)
+  lastAttemptAt DateTime?
+  nextAttemptAt DateTime?
+  contactedAt   DateTime?
+  completedAt   DateTime?
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  calls    Call[]
+
+  @@unique([campaignId, leadId])
+  @@map("campaign_leads")
+}
+
+model Call {
+  id                 String    @id @default(cuid())
+  businessId         String?
+  externalCallId     String    @unique
+  campaignId         String
+  agentId            String
+  agentVersionId     String
+  leadId             String
+  campaignLeadId     String?
+  phoneNumberId      String
+  status             String    @default("completed")
+  outcome            String    @default("successful_contact")
+  durationSeconds    Int       @default(0)
+  startedAt          DateTime  @default(now())
+  endedAt            DateTime?
+  transcript         Json      @default("[]")
+  extractedVariables Json      @default("{}")
+  usageEventId       String?   @unique
+
+  business     Business?     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaign     Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  agent        Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentVersion AgentVersion  @relation(fields: [agentVersionId], references: [id], onDelete: Cascade)
+  lead         Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  campaignLead CampaignLead? @relation(fields: [campaignLeadId], references: [id], onDelete: SetNull)
+  phoneNumber  PhoneNumber   @relation(fields: [phoneNumberId], references: [id], onDelete: Cascade)
+  usageEvent   UsageEvent?   @relation(fields: [usageEventId], references: [id])
+
+  @@map("calls")
+}
+
+model UsageEvent {
+  id                String   @id @default(cuid())
+  callId            String?  @unique
+  campaignId        String
+  agentId           String
+  durationMinutes   Float
+  providerCostUnits Float
+  platformCostUnits Float
+  timestamp         DateTime @default(now())
+
+  call     Call?     @relation
+  campaign Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@map("usage_events")
+}
+
+model BillingPeriod {
+  id                 String   @id @default(cuid())
+  periodName         String
+  startDate          DateTime
+  endDate            DateTime
+  totalMinutesUsed   Float    @default(0)
+  totalCallsCount    Int      @default(0)
+  estimatedTotalCost Float    @default(0)
+  providerCostTotal  Float    @default(0)
+  platformCostTotal  Float    @default(0)
+  status             String   @default("current")
+
+  @@map("billing_periods")
+}
+
+model KnowledgeBase {
+  id            String   @id @default(cuid())
+  businessId    String?
+  name          String
+  description   String
+  documentCount Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  business  Business?           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  documents KnowledgeDocument[]
+
+  @@map("knowledge_bases")
+}
+
+model KnowledgeDocument {
+  id              String   @id @default(cuid())
+  knowledgeBaseId String
+  fileName        String
+  fileSize        Int
+  status          String   @default("ready")
+  error           String?
+  uploadedAt      DateTime @default(now())
+
+  knowledgeBase KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+
+  @@map("knowledge_documents")
+}
+
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  provider    String    @default("sarvam")
+  eventType   String
+  externalId  String    @unique
+  payload     Json
+  status      String    @default("processed")
+  error       String?
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+
+  @@map("webhook_events")
+}
+
+model RecentActivity {
+  id          String   @id @default(cuid())
+  type        String
+  title       String
+  description String
+  timestamp   DateTime @default(now())
+  entityId    String?
+
+  @@map("recent_activities")
+}
+
+model CallActivityPoint {
+  id        String @id @default(cuid())
+  date      String
+  attempts  Int
+  completed Int
+
+  @@map("call_activity_points")
+}
+
