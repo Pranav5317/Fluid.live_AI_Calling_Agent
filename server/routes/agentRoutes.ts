@@ -68,3 +68,12 @@ agentRoutes.post('/:id/activate', async (req, res) => {
   }
 });
 
+// POST /api/agents/:id/sync-sarvam
+agentRoutes.post('/:id/sync-sarvam', async (req, res) => {
+  try {
+    const mapping = await serverAgentService.syncWithSarvam(req.params.id);
+    res.json({ success: true, data: mapping, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});

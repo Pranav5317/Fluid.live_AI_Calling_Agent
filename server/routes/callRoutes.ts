@@ -20,6 +20,16 @@ callRoutes.get('/', async (req, res) => {
   }
 });
 
+// POST /api/calls/test (Server-authorized outbound test call)
+callRoutes.post('/test', async (req, res) => {
+  try {
+    const call = await serverCallService.initiateTestCall(req.body);
+    res.status(201).json({ success: true, data: call, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err?.message || 'Test call initiation failed', timestamp: new Date().toISOString() });
+  }
+});
+
 // GET /api/calls/:id
 callRoutes.get('/:id', async (req, res) => {
   try {
@@ -32,4 +42,3 @@ callRoutes.get('/:id', async (req, res) => {
     res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
   }
 });
-

@@ -144,7 +144,7 @@ model Call {
   id                 String    @id @default(cuid())
   businessId         String?
   externalCallId     String    @unique
-  campaignId         String
+  campaignId         String?
   agentId            String
   agentVersionId     String
   leadId             String
@@ -160,7 +160,7 @@ model Call {
   usageEventId       String?   @unique
 
   business     Business?     @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  campaign     Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign     Campaign?     @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   agent        Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
   agentVersion AgentVersion  @relation(fields: [agentVersionId], references: [id], onDelete: Cascade)
   lead         Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
@@ -174,7 +174,7 @@ model Call {
 model UsageEvent {
   id                String   @id @default(cuid())
   callId            String?  @unique
-  campaignId        String
+  campaignId        String?
   agentId           String
   durationMinutes   Float
   providerCostUnits Float
@@ -182,7 +182,7 @@ model UsageEvent {
   timestamp         DateTime @default(now())
 
   call     Call?     @relation
-  campaign Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
 
   @@map("usage_events")
 }

@@ -9,9 +9,17 @@ export interface CallFilterOptions {
   agentId?: string | 'all';
 }
 
+export interface InitiateTestCallDTO {
+  agentVersionId: string;
+  phoneNumberId: string;
+  toPhoneNumber: string;
+  leadId?: string;
+}
+
 export interface ICallService {
   getCalls(options?: CallFilterOptions): Promise<Call[]>;
   getCallById(id: string): Promise<Call | undefined>;
+  initiateTestCall(dto: InitiateTestCallDTO): Promise<Call>;
 }
 
 class CallService implements ICallService {
@@ -27,6 +35,10 @@ class CallService implements ICallService {
 
   async getCallById(id: string): Promise<Call | undefined> {
     return await apiClient.get<Call>(`/calls/${id}`);
+  }
+
+  async initiateTestCall(dto: InitiateTestCallDTO): Promise<Call> {
+    return await apiClient.post<Call>('/calls/test', dto);
   }
 }
 

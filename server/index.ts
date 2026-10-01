@@ -41,7 +41,7 @@ app.get('/api/health', (req, res) => {
 
 export default app;
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.argv[1] && (process.argv[1].endsWith('server/index.ts') || process.argv[1].endsWith('server\\index.ts'))) {
   app.listen(PORT, () => {
     console.log(`[Fluid.Live Backend API] Modular Monolith Server running on http://localhost:${PORT}`);
   });

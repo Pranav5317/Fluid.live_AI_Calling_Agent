@@ -43,6 +43,9 @@ export interface AgentConfig {
   openingLine: string;
   closingBehavior: string;
   systemPrompt: string;
+  firstGreeting?: string;
+  voiceId?: string;
+  temperature?: number;
   flowNodes: CallFlowNode[];
   knowledgeBaseIds: string[];
   extractedVariables: ExtractedVariableConfig[];
@@ -125,11 +128,13 @@ export interface CampaignLead {
 
 export type CallStatus = 
   | 'queued' 
+  | 'initiated'
   | 'in-progress' 
   | 'completed' 
   | 'failed' 
   | 'busy' 
   | 'no-answer' 
+  | 'no_answer'
   | 'voicemail';
 
 export type CallOutcome = 
@@ -139,7 +144,8 @@ export type CallOutcome =
   | 'unreachable' 
   | 'voicemail_left' 
   | 'wrong_number' 
-  | 'technical_failure';
+  | 'technical_failure'
+  | 'system_error';
 
 export interface TranscriptMessage {
   id: string;
@@ -151,7 +157,7 @@ export interface TranscriptMessage {
 export interface Call {
   id: string;
   externalCallId: string;
-  campaignId: string;
+  campaignId?: string | null;
   agentId: string;
   agentVersionId: string;
   leadId: string;
@@ -168,8 +174,8 @@ export interface Call {
 
 export interface UsageEvent {
   id: string;
-  callId: string;
-  campaignId: string;
+  callId?: string | null;
+  campaignId?: string | null;
   agentId: string;
   durationMinutes: number;
   providerCostUnits: number;

@@ -1,6 +1,6 @@
 import { Agent, AgentVersion, AgentConfig } from '../../src/types';
 import { agentRepository } from '../repositories/agentRepository';
-import { backendSarvamProvider } from './sarvamProvider';
+import { backendSarvamProvider, SarvamAgentMapping } from './sarvamProvider';
 
 export class ServerAgentService {
   async getAgents(): Promise<Agent[]> {
@@ -29,6 +29,16 @@ export class ServerAgentService {
 
   async toggleAgentStatus(id: string): Promise<Agent> {
     return agentRepository.toggleAgentStatus(id);
+  }
+
+  async syncWithSarvam(agentId: string): Promise<SarvamAgentMapping> {
+    const agentDetails = await agentRepository.getAgentById(agentId);
+    if (!agentDetails) throw new Error(`Agent not found: ${agentId}`);
+    return await backendSarvamProvider.syncAgentConfig(
+      agentDetails.agent.id,
+      agentDetails.currentVersion.id,
+      agentDetails.currentVersion.config
+    );
   }
 }
 

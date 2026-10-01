@@ -14,6 +14,7 @@ export interface IAgentService {
   updateAgent(id: string, updates: Partial<Pick<Agent, 'name' | 'useCase'>> & { config?: AgentConfig; versionNotes?: string }): Promise<Agent>;
   toggleAgentStatus(id: string): Promise<Agent>;
   duplicateAgent(id: string): Promise<Agent>;
+  syncWithSarvam(id: string): Promise<any>;
 }
 
 class AgentService implements IAgentService {
@@ -56,6 +57,10 @@ class AgentService implements IAgentService {
       useCase: existing.agent.useCase,
       config: JSON.parse(JSON.stringify(existing.currentVersion.config)),
     });
+  }
+
+  async syncWithSarvam(id: string): Promise<any> {
+    return await apiClient.post<any>(`/agents/${id}/sync-sarvam`);
   }
 }
 
