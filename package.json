@@ -7,7 +7,7 @@
     "dev": "concurrently -k -p \"[{name}]\" -n \"SERVER,FRONTEND\" -c \"cyan,magenta\" \"npm run server\" \"vite\"",
     "dev:ui": "vite",
     "server": "tsx server/index.ts",
-    "build": "tsc && vite build",
+    "build": "prisma generate && tsc && vite build",
     "lint": "tsc --noEmit",
     "preview": "vite preview",
     "prisma:generate": "prisma generate",
