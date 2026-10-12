@@ -12,8 +12,8 @@ export function formatDuration(seconds: number): string {
   return `${hours}h ${remMins}m`;
 }
 
-export function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+export function formatCurrency(amount: number, currency: string = 'INR'): string {
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
@@ -24,7 +24,7 @@ export function formatCurrency(amount: number, currency: string = 'USD'): string
 export function formatDate(dateString: string): string {
   if (!dateString) return '-';
   const date = new Date(dateString);
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat('en-IN', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -37,24 +37,24 @@ export function formatDate(dateString: string): string {
 export function formatShortDate(dateString: string): string {
   if (!dateString) return '-';
   const date = new Date(dateString);
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat('en-IN', {
     month: 'short',
     day: 'numeric',
   }).format(date);
 }
 
 export function formatNumber(num: number): string {
-  return new Intl.NumberFormat('en-US').format(num);
+  return new Intl.NumberFormat('en-IN').format(num);
 }
 
 export function formatPhoneNumber(phone: string): string {
   if (!phone) return '-';
   const cleaned = ('' + phone).replace(/\D/g, '');
   if (cleaned.length === 10) {
-    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    return `+91 ${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
   }
-  if (cleaned.length === 11 && cleaned.startsWith('1')) {
-    return `+1 (${cleaned.slice(1, 4)}) ${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
+  if (cleaned.length === 12 && cleaned.startsWith('91')) {
+    return `+91 ${cleaned.slice(2, 7)} ${cleaned.slice(7)}`;
   }
   return phone;
 }

@@ -77,3 +77,54 @@ agentRoutes.post('/:id/sync-sarvam', async (req, res) => {
     res.status(400).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
   }
 });
+
+// POST /api/agents/voice-preview (Real Sarvam Bulbul TTS Audio Preview)
+agentRoutes.post('/voice-preview', async (req, res) => {
+  try {
+    const { text, speaker = 'shubh', languageCode = 'en-IN' } = req.body;
+    const apiKey = process.env.SARVAM_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ success: false, error: 'SARVAM_API_KEY not configured on server', timestamp: new Date().toISOString() });
+    }
+
+    const ttsRes = await fetch('https://api.sarvam.ai/text-to-speech', {
+      method: 'POST',
+      headers: {
+        'api-subscription-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        inputs: [text || 'Namaste! Main Shubh bol raha hoon Fluid.live se. How can I assist you today?'],
+        target_language_code: languageCode || 'en-IN',
+        speaker: (speaker || 'shubh').toLowerCase(),
+        model: 'bulbul:v1',
+      }),
+    });
+
+    if (!ttsRes.ok) {
+      const errText = await ttsRes.text();
+      console.warn(`[Sarvam TTS Preview] Bulbul TTS returned HTTP ${ttsRes.status}: ${errText}. Using browser synthesis fallback.`);
+      return res.json({
+        success: true,
+        audioBase64: null,
+        fallbackToBrowser: true,
+        speaker,
+        message: 'Bulbul TTS key not available; fallback to browser speech synthesis',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const ttsData: any = await ttsRes.json();
+    const audioBase64 = ttsData.audios?.[0];
+    res.json({ success: true, audioBase64, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    console.warn('[Sarvam TTS Preview] Error:', err?.message);
+    res.json({
+      success: true,
+      audioBase64: null,
+      fallbackToBrowser: true,
+      speaker: req.body?.speaker,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});

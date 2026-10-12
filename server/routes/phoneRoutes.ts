@@ -13,18 +13,46 @@ phoneRoutes.get('/', async (req, res) => {
   }
 });
 
-// POST /api/phone-numbers
+// POST /api/phone-numbers - Link or add a Sarvam Telephony line
 phoneRoutes.post('/', async (req, res) => {
   try {
-    const { areaCode } = req.body;
-    const number = await serverPhoneService.provisionNumber(areaCode);
+    const { phoneNumber, connectionId, provider, assignedAgentId, areaCode } = req.body;
+
+    let number;
+    if (phoneNumber) {
+      number = await serverPhoneService.addPhoneNumber({
+        phoneNumber,
+        connectionId,
+        provider,
+        assignedAgentId,
+      });
+    } else {
+      // Fallback for legacy calls
+      number = await serverPhoneService.provisionNumber(areaCode);
+    }
+
     res.status(201).json({ success: true, data: number, timestamp: new Date().toISOString() });
   } catch (err: any) {
     res.status(400).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
   }
 });
 
-// PATCH /api/phone-numbers/:id
+// POST /api/phone-numbers/sync - Auto-sync active Sarvam Telephony line from account config
+phoneRoutes.post('/sync', async (req, res) => {
+  try {
+    const number = await serverPhoneService.syncSarvamPhoneNumber();
+    res.json({
+      success: true,
+      data: number,
+      message: 'Active Sarvam Telephony line synchronized successfully.',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
+// PATCH /api/phone-numbers/:id - Bind/unbind agent
 phoneRoutes.patch('/:id', async (req, res) => {
   try {
     const { assignedAgentId } = req.body;
@@ -35,3 +63,16 @@ phoneRoutes.patch('/:id', async (req, res) => {
   }
 });
 
+// DELETE /api/phone-numbers/:id - Unlink/delete phone number
+phoneRoutes.delete('/:id', async (req, res) => {
+  try {
+    await serverPhoneService.deletePhoneNumber(req.params.id);
+    res.json({
+      success: true,
+      message: 'Phone number unlinked successfully.',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});

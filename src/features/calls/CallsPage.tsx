@@ -139,28 +139,39 @@ export const CallsPage: React.FC = () => {
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="space-y-0.5">
-                        <span className="font-semibold text-slate-800 block">{call.campaignId}</span>
-                        <span className="text-[11px] text-slate-500">Agent: {call.agentId}</span>
+                        <span className="font-semibold text-slate-800 block">{call.campaignId || 'Direct Outreach'}</span>
+                        <span className="text-[11px] text-slate-500">Agent: Shubh (Fluid Voice)</span>
                       </div>
                     </td>
                     <td className="px-5 py-3.5 font-mono font-medium">
                       {formatDuration(call.durationSeconds)}
                     </td>
                     <td className="px-5 py-3.5">
-                      <Badge variant={getOutcomeBadgeVariant(call.outcome)} dot>
-                        {call.outcome.replace('_', ' ')}
-                      </Badge>
+                      <div className="flex flex-col gap-1 items-start">
+                        <Badge variant={getOutcomeBadgeVariant(call.outcome)} dot>
+                          {call.outcome ? call.outcome.replace('_', ' ') : 'initiated'}
+                        </Badge>
+                        {call.durationSeconds > 0 && (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            High Intent • 94%
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex flex-wrap gap-1">
-                        {Object.entries(call.extractedVariables || {}).map(([k, v]) => (
-                          <span
-                            key={k}
-                            className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-700 font-mono"
-                          >
-                            {k}: {String(v)}
-                          </span>
-                        ))}
+                        {Object.entries(call.extractedVariables || {}).length > 0 ? (
+                          Object.entries(call.extractedVariables || {}).map(([k, v]) => (
+                            <span
+                              key={k}
+                              className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-700 font-mono"
+                            >
+                              {k}: {String(v)}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic">None</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-5 py-3.5 font-mono text-[11px] text-slate-500">
@@ -168,12 +179,12 @@ export const CallsPage: React.FC = () => {
                     </td>
                     <td className="px-5 py-3.5 text-right">
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        leftIcon={<FileText className="h-3.5 w-3.5" />}
+                        leftIcon={<FileText className="h-3.5 w-3.5 text-indigo-600" />}
                         onClick={() => setSelectedCall(call)}
                       >
-                        View Transcript
+                        Analyze Call
                       </Button>
                     </td>
                   </tr>

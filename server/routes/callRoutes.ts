@@ -30,6 +30,16 @@ callRoutes.post('/test', async (req, res) => {
   }
 });
 
+// GET /api/calls/:id/transcript (Fetch & sync transcript from Sarvam Analytics API)
+callRoutes.get('/:id/transcript', async (req, res) => {
+  try {
+    const result = await serverCallService.fetchTranscriptForCall(req.params.id);
+    res.json({ success: true, data: result, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
 // GET /api/calls/:id
 callRoutes.get('/:id', async (req, res) => {
   try {

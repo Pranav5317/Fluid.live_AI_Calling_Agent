@@ -131,12 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <Settings className="h-4 w-4 text-slate-400" />
             {!isCollapsed && (
-              <span className="truncate flex items-center justify-between w-full">
-                Settings
-                <span className="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400 font-normal">
-                  v1.2
-                </span>
-              </span>
+              <span className="truncate">Settings</span>
             )}
           </button>
         </div>

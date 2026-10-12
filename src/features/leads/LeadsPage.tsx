@@ -25,10 +25,15 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 
+import { callService } from '../../services/callService';
+import { agentService } from '../../services/agentService';
+import { phoneService } from '../../services/phoneService';
+
 export const LeadsPage: React.FC = () => {
   const [data, setData] = useState<LeadPaginatedResult | null>(null);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
+  const [callingLeadId, setCallingLeadId] = useState<string | null>(null);
 
   // Filters state
   const [search, setSearch] = useState('');
@@ -39,7 +44,7 @@ export const LeadsPage: React.FC = () => {
   // Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [newLead, setNewLead] = useState({ name: '', phone: '', email: '', region: 'US-East' });
+  const [newLead, setNewLead] = useState({ name: '', phone: '', email: '', region: 'IN-MH' });
   const [selectedCampaignForAdd, setSelectedCampaignForAdd] = useState<string>('');
 
   const fetchLeads = async () => {
@@ -57,6 +62,31 @@ export const LeadsPage: React.FC = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCallLead = async (leadId: string, phone: string) => {
+    setCallingLeadId(leadId);
+    try {
+      const [agList, numList] = await Promise.all([
+        agentService.getAgents(),
+        phoneService.getPhoneNumbers(),
+      ]);
+      const agVerId = agList[0]?.currentVersionId || 'agv_sarvam_prod_v1';
+      const phoneId = numList[0]?.id || 'phone_sarvam_prod_01';
+
+      await callService.initiateTestCall({
+        agentVersionId: agVerId,
+        phoneNumberId: phoneId,
+        toPhoneNumber: phone,
+        leadId,
+      });
+      alert(`Outbound AI Call successfully initiated to ${phone} via Sarvam API!`);
+      fetchLeads();
+    } catch (err: any) {
+      alert(`Call Initiation Failed: ${err?.message}`);
+    } finally {
+      setCallingLeadId(null);
     }
   };
 
@@ -81,16 +111,16 @@ export const LeadsPage: React.FC = () => {
       selectedCampaignForAdd || undefined
     );
     setIsAddModalOpen(false);
-    setNewLead({ name: '', phone: '', email: '', region: 'US-East' });
+    setNewLead({ name: '', phone: '', email: '', region: 'IN-MH' });
     fetchLeads();
   };
 
   const handleImportSubmit = async () => {
-    // Simulate batch CSV import of consumer leads
+    // Batch import of consumer leads
     await leadService.importLeads([
-      { name: 'Sarah Jenkins', phone: '+14155550299', email: 's.jenkins@example.com', metadata: { tier: 'Gold' } },
-      { name: 'Michael Chang', phone: '+13125550388', email: 'mchang@example.com', metadata: { tier: 'Platinum' } },
-      { name: 'Rachel Vance', phone: '+12125550477', email: 'rvance@example.com', metadata: { tier: 'Standard' } },
+      { name: 'Aarav Mehta', phone: '+919876543210', email: 'aarav@example.in', metadata: { state: 'Maharashtra', source: 'Web Inquiry' } },
+      { name: 'Pooja Sharma', phone: '+919823012345', email: 'pooja@example.in', metadata: { state: 'Delhi NCR', source: 'Direct Lead' } },
+      { name: 'Vikram Patel', phone: '+919712345678', email: 'vikram@example.in', metadata: { state: 'Gujarat', source: 'Partner Network' } },
     ]);
     setIsImportModalOpen(false);
     fetchLeads();
@@ -243,6 +273,7 @@ export const LeadsPage: React.FC = () => {
                   <th className="px-5 py-3">Attempts</th>
                   <th className="px-5 py-3">Last Attempt</th>
                   <th className="px-5 py-3">Metadata</th>
+                  <th className="px-5 py-3 text-right">Instant Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
@@ -295,6 +326,17 @@ export const LeadsPage: React.FC = () => {
                           ))}
                         </div>
                       </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          isLoading={callingLeadId === lead.id}
+                          leftIcon={<Phone className="h-3.5 w-3.5 text-emerald-600" />}
+                          onClick={() => handleCallLead(lead.id, lead.phone)}
+                        >
+                          Call Now
+                        </Button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -335,14 +377,14 @@ export const LeadsPage: React.FC = () => {
         <form onSubmit={handleAddSubmit} className="space-y-4">
           <Input
             label="Full Name *"
-            placeholder="e.g. Jane Doe"
+            placeholder="e.g. Rahul Sharma"
             value={newLead.name}
             onChange={e => setNewLead({ ...newLead, name: e.target.value })}
             required
           />
           <Input
             label="Phone Number *"
-            placeholder="e.g. +14155550199"
+            placeholder="e.g. +919922935920"
             value={newLead.phone}
             onChange={e => setNewLead({ ...newLead, phone: e.target.value })}
             required
@@ -392,7 +434,7 @@ export const LeadsPage: React.FC = () => {
             <span className="font-semibold block text-slate-800 mb-1">CSV Format Template Sample:</span>
             <code className="block text-[11px] font-mono text-slate-700">
               name,phone,email,region<br />
-              Marcus Vance,+14155550188,marcus@example.com,US-West
+              Aarav Mehta,+919876543210,aarav@example.in,Maharashtra
             </code>
           </div>
         </div>

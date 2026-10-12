@@ -62,6 +62,11 @@ class AgentService implements IAgentService {
   async syncWithSarvam(id: string): Promise<any> {
     return await apiClient.post<any>(`/agents/${id}/sync-sarvam`);
   }
+
+  async previewVoice(params: { text?: string; speaker: string; languageCode?: string }): Promise<string | null> {
+    const res = await apiClient.post<{ success: boolean; audioBase64?: string }>('/agents/voice-preview', params);
+    return res.audioBase64 || null;
+  }
 }
 
 export const agentService = new AgentService();

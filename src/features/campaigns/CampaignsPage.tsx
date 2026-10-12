@@ -44,12 +44,14 @@ export const CampaignsPage: React.FC = () => {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1);
   const [agentVersions, setAgentVersions] = useState<AgentVersion[]>([]);
+  const [wizardError, setWizardError] = useState<string | null>(null);
+  const [isSubmittingWizard, setIsSubmittingWizard] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     agentId: '',
     agentVersionId: '',
     phoneNumberId: '',
-    totalLeads: 100,
+    totalLeads: 1,
     selectedLeadIds: [] as string[],
     scheduleDate: '',
   });
@@ -71,6 +73,23 @@ export const CampaignsPage: React.FC = () => {
     }
   };
 
+  const handleAgentSelect = async (agentId: string) => {
+    if (!agentId) {
+      setFormData(prev => ({ ...prev, agentId: '', agentVersionId: '' }));
+      setAgentVersions([]);
+      return;
+    }
+    const details = await agentService.getAgentById(agentId);
+    if (details) {
+      setAgentVersions(details.allVersions || []);
+      setFormData(prev => ({
+        ...prev,
+        agentId,
+        agentVersionId: details.currentVersion?.id || details.allVersions?.[0]?.id || '',
+      }));
+    }
+  };
+
   useEffect(() => {
     Promise.all([
       agentService.getAgents(),
@@ -80,6 +99,14 @@ export const CampaignsPage: React.FC = () => {
       setAgents(agList);
       setPhoneNumbers(numList);
       setAvailableLeads(leadList);
+
+      // Pre-select defaults if available
+      if (agList.length > 0) {
+        handleAgentSelect(agList[0].id);
+      }
+      if (numList.length > 0) {
+        setFormData(prev => ({ ...prev, phoneNumberId: numList[0].id }));
+      }
     });
   }, []);
 
@@ -87,43 +114,86 @@ export const CampaignsPage: React.FC = () => {
     fetchCampaigns();
   }, [search, statusFilter]);
 
-  const handleAgentSelect = async (agentId: string) => {
-    const details = await agentService.getAgentById(agentId);
-    if (details) {
-      setAgentVersions(details.allVersions);
-      setFormData(prev => ({
-        ...prev,
-        agentId,
-        agentVersionId: details.currentVersion.id,
-      }));
+  const openWizard = async () => {
+    setWizardError(null);
+    setWizardStep(1);
+    
+    const defaultAgentId = formData.agentId || (agents.length > 0 ? agents[0].id : '');
+    const defaultPhoneId = formData.phoneNumberId || (phoneNumbers.length > 0 ? phoneNumbers[0].id : '');
+    
+    setFormData(prev => ({
+      ...prev,
+      name: prev.name || 'Outreach Campaign ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      agentId: defaultAgentId,
+      phoneNumberId: defaultPhoneId,
+    }));
+
+    if (defaultAgentId) {
+      await handleAgentSelect(defaultAgentId);
     }
+
+    setIsWizardOpen(true);
   };
 
   const handleWizardSubmit = async () => {
-    if (!formData.name || !formData.agentId || !formData.phoneNumberId) return;
+    setWizardError(null);
+    if (!formData.name.trim()) {
+      setWizardError('Please enter a Campaign Name.');
+      setWizardStep(1);
+      return;
+    }
+    if (!formData.agentId) {
+      setWizardError('Please select a Calling Agent in Step 1.');
+      setWizardStep(1);
+      return;
+    }
+    if (!formData.phoneNumberId) {
+      setWizardError('Please select a Phone Number in Step 2.');
+      setWizardStep(2);
+      return;
+    }
 
-    await campaignService.createCampaign({
-      name: formData.name,
-      agentId: formData.agentId,
-      agentVersionId: formData.agentVersionId, // Locked AgentVersion
-      phoneNumberId: formData.phoneNumberId,
-      totalLeads: formData.totalLeads,
-      selectedLeadIds: formData.selectedLeadIds.length > 0 ? formData.selectedLeadIds : undefined,
-      scheduledAt: formData.scheduleDate || undefined,
-    });
+    setIsSubmittingWizard(true);
+    try {
+      const selectedAgent = agents.find(a => a.id === formData.agentId);
+      const effectiveVersionId = formData.agentVersionId || selectedAgent?.currentVersionId || 'v1';
 
-    setIsWizardOpen(false);
-    setWizardStep(1);
-    setFormData({
-      name: '',
-      agentId: '',
-      agentVersionId: '',
-      phoneNumberId: '',
-      totalLeads: 100,
-      selectedLeadIds: [],
-      scheduleDate: '',
-    });
-    fetchCampaigns();
+      const newCampaign = await campaignService.createCampaign({
+        name: formData.name,
+        agentId: formData.agentId,
+        agentVersionId: effectiveVersionId,
+        phoneNumberId: formData.phoneNumberId,
+        totalLeads: formData.totalLeads,
+        selectedLeadIds: formData.selectedLeadIds.length > 0 ? formData.selectedLeadIds : undefined,
+        scheduledAt: formData.scheduleDate || undefined,
+      });
+
+      // If launched immediately (no schedule date), start campaign automatically!
+      if (!formData.scheduleDate && newCampaign?.id) {
+        try {
+          await campaignService.startCampaign(newCampaign.id);
+        } catch (e: any) {
+          console.warn('Auto-start campaign failed:', e?.message);
+        }
+      }
+
+      setIsWizardOpen(false);
+      setWizardStep(1);
+      setFormData({
+        name: '',
+        agentId: agents.length > 0 ? agents[0].id : '',
+        agentVersionId: '',
+        phoneNumberId: phoneNumbers.length > 0 ? phoneNumbers[0].id : '',
+        totalLeads: 100,
+        selectedLeadIds: [],
+        scheduleDate: '',
+      });
+      fetchCampaigns();
+    } catch (err: any) {
+      setWizardError(err?.message || 'Failed to create campaign. Please try again.');
+    } finally {
+      setIsSubmittingWizard(false);
+    }
   };
 
   const handleExecuteAction = async () => {
@@ -171,12 +241,7 @@ export const CampaignsPage: React.FC = () => {
           <Button
             size="sm"
             leftIcon={<Plus className="h-4 w-4" />}
-            onClick={() => {
-              if (agents.length > 0) handleAgentSelect(agents[0].id);
-              if (phoneNumbers.length > 0)
-                setFormData(prev => ({ ...prev, phoneNumberId: phoneNumbers[0].id }));
-              setIsWizardOpen(true);
-            }}
+            onClick={openWizard}
           >
             Create Campaign
           </Button>
@@ -219,7 +284,7 @@ export const CampaignsPage: React.FC = () => {
             title="No campaigns found"
             description="Create your first calling campaign to connect your AI agent with leads."
             actionLabel="Create Campaign"
-            onAction={() => setIsWizardOpen(true)}
+            onAction={openWizard}
           />
         ) : (
           <div className="overflow-x-auto">
@@ -351,12 +416,12 @@ export const CampaignsPage: React.FC = () => {
         footer={
           <div className="flex justify-between w-full">
             {wizardStep > 1 ? (
-              <Button variant="outline" size="sm" onClick={() => setWizardStep((wizardStep - 1) as any)}>
+              <Button variant="outline" size="sm" onClick={() => setWizardStep((wizardStep - 1) as any)} disabled={isSubmittingWizard}>
                 Back
               </Button>
             ) : <div />}
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setIsWizardOpen(false)}>
+              <Button variant="outline" size="sm" onClick={() => setIsWizardOpen(false)} disabled={isSubmittingWizard}>
                 Cancel
               </Button>
               {wizardStep < 3 ? (
@@ -364,8 +429,8 @@ export const CampaignsPage: React.FC = () => {
                   Next Step
                 </Button>
               ) : (
-                <Button size="sm" onClick={handleWizardSubmit} leftIcon={<CheckCircle className="h-4 w-4" />}>
-                  Launch Campaign
+                <Button size="sm" onClick={handleWizardSubmit} isLoading={isSubmittingWizard} leftIcon={<CheckCircle className="h-4 w-4" />}>
+                  {isSubmittingWizard ? 'Launching...' : 'Launch Campaign'}
                 </Button>
               )}
             </div>
@@ -373,6 +438,13 @@ export const CampaignsPage: React.FC = () => {
         }
       >
         <div className="space-y-4">
+          {wizardError && (
+            <div className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center justify-between">
+              <span>⚠️ {wizardError}</span>
+              <button type="button" onClick={() => setWizardError(null)} className="text-rose-400 hover:text-rose-600">✕</button>
+            </div>
+          )}
+
           {/* Step 1: Basics & Explicit AgentVersion Selection */}
           {wizardStep === 1 && (
             <div className="space-y-4">
@@ -381,7 +453,7 @@ export const CampaignsPage: React.FC = () => {
               </h4>
               <Input
                 label="Campaign Name *"
-                placeholder="e.g. Q4 Renewal Outreach"
+                placeholder="e.g. Fluid.live Customer Verification"
                 value={formData.name}
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                 required
@@ -450,10 +522,10 @@ export const CampaignsPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2 text-slate-600">
                   <div>Name: <strong className="text-slate-800">{formData.name}</strong></div>
                   <div>Audience Size: <strong className="text-slate-800">{formData.totalLeads} leads</strong></div>
-                  <div>Agent ID: <strong className="text-slate-800">{formData.agentId}</strong></div>
-                  <div>Locked AgentVersion: <strong className="text-slate-800 font-mono">{formData.agentVersionId}</strong></div>
-                  <div>Phone ID: <strong className="text-slate-800">{formData.phoneNumberId}</strong></div>
-                  <div>Status: <strong className="text-slate-800">{formData.scheduleDate ? 'Scheduled' : 'Draft / Ready'}</strong></div>
+                  <div>Agent: <strong className="text-slate-800">{agents.find(a => a.id === formData.agentId)?.name || formData.agentId || 'Not selected'}</strong></div>
+                  <div>Locked Version: <strong className="text-slate-800 font-mono">{formData.agentVersionId || 'Default'}</strong></div>
+                  <div>Phone Number: <strong className="text-slate-800 font-mono">{phoneNumbers.find(p => p.id === formData.phoneNumberId)?.phoneNumber || formData.phoneNumberId || 'Not selected'}</strong></div>
+                  <div>Status: <strong className="text-slate-800">{formData.scheduleDate ? 'Scheduled' : 'Ready to Launch'}</strong></div>
                 </div>
               </div>
             </div>

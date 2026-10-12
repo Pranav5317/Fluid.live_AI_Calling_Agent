@@ -22,7 +22,9 @@
     /* Path Aliases */
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["node"]
   },
-  "include": ["src", "server", "prisma"]
+  "include": ["src", "server", "prisma"],
+  "exclude": ["node_modules", "dist", "scratch"]
 }

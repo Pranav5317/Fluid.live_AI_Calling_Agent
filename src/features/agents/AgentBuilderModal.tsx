@@ -18,7 +18,10 @@ import {
   Plus,
   Trash2,
   Sparkles,
+  Zap,
+  Volume2,
 } from 'lucide-react';
+import { agentService } from '../../services/agentService';
 
 export interface AgentBuilderModalProps {
   isOpen: boolean;
@@ -37,6 +40,8 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('general');
   const [saving, setSaving] = useState(false);
+  const [playingVoicePreview, setPlayingVoicePreview] = useState(false);
+  const [voicePreviewError, setVoicePreviewError] = useState<string | null>(null);
 
   // Form State
   const [name, setName] = useState(initialData?.name || '');
@@ -44,25 +49,28 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
 
   const [config, setConfig] = useState<AgentConfig>(
     initialData?.config || {
-      voiceModel: 'Sarvam Neural Voice - English (US) - Professional Female',
-      language: 'en-US',
-      openingLine: 'Hello! I am calling from Apex Enterprises. Do you have a moment?',
-      closingBehavior: 'Politely thank the customer and close the call session.',
-      systemPrompt: 'You are an AI calling specialist for Apex Enterprises.',
+      voiceModel: 'Shubh - Friendly Verification Indian Male',
+      language: 'en-IN',
+      openingLine: 'नमस्ते <user_name> ji, I am calling on behalf of Fluid.live for a quick verification. Do you have a moment?',
+      closingBehavior: 'धन्यवाद <user_name> ji, आपका दिन शुभ हो!',
+      systemPrompt: `Persona\nRole: Shubh, a friendly verification assistant calling on behalf of Fluid.live, a company that offers AI voice calling for businesses.\nTone: Warm, courteous, respectful, and efficient. The call feels like a pleasant, brief conversation, never a telemarketing pitch.\n\nObjective:\nVerify customer interest in AI voice calling for their business and note follow-up preference (demo, WhatsApp, or none).\n\nSpeaking style rules:\n- Keep turns concise (under 20 words).\n- Address user respectfully (ji, Sir, Madam).\n- Ask one question at a time and wait for their response.`,
+      sarvamAppId: 'Conversatio-b063cf10-e735',
       flowNodes: [
-        { id: 'fn_1', type: 'start', title: 'Call Start', content: 'Establish line connection' },
-        { id: 'fn_2', type: 'opening', title: 'Greeting', content: 'Deliver introductory line' },
-        { id: 'fn_3', type: 'question', title: 'Main Inquiry', content: 'Ask lead primary question' },
-        { id: 'fn_4', type: 'closing', title: 'Closing Script', content: 'Deliver final remark' },
-        { id: 'fn_5', type: 'end', title: 'Terminate Call', content: 'Close audio stream' },
+        { id: 'fn_1', type: 'start', title: 'Call Connected', content: 'Establish telephony line connection' },
+        { id: 'fn_2', type: 'opening', title: 'Warm Greeting', content: 'Greet lead and confirm identity' },
+        { id: 'fn_3', type: 'question', title: 'Interest Verification', content: 'Check interest in AI voice calling' },
+        { id: 'fn_4', type: 'question', title: 'Follow-up Preference', content: 'Offer demo or WhatsApp details' },
+        { id: 'fn_5', type: 'closing', title: 'Polite Wrap-up', content: 'Deliver concise sign-off (< 10 words)' },
+        { id: 'fn_6', type: 'end', title: 'End Call', content: 'Call end_interaction' },
       ],
       knowledgeBaseIds: [],
       extractedVariables: [
-        { key: 'satisfaction_rating', label: 'Satisfaction Rating', type: 'number', required: true, description: 'Score from 1 to 5' },
-        { key: 'callback_requested', label: 'Callback Requested', type: 'boolean', required: true, description: 'True if supervisor callback requested' },
+        { key: 'interest_level', label: 'Interest Level', type: 'enum', required: true, description: 'interested | not_interested | maybe_later', enumOptions: ['interested', 'not_interested', 'maybe_later'] },
+        { key: 'follow_up_preference', label: 'Follow-up Channel', type: 'enum', required: true, description: 'demo | whatsapp_details | none', enumOptions: ['demo', 'whatsapp_details', 'none'] },
+        { key: 'verification_status', label: 'Verification Status', type: 'string', required: true, description: 'completed | unreachable | refused' },
       ],
       runtimeSettings: {
-        maxDurationMinutes: 5,
+        maxDurationMinutes: 3,
         silenceTimeoutSeconds: 5,
         interruptionSensitivity: 'medium',
         recordingEnabled: true,
@@ -103,6 +111,59 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
       ...config,
       extractedVariables: config.extractedVariables.filter(v => v.key !== key),
     });
+  };
+
+  const handlePlayVoicePreview = async () => {
+    setPlayingVoicePreview(true);
+    setVoicePreviewError(null);
+    try {
+      const speakerName = config.voiceModel.toLowerCase().includes('shubh')
+        ? 'shubh'
+        : config.voiceModel.toLowerCase().includes('shreya') || config.voiceModel.toLowerCase().includes('female')
+        ? 'meera'
+        : 'arvind';
+
+      const sampleText = config.openingLine || 'Namaste! Main Shubh bol raha hoon Fluid.live se. How can I assist you today?';
+      const audioBase64 = await agentService.previewVoice({
+        speaker: speakerName,
+        languageCode: config.language || 'en-IN',
+        text: sampleText,
+      });
+
+      if (audioBase64) {
+        const audio = new Audio(`data:audio/wav;base64,${audioBase64}`);
+        audio.onended = () => setPlayingVoicePreview(false);
+        audio.onerror = () => {
+          setPlayingVoicePreview(false);
+          setVoicePreviewError('Audio playback failed in browser');
+        };
+        await audio.play();
+      } else if ('speechSynthesis' in window) {
+        // High fidelity browser synthesis fallback
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(sampleText);
+        utterance.lang = config.language || 'en-IN';
+        if (speakerName === 'shubh') {
+          utterance.pitch = 0.95;
+          utterance.rate = 1.0;
+        } else if (speakerName === 'meera') {
+          utterance.pitch = 1.15;
+          utterance.rate = 1.05;
+        } else {
+          utterance.pitch = 0.85;
+          utterance.rate = 0.95;
+        }
+        utterance.onend = () => setPlayingVoicePreview(false);
+        utterance.onerror = () => setPlayingVoicePreview(false);
+        window.speechSynthesis.speak(utterance);
+      } else {
+        setPlayingVoicePreview(false);
+        setVoicePreviewError('Audio playback not supported in this browser');
+      }
+    } catch (err: any) {
+      setPlayingVoicePreview(false);
+      setVoicePreviewError(err?.message || 'Voice preview failed');
+    }
   };
 
   return (
@@ -165,6 +226,28 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
                 value={useCase}
                 onChange={e => setUseCase(e.target.value)}
               />
+
+              {/* Sarvam Samvaad App Integration */}
+              <div className="p-3.5 rounded-lg border border-slate-200 bg-slate-50/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-amber-500" />
+                    <span className="font-bold text-xs text-slate-900">Sarvam Voice App ID Mapping</span>
+                  </div>
+                  <Badge variant="brand" size="sm">
+                    Samvaad Voice Agent
+                  </Badge>
+                </div>
+                <Input
+                  label="Sarvam Voice Agent App ID"
+                  placeholder="e.g. Conversatio-b063cf10-e735 (or custom app ID)"
+                  value={config.sarvamAppId || ''}
+                  onChange={e => setConfig({ ...config, sarvamAppId: e.target.value })}
+                />
+                <p className="text-[11px] text-slate-500 leading-normal">
+                  Outbound calls for this agent will directly invoke this Sarvam App. If left blank, it automatically uses your connected account's default Sarvam Voice App.
+                </p>
+              </div>
             </div>
           )}
 
@@ -175,9 +258,12 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
                 label="Sarvam Neural Voice Model"
                 value={config.voiceModel}
                 options={[
+                  { value: 'Shubh - Friendly Verification Indian Male', label: 'Shubh - Friendly Verification Indian Male (Recommended)' },
+                  { value: 'Shreya - Courteous Professional Indian Female', label: 'Shreya - Courteous Professional Indian Female' },
+                  { value: 'Sarvam Neural Voice - English (IN) - Professional Female', label: 'Sarvam Neural Voice - English (IN) - Professional Female' },
+                  { value: 'Sarvam Neural Voice - Hindi (IN) - Professional Female', label: 'Sarvam Neural Voice - Hindi (IN) - Professional Female' },
                   { value: 'Sarvam Neural Voice - English (US) - Professional Female', label: 'Sarvam Neural Voice - English (US) - Professional Female' },
                   { value: 'Sarvam Neural Voice - English (US) - Executive Male', label: 'Sarvam Neural Voice - English (US) - Executive Male' },
-                  { value: 'Sarvam Neural Voice - English (IN) - Professional Female', label: 'Sarvam Neural Voice - English (IN) - Professional Female' },
                 ]}
                 onChange={e => setConfig({ ...config, voiceModel: e.target.value })}
               />
@@ -185,12 +271,52 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
                 label="Primary Language"
                 value={config.language}
                 options={[
-                  { value: 'en-US', label: 'English (US)' },
                   { value: 'en-IN', label: 'English (India)' },
                   { value: 'hi-IN', label: 'Hindi (India)' },
+                  { value: 'bn-IN', label: 'Bengali (India)' },
+                  { value: 'gu-IN', label: 'Gujarati (India)' },
+                  { value: 'kn-IN', label: 'Kannada (India)' },
+                  { value: 'ml-IN', label: 'Malayalam (India)' },
+                  { value: 'mr-IN', label: 'Marathi (India)' },
+                  { value: 'pa-IN', label: 'Punjabi (India)' },
+                  { value: 'ta-IN', label: 'Tamil (India)' },
+                  { value: 'te-IN', label: 'Telugu (India)' },
+                  { value: 'en-US', label: 'English (US)' },
                 ]}
                 onChange={e => setConfig({ ...config, language: e.target.value })}
               />
+
+              {/* Real-time Voice Audio Sample Player */}
+              <div className="p-4 rounded-lg bg-slate-900 text-white space-y-3 mt-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-xs font-bold">Neural Voice Audio Preview (Bulbul:v1)</span>
+                  </div>
+                  <Badge variant="brand" size="sm">
+                    Instant Playback
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-300 italic">
+                  "{config.openingLine || 'Namaste! Main Shubh bol raha hoon Fluid.live se. How can I assist you today?'}"
+                </p>
+                <div className="flex items-center gap-2 pt-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="primary"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                    leftIcon={<Volume2 className={`h-3.5 w-3.5 ${playingVoicePreview ? 'animate-bounce' : ''}`} />}
+                    onClick={handlePlayVoicePreview}
+                    isLoading={playingVoicePreview}
+                  >
+                    {playingVoicePreview ? 'Synthesizing & Playing...' : 'Listen to Voice Sample'}
+                  </Button>
+                </div>
+                {voicePreviewError && (
+                  <p className="text-[11px] text-rose-400 font-mono">{voicePreviewError}</p>
+                )}
+              </div>
             </div>
           )}
 

@@ -46,6 +46,9 @@ export interface AgentConfig {
   firstGreeting?: string;
   voiceId?: string;
   temperature?: number;
+  sarvamAppId?: string;
+  sarvamConnectionId?: string;
+  sarvamPhoneNumber?: string;
   flowNodes: CallFlowNode[];
   knowledgeBaseIds: string[];
   extractedVariables: ExtractedVariableConfig[];
@@ -190,6 +193,7 @@ export interface PhoneNumber {
   phoneNumber: string;
   status: PhoneStatus;
   provider: string;
+  providerId?: string;
   assignedAgentId?: string;
   assignedCampaignId?: string;
   createdAt: string;
@@ -227,6 +231,28 @@ export interface WebhookEvent {
   error?: string;
 }
 
+export interface BillingLineItem {
+  id: string;
+  name: string;
+  category: 'telephony' | 'platform';
+  unitRate: string;
+  quantity: string | number;
+  amount: number;
+}
+
+export interface EnterpriseInvoice {
+  invoiceNumber: string;
+  issuer: string;
+  billingEntity: string;
+  settlementMethod: string;
+  period: string;
+  subtotal: number;
+  taxGst: number;
+  total: number;
+  status: 'current' | 'paid' | 'pending';
+  lineItems: BillingLineItem[];
+}
+
 export interface BillingPeriod {
   id: string;
   periodName: string;
@@ -238,6 +264,8 @@ export interface BillingPeriod {
   providerCostTotal: number;
   platformCostTotal: number;
   status: 'current' | 'paid' | 'pending';
+  sarvamInvoice?: EnterpriseInvoice;
+  platformInvoice?: EnterpriseInvoice;
 }
 
 export interface DashboardMetrics {
@@ -266,5 +294,26 @@ export interface CallActivityPoint {
   date: string;
   attempts: number;
   completed: number;
+}
+
+export interface SarvamAccountStatus {
+  connected: boolean;
+  orgId: string;
+  workspaceId: string;
+  defaultAppId: string;
+  connectionId: string;
+  agentPhoneNumber: string;
+  maskedApiKey: string | null;
+  lastVerifiedAt?: string;
+  latencyMs?: number;
+}
+
+export interface SarvamAccountConfig {
+  apiKey?: string;
+  orgId?: string;
+  workspaceId?: string;
+  defaultAppId?: string;
+  connectionId?: string;
+  agentPhoneNumber?: string;
 }
 

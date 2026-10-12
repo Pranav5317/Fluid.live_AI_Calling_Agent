@@ -9,15 +9,24 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
 
   try {
     const response = await fetch(url, { ...options, headers });
-    const json = await response.json();
+    const text = await response.text();
 
-    if (!response.ok || (json && json.success === false)) {
-      throw new Error(json.error || `API Request failed with status ${response.status}`);
+    let json: any = {};
+    if (text && text.trim().length > 0) {
+      try {
+        json = JSON.parse(text);
+      } catch (e) {
+        throw new Error(`Invalid JSON response from server (Status ${response.status}): ${text.substring(0, 100)}`);
+      }
     }
 
-    return json.data as T;
+    if (!response.ok || (json && json.success === false)) {
+      throw new Error(json.error || `Server request failed with status ${response.status}. Make sure the Express backend server is running.`);
+    }
+
+    return (json.data !== undefined ? json.data : json) as T;
   } catch (error: any) {
-    // If backend is not running or network fails, bubble error up cleanly
+    // If backend is offline or returned bad response, bubble clean error message
     throw error;
   }
 }
@@ -26,5 +35,6 @@ export const apiClient = {
   get: <T>(url: string) => apiFetch<T>(url, { method: 'GET' }),
   post: <T>(url: string, body?: any) => apiFetch<T>(url, { method: 'POST', body: JSON.stringify(body) }),
   patch: <T>(url: string, body?: any) => apiFetch<T>(url, { method: 'PATCH', body: JSON.stringify(body) }),
+  delete: <T>(url: string) => apiFetch<T>(url, { method: 'DELETE' }),
 };
 

@@ -1,24 +1,44 @@
 import React, { useEffect, useState } from 'react';
 import { PageHeader } from '../../components/common/PageHeader';
-import { Card, CardHeader, CardTitle, CardDescription } from '../../components/common/Card';
+import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { webhookService } from '../../services/webhookService';
-import { WebhookEvent } from '../../types';
+import { sarvamService } from '../../services/sarvamService';
+import { phoneService } from '../../services/phoneService';
+import { SarvamConnectModal } from '../../components/sarvam/SarvamConnectModal';
+import { WebhookEvent, SarvamAccountStatus } from '../../types';
 import { formatDate } from '../../lib/formatters';
-import { Building2, Users, Bell, Zap, RefreshCw } from 'lucide-react';
+import { Building2, Users, Zap, RefreshCw, Activity, Phone, KeyRound, ExternalLink, CheckCircle } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   const [webhooks, setWebhooks] = useState<WebhookEvent[]>([]);
   const [reprocessingId, setReprocessingId] = useState<string | null>(null);
+
+  // Sarvam Account State
+  const [sarvamStatus, setSarvamStatus] = useState<SarvamAccountStatus | null>(null);
+  const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+  const [testingPing, setTestingPing] = useState(false);
+  const [syncingPhone, setSyncingPhone] = useState(false);
+  const [pingMessage, setPingMessage] = useState<{ success: boolean; text: string } | null>(null);
 
   const fetchWebhooks = async () => {
     const list = await webhookService.getWebhookEvents();
     setWebhooks(list);
   };
 
+  const fetchSarvamStatus = async () => {
+    try {
+      const status = await sarvamService.getStatus();
+      setSarvamStatus(status);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     fetchWebhooks();
+    fetchSarvamStatus();
   }, []);
 
   const handleReprocess = async (eventId: string) => {
@@ -31,14 +51,153 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  const handleTestPing = async () => {
+    setTestingPing(true);
+    setPingMessage(null);
+    try {
+      const res = await sarvamService.testConnection();
+      setPingMessage({
+        success: res.success,
+        text: res.message,
+      });
+      fetchSarvamStatus();
+    } catch (err: any) {
+      setPingMessage({
+        success: false,
+        text: err?.message || 'Connection ping failed.',
+      });
+    } finally {
+      setTestingPing(false);
+    }
+  };
+
+  const handleSyncPhone = async () => {
+    setSyncingPhone(true);
+    try {
+      await phoneService.syncAccountPhone();
+      alert(`Synchronized Sarvam Caller ID: ${sarvamStatus?.agentPhoneNumber || '+917965480599'}`);
+    } catch (err: any) {
+      alert(`Failed to sync phone line: ${err?.message}`);
+    } finally {
+      setSyncingPhone(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Organization Settings & Event Audit"
-        description="Configuration boundary for Business Profile, Roles, Alert Routing, and Sarvam Webhook Audit Trails."
+        title="Organization Settings & Integrations"
+        description="Configuration boundary for Sarvam AI Voice Cloud, Phone Line Syncing, Team Roles, and Webhook Audit Trails."
       />
 
-      {/* Settings Grid */}
+      {/* Primary: Sarvam AI Voice Account Integration Hub */}
+      <Card noPadding>
+        <div className="p-5 border-b border-slate-200 bg-slate-900 text-white rounded-t-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-amber-400/20 text-amber-400 flex items-center justify-center shrink-0">
+              <Zap className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-white">Sarvam AI Samvaad Integration</h3>
+                <Badge variant={sarvamStatus?.connected ? 'success' : 'warning'} size="sm" dot>
+                  {sarvamStatus?.connected ? 'Active & Connected' : 'Unconfigured'}
+                </Badge>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Direct integration with your Sarvam account for low-latency Indian voice models and SIP telephony.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-slate-700 text-slate-200 hover:bg-slate-800"
+              leftIcon={<Activity className="h-4 w-4 text-amber-400" />}
+              onClick={handleTestPing}
+              isLoading={testingPing}
+            >
+              Ping Test
+            </Button>
+            <Button
+              size="sm"
+              leftIcon={<KeyRound className="h-4 w-4" />}
+              onClick={() => setIsConnectModalOpen(true)}
+            >
+              Configure Credentials
+            </Button>
+          </div>
+        </div>
+
+        {pingMessage && (
+          <div
+            className={`px-5 py-3 text-xs flex items-center gap-2 border-b ${
+              pingMessage.success
+                ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                : 'bg-rose-50 text-rose-900 border-rose-200'
+            }`}
+          >
+            {pingMessage.success ? (
+              <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
+            ) : (
+              <Zap className="h-4 w-4 text-rose-600 shrink-0" />
+            )}
+            <span>{pingMessage.text}</span>
+          </div>
+        )}
+
+        <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4 bg-white text-xs">
+          <div className="space-y-1 p-3 rounded-lg border border-slate-100 bg-slate-50/50">
+            <span className="font-semibold text-slate-500 uppercase tracking-wider text-[10px] block">
+              Active API Key
+            </span>
+            <span className="font-mono font-bold text-slate-800 text-xs">
+              {sarvamStatus?.maskedApiKey || 'None'}
+            </span>
+            <span className="text-[11px] text-slate-400 block">Server-isolated credential</span>
+          </div>
+
+          <div className="space-y-1 p-3 rounded-lg border border-slate-100 bg-slate-50/50">
+            <span className="font-semibold text-slate-500 uppercase tracking-wider text-[10px] block">
+              Organization & Workspace
+            </span>
+            <span className="font-mono font-bold text-slate-800 text-xs block truncate" title={sarvamStatus?.orgId}>
+              Org: {sarvamStatus?.orgId?.slice(0, 18)}...
+            </span>
+            <span className="font-mono text-slate-600 text-[11px] block truncate" title={sarvamStatus?.workspaceId}>
+              WS: {sarvamStatus?.workspaceId?.slice(0, 18)}...
+            </span>
+          </div>
+
+          <div className="space-y-1 p-3 rounded-lg border border-slate-100 bg-slate-50/50">
+            <span className="font-semibold text-slate-500 uppercase tracking-wider text-[10px] block">
+              Telephony Caller ID & App
+            </span>
+            <div className="flex items-center justify-between">
+              <span className="font-mono font-bold text-emerald-700 text-xs">
+                {sarvamStatus?.agentPhoneNumber || 'Not linked'}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[10px]"
+                leftIcon={<Phone className="h-3 w-3" />}
+                onClick={handleSyncPhone}
+                isLoading={syncingPhone}
+              >
+                Sync Line
+              </Button>
+            </div>
+            <span className="font-mono text-slate-500 text-[11px] block truncate" title={sarvamStatus?.defaultAppId}>
+              App: {sarvamStatus?.defaultAppId || 'Conversatio-...'}
+            </span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Secondary Settings Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="flex items-start gap-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
@@ -47,10 +206,10 @@ export const SettingsPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-bold text-slate-900">Business Profile & Timezone</h3>
-              <Badge variant="neutral" size="sm">v1.2</Badge>
+              <Badge variant="success" size="sm">Active</Badge>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Apex Enterprises Inc. • Timezone: America/New_York
+              Fluid.live Technologies • Timezone: Asia/Kolkata (IST)
             </p>
           </div>
         </Card>
@@ -65,13 +224,13 @@ export const SettingsPage: React.FC = () => {
               <Badge variant="neutral" size="sm">RBAC</Badge>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              3 Active Admin Seats • Organization Security Enforced
+              Administrator Access • Role-Based Access Control Enabled
             </p>
           </div>
         </Card>
       </div>
 
-      {/* Webhook & Raw Provider Event Stream Audit Trail (Requirement #14 & Finding 6) */}
+      {/* Webhook & Raw Provider Event Stream Audit Trail */}
       <Card noPadding>
         <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
           <div>
@@ -135,6 +294,15 @@ export const SettingsPage: React.FC = () => {
           </table>
         </div>
       </Card>
+
+      {/* Connect Modal */}
+      <SarvamConnectModal
+        isOpen={isConnectModalOpen}
+        onClose={() => setIsConnectModalOpen(false)}
+        onConnected={status => {
+          setSarvamStatus(status);
+        }}
+      />
     </div>
   );
 };

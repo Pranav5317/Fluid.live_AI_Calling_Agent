@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -k -p \"[{name}]\" -n \"SERVER,FRONTEND\" -c \"cyan,magenta\" \"npm run server\" \"vite\"",
+    "dev:ui": "vite",
     "server": "tsx server/index.ts",
     "build": "tsc && vite build",
     "lint": "tsc --noEmit",
@@ -35,6 +36,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^10.0.5",
     "postcss": "^8.4.47",
     "prisma": "5.22.0",
     "tailwindcss": "^3.4.14",

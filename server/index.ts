@@ -10,6 +10,7 @@ import { billingRoutes } from './routes/billingRoutes';
 import { dashboardRoutes } from './routes/dashboardRoutes';
 import { webhookRoutes } from './routes/webhookRoutes';
 import { businessRoutes } from './routes/businessRoutes';
+import { sarvamRoutes } from './routes/sarvamRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -28,6 +29,7 @@ app.use('/api', billingRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/business', businessRoutes);
+app.use('/api/sarvam', sarvamRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

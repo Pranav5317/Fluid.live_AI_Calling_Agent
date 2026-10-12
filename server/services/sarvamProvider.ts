@@ -1,5 +1,6 @@
 import crypto from 'crypto';
-import { AgentConfig, Call } from '../../src/types';
+import { AgentConfig, Call, SarvamAccountStatus, SarvamAccountConfig } from '../../src/types';
+import { updateEnvVariables } from '../lib/envUtils';
 
 export interface SarvamAgentMapping {
   fluidAgentId: string;
@@ -40,17 +41,161 @@ export interface IBackendSarvamProvider {
   normalizeWebhookPayload(payload: Record<string, any>): NormalizedSarvamEvent;
   provisionNumber(areaCode?: string): Promise<{ phoneNumber: string; providerId: string }>;
   getMapping(fluidVersionId: string): SarvamAgentMapping | undefined;
+  fetchCallTranscript(interactionId: string, appId?: string): Promise<any>;
+  fetchInteractions(params?: { startDatetime?: string; endDatetime?: string; limit?: number; appId?: string }): Promise<any>;
 }
 
 export class BackendSarvamProvider implements IBackendSarvamProvider {
   public providerName = 'Sarvam AI Voice Infrastructure (Server Bridge)';
   private mappings = new Map<string, SarvamAgentMapping>();
   private baseUrl = process.env.SARVAM_BASE_URL || 'https://apps.sarvam.ai/api';
-  private orgId = process.env.SARVAM_ORG_ID || 'default_org';
-  private workspaceId = process.env.SARVAM_WORKSPACE_ID || 'default_workspace';
+  private orgId = process.env.SARVAM_ORG_ID || '019e9100-606e-790c-92e0-0bcfbf8523a6';
+  private workspaceId = process.env.SARVAM_WORKSPACE_ID || '019e9100-60a1-7bd7-bdb5-3b118f090be9';
+  private defaultAppId = process.env.SARVAM_APP_ID || 'Conversatio-b063cf10-e735';
+  private connectionId = process.env.SARVAM_CONNECTION_ID || '7efd8897-87-220da5aa-1d5e';
+  private agentPhoneNumber = process.env.SARVAM_AGENT_PHONE_NUMBER || '+917965480599';
+  private apiKey = process.env.SARVAM_API_KEY;
+  private lastVerifiedAt: string | undefined = undefined;
+  private lastLatencyMs: number | undefined = undefined;
 
   private getApiKey(): string | undefined {
-    return process.env.SARVAM_API_KEY;
+    return this.apiKey || process.env.SARVAM_API_KEY;
+  }
+
+  public getConnectionId(): string {
+    return this.connectionId;
+  }
+
+  public getAgentPhoneNumber(): string {
+    return this.agentPhoneNumber;
+  }
+
+  public getDefaultAppId(): string {
+    return this.defaultAppId;
+  }
+
+  public getOrgId(): string {
+    return this.orgId;
+  }
+
+  public getWorkspaceId(): string {
+    return this.workspaceId;
+  }
+
+  public getStatus(): SarvamAccountStatus {
+    const key = this.getApiKey();
+    return {
+      connected: !!key,
+      orgId: this.orgId,
+      workspaceId: this.workspaceId,
+      defaultAppId: this.defaultAppId,
+      connectionId: this.connectionId,
+      agentPhoneNumber: this.agentPhoneNumber,
+      maskedApiKey: key ? (key.length > 18 ? `${key.substring(0, 14)}••••${key.substring(key.length - 4)}` : '••••••••') : null,
+      lastVerifiedAt: this.lastVerifiedAt,
+      latencyMs: this.lastLatencyMs,
+    };
+  }
+
+  public async testConnection(customConfig?: Partial<SarvamAccountConfig>): Promise<{ success: boolean; latencyMs: number; message: string; details?: any }> {
+    const testKey = customConfig?.apiKey || this.getApiKey();
+    const testOrgId = customConfig?.orgId || this.orgId;
+    const testWorkspaceId = customConfig?.workspaceId || this.workspaceId;
+    const testAppId = customConfig?.defaultAppId || this.defaultAppId;
+
+    if (!testKey) {
+      return { success: false, latencyMs: 0, message: 'No Sarvam API Key provided.' };
+    }
+
+    const startTime = Date.now();
+    try {
+      const now = new Date();
+      const past24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const start = encodeURIComponent(past24h.toISOString());
+      const end = encodeURIComponent(now.toISOString());
+      const endpoint = `${this.baseUrl}/analytics/v1/${testOrgId}/${testWorkspaceId}/${testAppId}/interactions?start_datetime=${start}&end_datetime=${end}&limit=1`;
+      console.log(`[Sarvam Provider] Testing connection to ${endpoint}...`);
+      const res = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'X-API-Key': testKey,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const latencyMs = Date.now() - startTime;
+      if (res.ok) {
+        this.lastVerifiedAt = new Date().toISOString();
+        this.lastLatencyMs = latencyMs;
+        console.log(`[Sarvam Provider] Test succeeded in ${latencyMs}ms`);
+        return {
+          success: true,
+          latencyMs,
+          message: `Successfully connected & authenticated with Sarvam AI Voice Cloud (${latencyMs}ms).`,
+        };
+      } else {
+        const errText = await res.text();
+        console.warn(`[Sarvam Provider] Connection test HTTP ${res.status}: ${errText}`);
+        return {
+          success: false,
+          latencyMs,
+          message: `Sarvam API returned HTTP ${res.status}: ${errText.slice(0, 200)}`,
+        };
+      }
+    } catch (err: any) {
+      const latencyMs = Date.now() - startTime;
+      return {
+        success: false,
+        latencyMs,
+        message: `Network connection to Sarvam failed: ${err?.message}`,
+      };
+    }
+  }
+
+  public async updateConfig(config: SarvamAccountConfig): Promise<{ success: boolean; status: SarvamAccountStatus; testResult: any }> {
+    const envUpdates: Record<string, string> = {};
+
+    if (config.apiKey !== undefined && config.apiKey.trim()) {
+      this.apiKey = config.apiKey.trim();
+      process.env.SARVAM_API_KEY = this.apiKey;
+      envUpdates.SARVAM_API_KEY = this.apiKey;
+    }
+    if (config.orgId !== undefined && config.orgId.trim()) {
+      this.orgId = config.orgId.trim();
+      process.env.SARVAM_ORG_ID = this.orgId;
+      envUpdates.SARVAM_ORG_ID = this.orgId;
+    }
+    if (config.workspaceId !== undefined && config.workspaceId.trim()) {
+      this.workspaceId = config.workspaceId.trim();
+      process.env.SARVAM_WORKSPACE_ID = this.workspaceId;
+      envUpdates.SARVAM_WORKSPACE_ID = this.workspaceId;
+    }
+    if (config.defaultAppId !== undefined && config.defaultAppId.trim()) {
+      this.defaultAppId = config.defaultAppId.trim();
+      process.env.SARVAM_APP_ID = this.defaultAppId;
+      envUpdates.SARVAM_APP_ID = this.defaultAppId;
+    }
+    if (config.connectionId !== undefined && config.connectionId.trim()) {
+      this.connectionId = config.connectionId.trim();
+      process.env.SARVAM_CONNECTION_ID = this.connectionId;
+      envUpdates.SARVAM_CONNECTION_ID = this.connectionId;
+    }
+    if (config.agentPhoneNumber !== undefined && config.agentPhoneNumber.trim()) {
+      this.agentPhoneNumber = config.agentPhoneNumber.trim();
+      process.env.SARVAM_AGENT_PHONE_NUMBER = this.agentPhoneNumber;
+      envUpdates.SARVAM_AGENT_PHONE_NUMBER = this.agentPhoneNumber;
+    }
+
+    if (Object.keys(envUpdates).length > 0) {
+      updateEnvVariables(envUpdates);
+    }
+
+    const testResult = await this.testConnection();
+    return {
+      success: testResult.success,
+      status: this.getStatus(),
+      testResult,
+    };
   }
 
   async syncAgentConfig(agentId: string, versionId: string, config: AgentConfig): Promise<SarvamAgentMapping> {
@@ -120,6 +265,13 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
     toPhoneNumber: string;
     leadId: string;
     campaignId?: string;
+    connectionId?: string;
+    webhookUrl?: string;
+    userName?: string;
+    agentVariables?: Record<string, any>;
+    initialBotMessage?: string;
+    outroMessage?: string;
+    systemPrompt?: string;
   }): Promise<{ providerCallId: string; status: 'initiated' }> {
     const apiKey = this.getApiKey();
     let providerCallId = `srv_interaction_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -127,37 +279,72 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
     if (apiKey) {
       try {
         const endpoint = `${this.baseUrl}/outbounds/v1/orgs/${this.orgId}/workspaces/${this.workspaceId}/outbounds`;
-        console.log(`[Sarvam Provider] Initiating outbound call via Sarvam API (${endpoint}) to ${params.toPhoneNumber}...`);
+        console.log(`[Sarvam Provider] Initiating outbound call via Sarvam API (${endpoint}) to ${params.toPhoneNumber} (Lead Name: ${params.userName || 'Customer'})...`);
         
+        const appId = (params.sarvamAgentId && !params.sarvamAgentId.startsWith('srv_app_')) 
+          ? params.sarvamAgentId 
+          : this.defaultAppId;
+
+        const connectionId = params.connectionId || this.connectionId;
+        const agentPhoneNumber = (params.fromPhoneNumber && params.fromPhoneNumber.startsWith('+91'))
+          ? params.fromPhoneNumber
+          : this.agentPhoneNumber;
+
+        const cleanUserName = params.userName ? params.userName.replace(/\s*\(.*?\)\s*/g, '').trim() : 'Valued Customer';
+
+        const payload: any = {
+          app_config: {
+            app_id: appId,
+            app_version: 1,
+            connection_config: {
+              connection_id: connectionId,
+              agent_phone_number: agentPhoneNumber,
+            },
+            agent_variables: {
+              user_name: cleanUserName,
+              call_summary: '<call_summary>',
+              follow_up_preference: '<follow_up_preference>',
+              interest_level: '<interest_level>',
+              verification_status: '<verification_status>',
+              ...(params.agentVariables || {}),
+            },
+          },
+          user_config: {
+            user_phone_number: params.toPhoneNumber,
+          },
+        };
+
+        if (params.initialBotMessage || params.systemPrompt) {
+          payload.app_config.app_overrides = {
+            ...(params.initialBotMessage ? { initial_bot_message: params.initialBotMessage.replace(/<user_name>/g, cleanUserName) } : {}),
+            ...(params.systemPrompt ? { prompt: params.systemPrompt.replace(/<user_name>/g, cleanUserName) } : {}),
+          };
+        }
+
+        if (params.webhookUrl) {
+          payload.webhook_config = {
+            url: params.webhookUrl,
+            metadata: {
+              lead_id: params.leadId,
+              agent_version_id: params.agentVersionId,
+              campaign_id: params.campaignId,
+            },
+          };
+        }
+
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'X-API-Key': apiKey,
           },
-          body: JSON.stringify({
-            app_config: {
-              app_id: params.sarvamAgentId,
-              app_version: 1,
-              connection_config: {
-                agent_phone_number: params.fromPhoneNumber,
-              },
-            },
-            user_config: {
-              user_phone_number: params.toPhoneNumber,
-            },
-            metadata: {
-              lead_id: params.leadId,
-              agent_version_id: params.agentVersionId,
-              campaign_id: params.campaignId,
-            },
-          }),
+          body: JSON.stringify(payload),
         });
 
         if (res.ok) {
           const data = await res.json();
-          providerCallId = data.interaction_id || data.interactionId || data.call_id || providerCallId;
-          console.log(`[Sarvam Provider] Outbound call initiated successfully. Interaction ID: ${providerCallId}`);
+          providerCallId = data.attempt_id || data.interaction_id || data.interactionId || data.call_id || providerCallId;
+          console.log(`[Sarvam Provider] Outbound call initiated successfully. Attempt ID: ${providerCallId}`);
         } else {
           const errText = await res.text();
           throw new Error(`Sarvam API outbound call initiation failed (HTTP ${res.status}): ${errText}`);
@@ -167,7 +354,7 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
         throw err;
       }
     } else {
-      console.log(`[Sarvam Provider] SARVAM_API_KEY omitted. Initiated simulated outbound test call. Provider Interaction ID: ${providerCallId}`);
+      console.log(`[Sarvam Provider] SARVAM_API_KEY omitted. Initiated simulated outbound test call. Provider Attempt ID: ${providerCallId}`);
     }
 
     return { providerCallId, status: 'initiated' };
@@ -281,11 +468,112 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
     return { status: 'paused' as const };
   }
 
-  async provisionNumber(areaCode = '800') {
-    const randomNum = Math.floor(1000000 + Math.random() * 9000000);
+  async fetchCallTranscript(jobOrInteractionId: string, appId?: string): Promise<any> {
+    const apiKey = this.getApiKey();
+    const targetAppId = appId || process.env.SARVAM_APP_ID || 'Conversatio-b063cf10-e735';
+    
+    if (!apiKey) {
+      console.warn(`[Sarvam Provider] SARVAM_API_KEY omitted. Cannot fetch transcript for interaction ${jobOrInteractionId}`);
+      return null;
+    }
+
+    try {
+      let realInteractionId = jobOrInteractionId;
+      let extractedVariables: any = undefined;
+      let callDuration: number | undefined = undefined;
+
+      // If jobOrInteractionId doesn't contain a slash '/', resolve interaction_id & agent_variables via /interactions
+      if (!jobOrInteractionId.includes('/')) {
+        console.log(`[Sarvam Provider] Resolving job_id/attempt_id (${jobOrInteractionId}) to Sarvam interaction_id...`);
+        const interactionsRes = await this.fetchInteractions({ appId: targetAppId, limit: 30 });
+        if (interactionsRes && Array.isArray(interactionsRes.items)) {
+          const matchedItem = interactionsRes.items.find(
+            (item: any) => item.job_id === jobOrInteractionId || item.interaction_id?.endsWith(jobOrInteractionId)
+          ) || interactionsRes.items[0]; // Fallback to latest interaction if direct attempt match is processing
+
+          if (matchedItem) {
+            realInteractionId = matchedItem.interaction_id;
+            extractedVariables = matchedItem.agent_variables || matchedItem.extracted_variables;
+            callDuration = matchedItem.duration_in_seconds;
+            console.log(`[Sarvam Provider] Mapped attempt ${jobOrInteractionId} -> interaction_id: ${realInteractionId}`);
+          }
+        }
+      }
+
+      const endpoint = `${this.baseUrl}/analytics/v1/${this.orgId}/${this.workspaceId}/${targetAppId}/transcripts/${realInteractionId}`;
+      console.log(`[Sarvam Provider] Fetching transcript from Sarvam Analytics API (${endpoint})...`);
+
+      const res = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'X-API-Key': apiKey,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log(`[Sarvam Provider] Successfully fetched transcript for ${realInteractionId}. Messages count: ${data.messages?.length || 0}`);
+        return {
+          ...data,
+          extracted_variables: extractedVariables || data.extracted_variables || data.agent_variables,
+          duration: callDuration || data.duration,
+        };
+      } else {
+        const errText = await res.text();
+        console.warn(`[Sarvam Provider] HTTP ${res.status} fetching transcript: ${errText}`);
+        return null;
+      }
+    } catch (err: any) {
+      console.error(`[Sarvam Provider] Error fetching transcript: ${err?.message}`);
+      return null;
+    }
+  }
+
+  async fetchInteractions(params?: { startDatetime?: string; endDatetime?: string; limit?: number; appId?: string }): Promise<any> {
+    const apiKey = this.getApiKey();
+    const targetAppId = params?.appId || process.env.SARVAM_APP_ID || 'Conversatio-b063cf10-e735';
+    
+    if (!apiKey) {
+      return { items: [], total: 0 };
+    }
+
+    try {
+      const now = new Date();
+      const past24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const start = params?.startDatetime || past24h.toISOString();
+      const end = params?.endDatetime || now.toISOString();
+      const limit = params?.limit || 20;
+
+      const endpoint = `${this.baseUrl}/analytics/v1/${this.orgId}/${this.workspaceId}/${targetAppId}/interactions?start_datetime=${encodeURIComponent(start)}&end_datetime=${encodeURIComponent(end)}&limit=${limit}`;
+      console.log(`[Sarvam Provider] Fetching interactions from Sarvam Analytics API (${endpoint})...`);
+
+      const res = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'X-API-Key': apiKey,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        return data;
+      } else {
+        const errText = await res.text();
+        console.warn(`[Sarvam Provider] HTTP ${res.status} fetching interactions: ${errText}`);
+        return { items: [], total: 0 };
+      }
+    } catch (err: any) {
+      console.error(`[Sarvam Provider] Error fetching interactions: ${err?.message}`);
+      return { items: [], total: 0 };
+    }
+  }
+
+  async provisionNumber(_areaCode = '800') {
     return {
-      phoneNumber: `+1 (${areaCode}) ${String(randomNum).slice(0, 3)}-${String(randomNum).slice(3)}`,
-      providerId: `srv_num_${Date.now()}`,
+      phoneNumber: this.agentPhoneNumber,
+      providerId: this.connectionId,
     };
   }
 }

@@ -9,6 +9,7 @@ import { agentService } from '../../services/agentService';
 import { knowledgeService } from '../../services/knowledgeService';
 import { Agent, KnowledgeBase } from '../../types';
 import { AgentBuilderModal } from './AgentBuilderModal';
+import { AgentTestCallModal } from './AgentTestCallModal';
 import { formatDate } from '../../lib/formatters';
 import {
   Bot,
@@ -20,6 +21,7 @@ import {
   History,
   Mic,
   Languages,
+  PhoneCall,
 } from 'lucide-react';
 
 export const AgentsPage: React.FC = () => {
@@ -31,6 +33,7 @@ export const AgentsPage: React.FC = () => {
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
   const [editingInitialData, setEditingInitialData] = useState<any>(undefined);
+  const [testCallAgent, setTestCallAgent] = useState<Agent | null>(null);
 
   const fetchAgents = async () => {
     setLoading(true);
@@ -149,7 +152,7 @@ export const AgentsPage: React.FC = () => {
 
               <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
                 <span className="text-slate-400 text-[11px]">Updated {formatDate(ag.updatedAt)}</span>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => handleToggleStatus(ag.id)}
@@ -169,10 +172,19 @@ export const AgentsPage: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
+                    className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                    leftIcon={<PhoneCall className="h-3.5 w-3.5 text-emerald-600" />}
+                    onClick={() => setTestCallAgent(ag)}
+                  >
+                    Test Call
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
                     leftIcon={<Edit2 className="h-3.5 w-3.5" />}
                     onClick={() => handleEdit(ag)}
                   >
-                    Configure Agent
+                    Configure
                   </Button>
                 </div>
               </div>
@@ -189,6 +201,15 @@ export const AgentsPage: React.FC = () => {
           onSave={handleSaveAgent}
           initialData={editingInitialData}
           knowledgeBases={knowledgeBases}
+        />
+      )}
+
+      {/* Live Phone Testing Modal */}
+      {testCallAgent && (
+        <AgentTestCallModal
+          agent={testCallAgent}
+          isOpen={!!testCallAgent}
+          onClose={() => setTestCallAgent(null)}
         />
       )}
     </div>

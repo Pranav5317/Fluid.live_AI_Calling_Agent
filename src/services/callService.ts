@@ -14,6 +14,7 @@ export interface InitiateTestCallDTO {
   phoneNumberId: string;
   toPhoneNumber: string;
   leadId?: string;
+  userName?: string;
 }
 
 export interface ICallService {
