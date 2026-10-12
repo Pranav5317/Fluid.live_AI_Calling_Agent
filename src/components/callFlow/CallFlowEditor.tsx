@@ -26,13 +26,15 @@ export interface CallFlowEditorProps {
 }
 
 export const CallFlowEditor: React.FC<CallFlowEditorProps> = ({
-  nodes,
+  nodes = [],
   onChange,
   readOnly = false,
 }) => {
   const [editingNode, setEditingNode] = useState<CallFlowNode | null>(null);
 
-  const getNodeIcon = (type: CallNodeType) => {
+  const safeNodes = Array.isArray(nodes) ? nodes : [];
+
+  const getNodeIcon = (type?: CallNodeType) => {
     switch (type) {
       case 'start':
         return <Play className="h-4 w-4 text-emerald-600" />;
@@ -48,10 +50,12 @@ export const CallFlowEditor: React.FC<CallFlowEditorProps> = ({
         return <CheckCircle className="h-4 w-4 text-emerald-600" />;
       case 'end':
         return <Square className="h-4 w-4 text-rose-600" />;
+      default:
+        return <MessageSquare className="h-4 w-4 text-slate-600" />;
     }
   };
 
-  const getNodeBadgeVariant = (type: CallNodeType) => {
+  const getNodeBadgeVariant = (type?: CallNodeType): any => {
     switch (type) {
       case 'start':
       case 'closing':
@@ -66,6 +70,8 @@ export const CallFlowEditor: React.FC<CallFlowEditorProps> = ({
         return 'purple';
       case 'end':
         return 'danger';
+      default:
+        return 'neutral';
     }
   };
 
@@ -108,77 +114,94 @@ export const CallFlowEditor: React.FC<CallFlowEditorProps> = ({
 
       {/* Visual Step List */}
       <div className="space-y-3 relative py-2">
-        {nodes.map((node, index) => {
-          const isLast = index === nodes.length - 1;
-          return (
-            <div key={node.id} className="relative group">
-              <div className="flex items-start gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-subtle hover:border-slate-300 transition-all">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-100 border border-slate-200 mt-0.5">
-                  {getNodeIcon(node.type)}
-                </div>
+        {safeNodes.length === 0 ? (
+          <div className="p-8 text-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/80">
+            <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-2 text-slate-400">
+              <GitBranch className="h-5 w-5" />
+            </div>
+            <h5 className="text-xs font-bold text-slate-800">No Call Flow Steps Configured</h5>
+            <p className="text-[11px] text-slate-500 max-w-sm mx-auto mt-1 mb-3">
+              Define conversational milestones for greeting, qualification questions, objection handling, and sign-off.
+            </p>
+            {!readOnly && (
+              <Button size="sm" leftIcon={<Plus className="h-4 w-4" />} onClick={handleAddNode}>
+                Add First Step
+              </Button>
+            )}
+          </div>
+        ) : (
+          safeNodes.map((node, index) => {
+            const isLast = index === safeNodes.length - 1;
+            return (
+              <div key={node.id} className="relative group">
+                <div className="flex items-start gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-subtle hover:border-slate-300 transition-all">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-slate-100 border border-slate-200 mt-0.5">
+                    {getNodeIcon(node.type)}
+                  </div>
 
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-900">{node.title}</span>
-                    <Badge variant={getNodeBadgeVariant(node.type)} size="sm">
-                      {node.type.replace('_', ' ')}
-                    </Badge>
-                    {node.variableKey && (
-                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-600">
-                        {`{{${node.variableKey}}}`}
-                      </span>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-900">{node.title}</span>
+                      <Badge variant={getNodeBadgeVariant(node.type)} size="sm">
+                        {(node.type || 'step').replace('_', ' ')}
+                      </Badge>
+                      {node.variableKey && (
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-600">
+                          {`{{${node.variableKey}}}`}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed font-mono bg-slate-50/70 p-2 rounded border border-slate-100">
+                      "{node.content}"
+                    </p>
+
+                    {/* Branches if conditional node */}
+                    {node.branches && node.branches.length > 0 && (
+                      <div className="mt-2 space-y-1 pl-3 border-l-2 border-amber-300">
+                        {node.branches.map((b, idx) => (
+                          <div key={idx} className="text-[11px] text-slate-600 flex items-center gap-2">
+                            <GitBranch className="h-3 w-3 text-amber-600" />
+                            <span className="font-mono bg-amber-50 px-1 rounded text-amber-800 font-semibold">{b.condition}</span>
+                            <span>→ Go to target node</span>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed font-mono bg-slate-50/70 p-2 rounded border border-slate-100">
-                    "{node.content}"
-                  </p>
 
-                  {/* Branches if conditional node */}
-                  {node.branches && node.branches.length > 0 && (
-                    <div className="mt-2 space-y-1 pl-3 border-l-2 border-amber-300">
-                      {node.branches.map((b, idx) => (
-                        <div key={idx} className="text-[11px] text-slate-600 flex items-center gap-2">
-                          <GitBranch className="h-3 w-3 text-amber-600" />
-                          <span className="font-mono bg-amber-50 px-1 rounded text-amber-800 font-semibold">{b.condition}</span>
-                          <span>→ Go to target node</span>
-                        </div>
-                      ))}
+                  {!readOnly && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setEditingNode(node)}
+                        className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded"
+                        title="Edit Node"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      {node.type !== 'start' && node.type !== 'end' && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteNode(node.id)}
+                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded"
+                          title="Delete Node"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {!readOnly && (
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setEditingNode(node)}
-                      className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded"
-                      title="Edit Node"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    {node.type !== 'start' && node.type !== 'end' && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteNode(node.id)}
-                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded"
-                        title="Delete Node"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
+                {!isLast && (
+                  <div className="flex justify-center py-1">
+                    <ArrowDown className="h-4 w-4 text-slate-300" />
                   </div>
                 )}
               </div>
-
-              {!isLast && (
-                <div className="flex justify-center py-1">
-                  <ArrowDown className="h-4 w-4 text-slate-300" />
-                </div>
-              )}
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
       {/* Edit Node Modal */}

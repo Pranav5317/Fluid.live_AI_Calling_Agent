@@ -22,6 +22,8 @@ import {
   Volume2,
 } from 'lucide-react';
 import { agentService } from '../../services/agentService';
+import { INDUSTRY_TEMPLATES } from '../../data/industryTemplates';
+import { AgentSandboxSimulator } from './AgentSandboxSimulator';
 
 export interface AgentBuilderModalProps {
   isOpen: boolean;
@@ -43,19 +45,17 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
   const [playingVoicePreview, setPlayingVoicePreview] = useState(false);
   const [voicePreviewError, setVoicePreviewError] = useState<string | null>(null);
 
-  // Form State
-  const [name, setName] = useState(initialData?.name || '');
-  const [useCase, setUseCase] = useState(initialData?.useCase || '');
-
-  const [config, setConfig] = useState<AgentConfig>(
-    initialData?.config || {
-      voiceModel: 'Shubh - Friendly Verification Indian Male',
-      language: 'en-IN',
-      openingLine: 'नमस्ते <user_name> ji, I am calling on behalf of Fluid.live for a quick verification. Do you have a moment?',
-      closingBehavior: 'धन्यवाद <user_name> ji, आपका दिन शुभ हो!',
-      systemPrompt: `Persona\nRole: Shubh, a friendly verification assistant calling on behalf of Fluid.live, a company that offers AI voice calling for businesses.\nTone: Warm, courteous, respectful, and efficient. The call feels like a pleasant, brief conversation, never a telemarketing pitch.\n\nObjective:\nVerify customer interest in AI voice calling for their business and note follow-up preference (demo, WhatsApp, or none).\n\nSpeaking style rules:\n- Keep turns concise (under 20 words).\n- Address user respectfully (ji, Sir, Madam).\n- Ask one question at a time and wait for their response.`,
-      sarvamAppId: 'Conversatio-b063cf10-e735',
-      flowNodes: [
+  // Normalize configuration to guarantee safe array & object defaults
+  const normalizeAgentConfig = (raw?: Partial<AgentConfig>): AgentConfig => {
+    return {
+      voiceModel: raw?.voiceModel || 'Shubh - Friendly Verification Indian Male',
+      language: raw?.language || 'en-IN',
+      openingLine: raw?.openingLine || (raw as any)?.firstGreeting || 'नमस्ते <user_name> ji, I am calling on behalf of Fluid.live for a quick verification. Do you have a moment?',
+      closingBehavior: raw?.closingBehavior || 'धन्यवाद <user_name> ji, आपका दिन शुभ हो!',
+      systemPrompt: raw?.systemPrompt || `Persona\nRole: Shubh, a friendly verification assistant calling on behalf of Fluid.live, a company that offers AI voice calling for businesses.\nTone: Warm, courteous, respectful, and efficient.\n\nObjective:\nVerify customer interest in AI voice calling for their business and note follow-up preference (demo, WhatsApp, or none).\n\nSpeaking style rules:\n- Keep turns concise (under 20 words).\n- Address user respectfully (ji, Sir, Madam).\n- Ask one question at a time and wait for their response.`,
+      sarvamAppId: raw?.sarvamAppId || (raw as any)?.app_id || 'Conversatio-b063cf10-e735',
+      sarvamConnectionId: raw?.sarvamConnectionId || (raw as any)?.connection_id || '7efd8897-87-220da5aa-1d5e',
+      flowNodes: Array.isArray(raw?.flowNodes) && raw!.flowNodes.length > 0 ? raw!.flowNodes : [
         { id: 'fn_1', type: 'start', title: 'Call Connected', content: 'Establish telephony line connection' },
         { id: 'fn_2', type: 'opening', title: 'Warm Greeting', content: 'Greet lead and confirm identity' },
         { id: 'fn_3', type: 'question', title: 'Interest Verification', content: 'Check interest in AI voice calling' },
@@ -63,23 +63,58 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
         { id: 'fn_5', type: 'closing', title: 'Polite Wrap-up', content: 'Deliver concise sign-off (< 10 words)' },
         { id: 'fn_6', type: 'end', title: 'End Call', content: 'Call end_interaction' },
       ],
-      knowledgeBaseIds: [],
-      extractedVariables: [
+      knowledgeBaseIds: Array.isArray(raw?.knowledgeBaseIds) ? raw!.knowledgeBaseIds : [],
+      extractedVariables: Array.isArray(raw?.extractedVariables) && raw!.extractedVariables.length > 0 ? raw!.extractedVariables : [
         { key: 'interest_level', label: 'Interest Level', type: 'enum', required: true, description: 'interested | not_interested | maybe_later', enumOptions: ['interested', 'not_interested', 'maybe_later'] },
         { key: 'follow_up_preference', label: 'Follow-up Channel', type: 'enum', required: true, description: 'demo | whatsapp_details | none', enumOptions: ['demo', 'whatsapp_details', 'none'] },
         { key: 'verification_status', label: 'Verification Status', type: 'string', required: true, description: 'completed | unreachable | refused' },
       ],
-      runtimeSettings: {
+      runtimeSettings: raw?.runtimeSettings || {
         maxDurationMinutes: 3,
         silenceTimeoutSeconds: 5,
         interruptionSensitivity: 'medium',
         recordingEnabled: true,
       },
+    };
+  };
+
+  // Form State
+  const [name, setName] = useState(initialData?.name || '');
+  const [useCase, setUseCase] = useState(initialData?.useCase || '');
+  const [config, setConfig] = useState<AgentConfig>(() => normalizeAgentConfig(initialData?.config));
+
+  // Sync state when initialData or modal open status changes
+  React.useEffect(() => {
+    if (initialData) {
+      setName(initialData.name || '');
+      setUseCase(initialData.useCase || '');
+      setConfig(normalizeAgentConfig(initialData.config));
+    } else {
+      setName('');
+      setUseCase('');
+      setConfig(normalizeAgentConfig());
     }
-  );
+  }, [initialData, isOpen]);
 
   // Simulated Live Preview State
   const [isPreviewActive, setIsPreviewActive] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+
+  const handleApplyTemplate = (templateId: string) => {
+    const selected = INDUSTRY_TEMPLATES.find(t => t.id === templateId);
+    if (!selected) return;
+    setSelectedTemplateId(templateId);
+    setName(selected.agentName);
+    setUseCase(selected.useCase);
+    setConfig(prev => ({
+      ...prev,
+      ...selected.config,
+      // ensure nested objects are preserved
+      flowNodes: selected.config.flowNodes || prev.flowNodes,
+      extractedVariables: selected.config.extractedVariables || prev.extractedVariables,
+      runtimeSettings: selected.config.runtimeSettings || prev.runtimeSettings,
+    }));
+  };
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -197,6 +232,41 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Main Builder Form Workspace */}
         <div className="flex-1 space-y-4">
+          {/* 1-Click Enterprise Industry Blueprint Banner */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 rounded-xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white border border-indigo-900/40 shadow-sm gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-white tracking-wide">Enterprise Industry Blueprint</span>
+                  <Badge variant="brand" size="sm" className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] py-0 px-2">
+                    1-Click Auto-Fill
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-slate-300 mt-0.5">
+                  Load Indian enterprise workflows with calibrated personas, bilingual scripts & extracted variables.
+                </p>
+              </div>
+            </div>
+
+            <div className="w-full sm:w-auto">
+              <select
+                className="w-full sm:w-auto bg-slate-800/90 border border-indigo-700/50 text-xs rounded-lg px-3 py-1.5 text-slate-100 font-medium focus:outline-none focus:border-amber-400 hover:border-slate-600 transition"
+                value={selectedTemplateId}
+                onChange={e => handleApplyTemplate(e.target.value)}
+              >
+                <option value="" disabled>Load Industry Blueprint...</option>
+                {INDUSTRY_TEMPLATES.map(t => (
+                  <option key={t.id} value={t.id}>
+                    [{t.category}] {t.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <Tabs
             tabs={[
               { id: 'general', label: 'General', icon: <Bot className="h-4 w-4" /> },
@@ -544,39 +614,13 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
           )}
         </div>
 
-        {/* Live Conversation Preview Panel */}
+        {/* Live Two-Way Audio Sandbox Simulator */}
         {isPreviewActive && (
-          <div className="w-full lg:w-80 rounded-lg border border-slate-200 bg-slate-900 text-white p-4 flex flex-col justify-between h-[500px]">
-            <div>
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-xs font-bold">Audio Test Sandbox</span>
-                </div>
-                <Badge variant="brand" size="sm">
-                  Sarvam Neural Preview
-                </Badge>
-              </div>
-
-              <div className="space-y-2 text-xs font-mono">
-                <p className="text-slate-400 text-[11px]">Connecting to Sarvam Audio Stream...</p>
-                <div className="bg-slate-800/80 p-2.5 rounded border border-slate-700 text-emerald-300">
-                  <span className="font-bold block text-[10px] text-slate-400">Agent Opening:</span>
-                  "{config.openingLine}"
-                </div>
-                <div className="bg-slate-800/50 p-2.5 rounded border border-slate-700 text-slate-200">
-                  <span className="font-bold block text-[10px] text-slate-400">Lead Speech Simulated:</span>
-                  "Yes, I have 2 minutes to talk."
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-slate-800 text-center">
-              <Button size="sm" variant="danger" onClick={() => setIsPreviewActive(false)}>
-                End Sandbox Call
-              </Button>
-            </div>
-          </div>
+          <AgentSandboxSimulator
+            agentName={name}
+            config={config}
+            onClose={() => setIsPreviewActive(false)}
+          />
         )}
       </div>
     </Modal>
