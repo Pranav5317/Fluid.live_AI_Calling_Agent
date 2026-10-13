@@ -17,11 +17,13 @@ import {
   Check,
   MessageSquare,
   Download,
+  RotateCw,
 } from 'lucide-react';
 import { Call } from '../../types';
 import { formatDate, formatDuration } from '../../lib/formatters';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
+import { callService } from '../../services/callService';
 
 export interface CallDetailDrawerProps {
   call: Call | null;
@@ -29,16 +31,41 @@ export interface CallDetailDrawerProps {
 }
 
 export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClose }) => {
+  const [activeCall, setActiveCall] = useState<Call | null>(call);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [playbackTime, setPlaybackTime] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState<1 | 1.5 | 2>(1);
 
+  const currentCall = activeCall || call;
+
+  const handleSyncTranscript = async (callId: string) => {
+    setIsSyncing(true);
+    try {
+      const res = await callService.getCallTranscript(callId);
+      if (res && res.call) {
+        setActiveCall(res.call);
+      }
+    } catch (err) {
+      console.warn('[CallDetailDrawer] Transcript sync error:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  useEffect(() => {
+    setActiveCall(call);
+    if (call && (!call.transcript || call.transcript.length === 0)) {
+      handleSyncTranscript(call.id);
+    }
+  }, [call?.id]);
+
   useEffect(() => {
     let interval: any;
-    if (isPlayingAudio && call && call.durationSeconds > 0) {
+    if (isPlayingAudio && currentCall && currentCall.durationSeconds > 0) {
       interval = setInterval(() => {
         setPlaybackTime(prev => {
-          if (prev >= call.durationSeconds) {
+          if (prev >= currentCall.durationSeconds) {
             setIsPlayingAudio(false);
             return 0;
           }
@@ -47,11 +74,11 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
       }, 1000 / playbackSpeed);
     }
     return () => clearInterval(interval);
-  }, [isPlayingAudio, playbackSpeed, call]);
+  }, [isPlayingAudio, playbackSpeed, currentCall]);
 
-  if (!call) return null;
+  if (!currentCall) return null;
 
-  const isConnected = call.durationSeconds > 0 && Array.isArray(call.transcript) && call.transcript.length > 0;
+  const isConnected = currentCall.durationSeconds > 0 && Array.isArray(currentCall.transcript) && currentCall.transcript.length > 0;
 
   // Synthesize Enterprise AI Call Summary
   const getExecutiveSummary = () => {
@@ -65,7 +92,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
       };
     }
 
-    const vars = call.extractedVariables || {};
+    const vars = currentCall.extractedVariables || {};
     const interest = vars.interest_level || 'interested';
     const followup = vars.follow_up_preference || 'whatsapp_details';
 
@@ -99,21 +126,35 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-slate-900">Call Intelligence & Transcript</h3>
-              <Badge variant={call.status === 'completed' ? 'success' : 'neutral'} dot>
-                {call.status}
+              <Badge variant={currentCall.status === 'completed' ? 'success' : 'neutral'} dot>
+                {currentCall.status}
               </Badge>
             </div>
             <span className="text-xs font-mono text-slate-500 mt-0.5 block">
-              Internal ID: {call.id} • Sarvam Ref: {call.externalCallId}
+              Internal ID: {currentCall.id} • Sarvam Ref: {currentCall.externalCallId}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs text-slate-700 bg-white hover:bg-slate-50 shadow-sm"
+              leftIcon={<RotateCw className={`h-3.5 w-3.5 text-indigo-600 ${isSyncing ? 'animate-spin' : ''}`} />}
+              onClick={() => handleSyncTranscript(currentCall.id)}
+              disabled={isSyncing}
+            >
+              {isSyncing ? 'Syncing...' : 'Sync from Sarvam'}
+            </Button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content Body */}
@@ -185,7 +226,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
                 {/* Simulated Audio Waveform / Scrubber */}
                 <div className="h-6 flex items-center gap-0.5 px-2 bg-slate-800/80 rounded">
                   {Array.from({ length: 32 }).map((_, i) => {
-                    const isPlayed = call.durationSeconds > 0 && (i / 32) * call.durationSeconds <= playbackTime;
+                    const isPlayed = currentCall.durationSeconds > 0 && (i / 32) * currentCall.durationSeconds <= playbackTime;
                     const barHeight = isConnected
                       ? Math.sin(i * 0.5) * 8 + 12
                       : 4;
@@ -202,7 +243,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
                 </div>
                 <div className="flex justify-between text-[10px] font-mono text-slate-400 px-1">
                   <span>{formatScrubberTime(playbackTime)}</span>
-                  <span>{formatScrubberTime(call.durationSeconds)}</span>
+                  <span>{formatScrubberTime(currentCall.durationSeconds)}</span>
                 </div>
               </div>
 
@@ -222,27 +263,27 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs">
             <div>
               <span className="text-slate-400 block text-[10px] uppercase font-bold">Outcome</span>
-              <span className="font-semibold text-slate-800">{call.outcome ? call.outcome.replace('_', ' ') : 'Pending'}</span>
+              <span className="font-semibold text-slate-800">{currentCall.outcome ? currentCall.outcome.replace('_', ' ') : 'Pending'}</span>
             </div>
             <div>
               <span className="text-slate-400 block text-[10px] uppercase font-bold">Call Duration</span>
-              <span className="font-semibold text-slate-800 font-mono">{formatDuration(call.durationSeconds)}</span>
+              <span className="font-semibold text-slate-800 font-mono">{formatDuration(currentCall.durationSeconds)}</span>
             </div>
             <div>
               <span className="text-slate-400 block text-[10px] uppercase font-bold">Started At</span>
-              <span className="font-semibold text-slate-800 font-mono">{formatDate(call.startedAt)}</span>
+              <span className="font-semibold text-slate-800 font-mono">{formatDate(currentCall.startedAt)}</span>
             </div>
             <div>
               <span className="text-slate-400 block text-[10px] uppercase font-bold">Campaign ID</span>
-              <span className="font-semibold text-slate-800 font-mono">{call.campaignId || 'Direct Outreach'}</span>
+              <span className="font-semibold text-slate-800 font-mono">{currentCall.campaignId || 'Direct Outreach'}</span>
             </div>
             <div>
               <span className="text-slate-400 block text-[10px] uppercase font-bold">Agent Version</span>
-              <span className="font-semibold text-slate-800 font-mono">{call.agentVersionId}</span>
+              <span className="font-semibold text-slate-800 font-mono">{currentCall.agentVersionId}</span>
             </div>
             <div>
               <span className="text-slate-400 block text-[10px] uppercase font-bold">Lead Reference</span>
-              <span className="font-semibold text-slate-800 font-mono">{call.leadId}</span>
+              <span className="font-semibold text-slate-800 font-mono">{currentCall.leadId}</span>
             </div>
           </div>
 
@@ -252,11 +293,11 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
               <Database className="h-4 w-4 text-purple-600" />
               <span>Extracted Conversation Variables</span>
             </div>
-            {!call.extractedVariables || Object.keys(call.extractedVariables || {}).length === 0 ? (
+            {!currentCall.extractedVariables || Object.keys(currentCall.extractedVariables || {}).length === 0 ? (
               <p className="text-xs text-slate-400 italic">No structured variables extracted from this call session.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {Object.entries(call.extractedVariables).map(([key, value]) => (
+                {Object.entries(currentCall.extractedVariables).map(([key, value]) => (
                   <div key={key} className="p-3 rounded-lg border border-slate-200 bg-white flex items-center justify-between">
                     <div>
                       <span className="text-[10px] uppercase font-mono font-bold text-slate-500 block">{key}</span>
@@ -277,17 +318,17 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
                 <span>Call Audio Transcript</span>
               </div>
               <span className="text-[11px] text-slate-400 font-mono">
-                {call.transcript?.length || 0} Messages
+                {currentCall.transcript?.length || 0} Messages
               </span>
             </div>
 
             <div className="space-y-3">
-              {(!call.transcript || call.transcript.length === 0) ? (
+              {(!currentCall.transcript || currentCall.transcript.length === 0) ? (
                 <div className="p-6 text-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50">
                   <p className="text-xs text-slate-500">No voice conversation took place on this call attempt.</p>
                 </div>
               ) : (
-                call.transcript.map(msg => {
+                currentCall.transcript.map(msg => {
                   const isAgent = msg.speaker === 'agent';
                   return (
                     <div

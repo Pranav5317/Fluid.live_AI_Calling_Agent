@@ -196,7 +196,13 @@ export const CallsPage: React.FC = () => {
       </Card>
 
       {/* Slide-over Call Detail Drawer */}
-      <CallDetailDrawer call={selectedCall} onClose={() => setSelectedCall(null)} />
+      <CallDetailDrawer
+        call={selectedCall}
+        onClose={() => {
+          setSelectedCall(null);
+          fetchCalls();
+        }}
+      />
     </div>
   );
 };

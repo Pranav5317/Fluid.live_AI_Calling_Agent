@@ -41,6 +41,10 @@ class CallService implements ICallService {
   async initiateTestCall(dto: InitiateTestCallDTO): Promise<Call> {
     return await apiClient.post<Call>('/calls/test', dto);
   }
+
+  async getCallTranscript(id: string): Promise<{ call: Call; transcriptData: any }> {
+    return await apiClient.get<{ call: Call; transcriptData: any }>(`/calls/${id}/transcript`);
+  }
 }
 
 export const callService = new CallService();
