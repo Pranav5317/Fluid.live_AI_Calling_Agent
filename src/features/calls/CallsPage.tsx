@@ -151,24 +151,53 @@ export const CallsPage: React.FC = () => {
                         <Badge variant={getOutcomeBadgeVariant(call.outcome)} dot>
                           {call.outcome ? call.outcome.replace('_', ' ') : 'initiated'}
                         </Badge>
-                        {call.durationSeconds > 0 && (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-1">
-                            High Intent • 94%
-                          </span>
-                        )}
+                        {(() => {
+                          const vars = (call.extractedVariables || {}) as Record<string, any>;
+                          if (vars.interest_level === 'interested') {
+                            return (
+                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                Interested
+                              </span>
+                            );
+                          }
+                          if (vars.interest_level === 'not_interested') {
+                            return (
+                              <span className="text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                Not Interested
+                              </span>
+                            );
+                          }
+                          if (vars.verification_status === 'completed') {
+                            return (
+                              <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                Verified
+                              </span>
+                            );
+                          }
+                          if (call.durationSeconds > 0) {
+                            return (
+                              <span className="text-[10px] font-medium text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                Connected
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex flex-wrap gap-1">
-                        {Object.entries(call.extractedVariables || {}).length > 0 ? (
-                          Object.entries(call.extractedVariables || {}).map(([k, v]) => (
-                            <span
-                              key={k}
-                              className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-700 font-mono"
-                            >
-                              {k}: {String(v)}
-                            </span>
-                          ))
+                        {Object.entries(call.extractedVariables || {}).filter(([k]) => !k.startsWith('_')).length > 0 ? (
+                          Object.entries(call.extractedVariables || {})
+                            .filter(([k]) => !k.startsWith('_'))
+                            .map(([k, v]) => (
+                              <span
+                                key={k}
+                                className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-700 font-mono"
+                              >
+                                {k}: {String(v)}
+                              </span>
+                            ))
                         ) : (
                           <span className="text-[11px] text-slate-400 italic">None</span>
                         )}

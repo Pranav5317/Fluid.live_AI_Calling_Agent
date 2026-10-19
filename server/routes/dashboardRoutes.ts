@@ -4,8 +4,8 @@ import { businessRepository } from '../repositories/businessRepository';
 
 export const dashboardRoutes = Router();
 
-// GET /api/dashboard/metrics
-dashboardRoutes.get('/metrics', async (req, res) => {
+// GET /api/dashboard/metrics or /api/dashboard/stats
+dashboardRoutes.get(['/metrics', '/stats'], async (req, res) => {
   try {
     const metrics = await serverDashboardService.getMetrics();
     res.json({ success: true, data: metrics, timestamp: new Date().toISOString() });

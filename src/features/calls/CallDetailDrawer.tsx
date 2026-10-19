@@ -1,23 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
-  Phone,
-  Clock,
   User,
   Bot,
   CheckCircle2,
   Play,
   Pause,
-  AlertCircle,
   FileText,
   Database,
   Sparkles,
-  TrendingUp,
   Volume2,
-  Check,
-  MessageSquare,
   Download,
   RotateCw,
+  AlertCircle,
 } from 'lucide-react';
 import { Call } from '../../types';
 import { formatDate, formatDuration } from '../../lib/formatters';
@@ -33,9 +28,15 @@ export interface CallDetailDrawerProps {
 export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClose }) => {
   const [activeCall, setActiveCall] = useState<Call | null>(call);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Audio Playback State
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [playbackTime, setPlaybackTime] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState<1 | 1.5 | 2>(1);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
 
   const currentCall = activeCall || call;
 
@@ -60,59 +61,167 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
     }
   }, [call?.id]);
 
+  // Audio cleanup & reset when call changes
   useEffect(() => {
-    let interval: any;
-    if (isPlayingAudio && currentCall && currentCall.durationSeconds > 0) {
-      interval = setInterval(() => {
-        setPlaybackTime(prev => {
-          if (prev >= currentCall.durationSeconds) {
-            setIsPlayingAudio(false);
-            return 0;
-          }
-          return prev + 1;
-        });
-      }, 1000 / playbackSpeed);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
     }
-    return () => clearInterval(interval);
-  }, [isPlayingAudio, playbackSpeed, currentCall]);
+    setIsPlayingAudio(false);
+    setCurrentTime(0);
+    setAudioError(null);
+    setAudioLoading(false);
+    setAudioDuration(currentCall?.durationSeconds || 0);
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, [currentCall?.id]);
 
   if (!currentCall) return null;
 
-  const isConnected = currentCall.durationSeconds > 0 && Array.isArray(currentCall.transcript) && currentCall.transcript.length > 0;
+  const isConnected = currentCall.durationSeconds > 0 || (Array.isArray(currentCall.transcript) && currentCall.transcript.length > 0);
 
-  // Synthesize Enterprise AI Call Summary
+  // Dynamic Enterprise AI Summary directly from Sarvam
   const getExecutiveSummary = () => {
-    if (!isConnected) {
+    const vars = currentCall.extractedVariables || {};
+    const interest = vars.interest_level;
+    const verification = vars.verification_status;
+    const sarvamSummary = vars.call_summary;
+
+    if (!isConnected && (!currentCall.durationSeconds || currentCall.durationSeconds === 0)) {
       return {
         summary:
-          'Outbound call initiated through Sarvam telephony SIP trunk. The line was not answered before the dialer timeout window. No customer voice dialogue was exchanged.',
-        sentiment: 'neutral',
+          sarvamSummary ||
+          'Outbound call initiated through Sarvam telephony infrastructure. The line was not answered before dialer timeout window. No customer voice dialogue was exchanged.',
+        sentiment: 'neutral' as const,
         intentScore: 0,
         statusText: 'Unconnected / No Answer',
       };
     }
 
-    const vars = currentCall.extractedVariables || {};
-    const interest = vars.interest_level || 'interested';
-    const followup = vars.follow_up_preference || 'whatsapp_details';
+    let sentiment: 'positive' | 'neutral' | 'negative' = 'neutral';
+    let intentScore = 0;
+    let statusText = 'Completed';
+
+    if (interest === 'interested') {
+      sentiment = 'positive';
+      intentScore = 95;
+      statusText = 'Interested • High Intent';
+    } else if (interest === 'not_interested') {
+      sentiment = 'negative';
+      intentScore = 15;
+      statusText = 'Not Interested';
+    } else if (verification === 'completed') {
+      sentiment = 'positive';
+      intentScore = 80;
+      statusText = 'Verified Contact';
+    } else if (currentCall.durationSeconds > 0) {
+      sentiment = 'neutral';
+      intentScore = currentCall.durationSeconds > 30 ? 50 : 25;
+      statusText = verification === 'incomplete' ? 'Incomplete Dialogue' : 'Connected';
+    }
+
+    const defaultSummary = sarvamSummary
+      ? sarvamSummary
+      : `Call connected for ${formatDuration(currentCall.durationSeconds)}. Voice dialogue captured across ${currentCall.transcript?.length || 0} interaction turns.`;
 
     return {
-      summary: `Customer verified identity and completed the 1-minute verification outreach with Shubh. Expressed clear interest in automated business voice calling and selected follow-up via ${
-        followup === 'whatsapp_details' ? 'WhatsApp product details' : followup
-      }. Positive conversational sentiment with zero objections or pricing friction.`,
-      sentiment: 'positive',
-      intentScore: 94,
-      statusText: 'Qualified Lead • High Intent',
+      summary: defaultSummary,
+      sentiment,
+      intentScore,
+      statusText,
     };
   };
 
   const aiIntelligence = getExecutiveSummary();
 
   const formatScrubberTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const total = Math.max(0, Math.floor(seconds));
+    const mins = Math.floor(total / 60);
+    const secs = total % 60;
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
+
+  // Toggle real audio playback
+  const togglePlayAudio = () => {
+    if (!currentCall || currentCall.durationSeconds === 0) return;
+
+    if (!audioRef.current) {
+      const audio = new Audio(`/api/calls/${currentCall.id}/audio`);
+      audio.playbackRate = playbackSpeed;
+      audioRef.current = audio;
+
+      audio.addEventListener('timeupdate', () => {
+        setCurrentTime(audio.currentTime);
+      });
+
+      audio.addEventListener('loadedmetadata', () => {
+        if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+          setAudioDuration(audio.duration);
+        }
+        setAudioLoading(false);
+      });
+
+      audio.addEventListener('canplay', () => {
+        setAudioLoading(false);
+      });
+
+      audio.addEventListener('play', () => setIsPlayingAudio(true));
+      audio.addEventListener('pause', () => setIsPlayingAudio(false));
+      audio.addEventListener('ended', () => {
+        setIsPlayingAudio(false);
+        setCurrentTime(0);
+      });
+
+      audio.addEventListener('error', () => {
+        setAudioLoading(false);
+        setIsPlayingAudio(false);
+        setAudioError('Audio recording unavailable for this call.');
+      });
+
+      setAudioLoading(true);
+      audio.play().catch(err => {
+        console.warn('[CallDetailDrawer] Audio playback blocked or failed:', err);
+        setAudioLoading(false);
+        setIsPlayingAudio(false);
+      });
+    } else {
+      if (isPlayingAudio) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play().catch(err => {
+          console.warn('[CallDetailDrawer] Audio resume failed:', err);
+        });
+      }
+    }
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isConnected || currentCall.durationSeconds === 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const totalDur = audioDuration || currentCall.durationSeconds;
+    const targetTime = percent * totalDur;
+
+    if (audioRef.current) {
+      audioRef.current.currentTime = targetTime;
+    }
+    setCurrentTime(targetTime);
+  };
+
+  const handleSpeedToggle = () => {
+    const nextSpeed: 1 | 1.5 | 2 = playbackSpeed === 1 ? 1.5 : playbackSpeed === 1.5 ? 2 : 1;
+    setPlaybackSpeed(nextSpeed);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = nextSpeed;
+    }
+  };
+
+  const effectiveDuration = audioDuration || currentCall.durationSeconds || 0;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -174,15 +283,12 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
-                {aiIntelligence.sentiment === 'positive' ? (
-                  <Badge variant="success" size="sm">
-                    {aiIntelligence.statusText}
-                  </Badge>
-                ) : (
-                  <Badge variant="neutral" size="sm">
-                    {aiIntelligence.statusText}
-                  </Badge>
-                )}
+                <Badge
+                  variant={aiIntelligence.sentiment === 'positive' ? 'success' : aiIntelligence.sentiment === 'negative' ? 'danger' : 'neutral'}
+                  size="sm"
+                >
+                  {aiIntelligence.statusText}
+                </Badge>
                 {aiIntelligence.intentScore > 0 && (
                   <span className="text-[11px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded font-mono">
                     {aiIntelligence.intentScore}% Intent
@@ -196,67 +302,101 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
             </p>
           </div>
 
-          {/* 2. INTERACTIVE CALL AUDIO RECORDING BAR */}
+          {/* 2. REAL CALL AUDIO STREAMING & SCRUBBER */}
           <div className="p-4 rounded-xl bg-slate-900 text-white space-y-3">
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 <Volume2 className="h-4 w-4 text-emerald-400" />
-                <span className="font-bold">Call Audio Stream & Recording</span>
+                <span className="font-bold">Live Audio Stream & Recording</span>
               </div>
               <span className="text-[11px] font-mono text-slate-400">
-                Carrier Format: G.711u / PCM 8kHz
+                Sarvam Master Audio (WAV / PCM)
               </span>
             </div>
 
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                disabled={!isConnected}
-                onClick={() => setIsPlayingAudio(!isPlayingAudio)}
-                className={`h-9 w-9 rounded-full flex items-center justify-center transition-all ${
-                  !isConnected
-                    ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                    : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-md'
-                }`}
-              >
-                {isPlayingAudio ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
-              </button>
-
-              <div className="flex-1 space-y-1">
-                {/* Simulated Audio Waveform / Scrubber */}
-                <div className="h-6 flex items-center gap-0.5 px-2 bg-slate-800/80 rounded">
-                  {Array.from({ length: 32 }).map((_, i) => {
-                    const isPlayed = currentCall.durationSeconds > 0 && (i / 32) * currentCall.durationSeconds <= playbackTime;
-                    const barHeight = isConnected
-                      ? Math.sin(i * 0.5) * 8 + 12
-                      : 4;
-                    return (
-                      <div
-                        key={i}
-                        className={`flex-1 rounded-full transition-all ${
-                          isPlayed ? 'bg-emerald-400' : 'bg-slate-700'
-                        } ${isPlayingAudio && isPlayed ? 'animate-pulse' : ''}`}
-                        style={{ height: `${barHeight}px` }}
-                      />
-                    );
-                  })}
-                </div>
-                <div className="flex justify-between text-[10px] font-mono text-slate-400 px-1">
-                  <span>{formatScrubberTime(playbackTime)}</span>
-                  <span>{formatScrubberTime(currentCall.durationSeconds)}</span>
-                </div>
+            {audioError ? (
+              <div className="flex items-center gap-2 p-2.5 rounded bg-slate-800 text-slate-400 text-xs">
+                <AlertCircle className="h-4 w-4 text-amber-400 shrink-0" />
+                <span>{audioError}</span>
               </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  disabled={!isConnected || currentCall.durationSeconds === 0}
+                  onClick={togglePlayAudio}
+                  className={`h-9 w-9 rounded-full flex items-center justify-center transition-all ${
+                    !isConnected || currentCall.durationSeconds === 0
+                      ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                      : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-md'
+                  }`}
+                  title={isPlayingAudio ? 'Pause Recording' : 'Play Recording'}
+                >
+                  {audioLoading ? (
+                    <RotateCw className="h-4 w-4 animate-spin text-slate-950" />
+                  ) : isPlayingAudio ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4 ml-0.5" />
+                  )}
+                </button>
 
-              {/* Speed Controller */}
-              <button
-                type="button"
-                disabled={!isConnected}
-                onClick={() => setPlaybackSpeed(s => (s === 1 ? 1.5 : s === 1.5 ? 2 : 1))}
-                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-[11px] font-mono font-bold text-slate-300 transition-colors"
-              >
-                {playbackSpeed}x
-              </button>
-            </div>
+                <div className="flex-1 space-y-1">
+                  {/* Interactive Audio Waveform / Scrubber Track */}
+                  <div
+                    onClick={handleSeek}
+                    className="h-7 flex items-center gap-0.5 px-2 bg-slate-800/80 rounded cursor-pointer group hover:bg-slate-800 transition-colors"
+                    title="Click anywhere to scrub playback position"
+                  >
+                    {Array.from({ length: 36 }).map((_, i) => {
+                      const barFraction = (i + 1) / 36;
+                      const isPlayed = effectiveDuration > 0 && barFraction <= currentTime / effectiveDuration;
+                      const barHeight = isConnected
+                        ? ((i % 5 === 0 ? 18 : i % 3 === 0 ? 14 : 10))
+                        : 4;
+
+                      return (
+                        <div
+                          key={i}
+                          className={`flex-1 rounded-full transition-all ${
+                            isPlayed ? 'bg-emerald-400' : 'bg-slate-700 group-hover:bg-slate-600'
+                          } ${isPlayingAudio && isPlayed ? 'opacity-90' : ''}`}
+                          style={{ height: `${barHeight}px` }}
+                        />
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex justify-between text-[10px] font-mono text-slate-400 px-1">
+                    <span>{formatScrubberTime(currentTime)}</span>
+                    <span>{formatScrubberTime(effectiveDuration)}</span>
+                  </div>
+                </div>
+
+                {/* Speed Toggle */}
+                <button
+                  type="button"
+                  disabled={!isConnected || currentCall.durationSeconds === 0}
+                  onClick={handleSpeedToggle}
+                  className="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-[11px] font-mono font-bold text-slate-300 transition-colors"
+                  title="Cycle playback speed: 1x, 1.5x, 2x"
+                >
+                  {playbackSpeed}x
+                </button>
+
+                {/* Direct Download Recording Link */}
+                {isConnected && currentCall.durationSeconds > 0 && (
+                  <a
+                    href={`/api/calls/${currentCall.id}/audio`}
+                    download={`sarvam_call_${currentCall.id}.wav`}
+                    className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded transition-colors"
+                    title="Download original WAV recording"
+                  >
+                    <Download className="h-4 w-4" />
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 3. CALL METADATA GRID */}
@@ -293,19 +433,22 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
               <Database className="h-4 w-4 text-purple-600" />
               <span>Extracted Conversation Variables</span>
             </div>
-            {!currentCall.extractedVariables || Object.keys(currentCall.extractedVariables || {}).length === 0 ? (
+            {!currentCall.extractedVariables ||
+            Object.entries(currentCall.extractedVariables).filter(([k]) => !k.startsWith('_')).length === 0 ? (
               <p className="text-xs text-slate-400 italic">No structured variables extracted from this call session.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {Object.entries(currentCall.extractedVariables).map(([key, value]) => (
-                  <div key={key} className="p-3 rounded-lg border border-slate-200 bg-white flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] uppercase font-mono font-bold text-slate-500 block">{key}</span>
-                      <span className="text-xs font-bold text-slate-900 mt-0.5 block">{String(value)}</span>
+                {Object.entries(currentCall.extractedVariables)
+                  .filter(([key]) => !key.startsWith('_'))
+                  .map(([key, value]) => (
+                    <div key={key} className="p-3 rounded-lg border border-slate-200 bg-white flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] uppercase font-mono font-bold text-slate-500 block">{key.replace(/_/g, ' ')}</span>
+                        <span className="text-xs font-bold text-slate-900 mt-0.5 block">{String(value)}</span>
+                      </div>
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
                     </div>
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
           </div>

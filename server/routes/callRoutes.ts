@@ -40,6 +40,28 @@ callRoutes.get('/:id/transcript', async (req, res) => {
   }
 });
 
+// GET /api/calls/:id/audio (Stream real WAV call recording from Sarvam Analytics)
+callRoutes.get('/:id/audio', async (req, res) => {
+  try {
+    const audioData = await serverCallService.getCallAudio(req.params.id);
+    if (!audioData) {
+      return res.status(404).json({
+        success: false,
+        error: 'Call recording audio not found or not yet available for this call.',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    res.setHeader('Content-Type', audioData.contentType || 'audio/wav');
+    res.setHeader('Content-Length', audioData.buffer.length);
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache completed call recordings
+    res.send(audioData.buffer);
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
 // GET /api/calls/:id
 callRoutes.get('/:id', async (req, res) => {
   try {

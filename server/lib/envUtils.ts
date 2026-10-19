@@ -5,6 +5,10 @@ import path from 'path';
  * Safely updates or appends key-value pairs in the project's .env file.
  */
 export function updateEnvVariables(updates: Record<string, string>): void {
+  // In serverless environments (e.g. Vercel), the filesystem is read-only
+  if (process.env.VERCEL) {
+    return;
+  }
   try {
     const envPath = path.resolve(process.cwd(), '.env');
     let content = '';

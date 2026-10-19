@@ -39,12 +39,12 @@ app.use('/api/webhooks', webhookRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/sarvam', sarvamRoutes);
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
+// Health check endpoints
+app.get(['/api', '/api/health'], (req, res) => {
   res.json({
     status: 'healthy',
     service: 'Fluid.Live Voice AI Platform Backend API',
-    sarvamBridge: 'Connected (Decoupled Provider Layer)',
+    sarvamBridge: 'Connected (Live)',
     timestamp: new Date().toISOString(),
   });
 });
@@ -61,7 +61,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 export default app;
 
-if (process.argv[1] && (process.argv[1].endsWith('server/index.ts') || process.argv[1].endsWith('server\\index.ts'))) {
+if (!process.env.VERCEL && process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`[Fluid.Live Backend API] Modular Monolith Server running on http://localhost:${PORT}`);
   });

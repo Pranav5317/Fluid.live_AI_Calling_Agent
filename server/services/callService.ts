@@ -102,7 +102,9 @@ export class ServerCallService {
       throw new Error(`Call record not found: ${callId}`);
     }
 
-    const transcriptData = await backendSarvamProvider.fetchCallTranscript(call.externalCallId);
+    // Pass call.startedAt to narrow the search window if resolving from job_id
+    let lookupId = (call.extractedVariables as any)?._sarvam_interaction_id || call.externalCallId;
+    const transcriptData = await backendSarvamProvider.fetchCallTranscript(lookupId, undefined, call.startedAt);
     
     if (transcriptData) {
       const rawMessages = transcriptData.messages || transcriptData.turns || transcriptData.transcript || (Array.isArray(transcriptData) ? transcriptData : []);
@@ -114,49 +116,109 @@ export class ServerCallService {
         timestampSeconds: msg.timestampSeconds || (index + 1) * 4,
       }));
 
-      const extractedVars = transcriptData.extracted_variables || transcriptData.agent_variables || call.extractedVariables || {};
-      const durationSecs = Math.round(transcriptData.duration || call.durationSeconds || 56);
+      const rawVars = transcriptData.extracted_variables || transcriptData.agent_variables || {};
+      const durationSecs = Math.round(transcriptData.duration ?? transcriptData.duration_in_seconds ?? call.durationSeconds ?? 0);
       const durationMins = Number((durationSecs / 60).toFixed(2));
       const providerCost = Number((durationMins * 0.05).toFixed(3));
       const platformCost = Number((durationMins * 0.08).toFixed(3));
 
+      // Derive genuine outcome from real Sarvam variables & metrics
+      let outcome = call.outcome || 'successful_contact';
+      if (durationSecs === 0) {
+        outcome = 'unreachable';
+      } else if (rawVars.interest_level === 'interested') {
+        outcome = rawVars.follow_up_preference === 'callback' ? 'callback_requested' : 'successful_contact';
+      } else if (rawVars.interest_level === 'not_interested') {
+        outcome = 'not_interested';
+      } else if (rawVars.verification_status === 'incomplete' && transcriptData.goal_overall_status === 'failed') {
+        outcome = 'not_interested';
+      } else if (durationSecs > 0) {
+        outcome = 'successful_contact';
+      }
+
+      const status = durationSecs > 0 || formattedTranscript.length > 0 ? 'completed' : (outcome === 'unreachable' ? 'failed' : 'completed');
+
+      const extractedVars = {
+        ...((call.extractedVariables as any) || {}),
+        ...rawVars,
+        ...(transcriptData.real_interaction_id ? { _sarvam_interaction_id: transcriptData.real_interaction_id } : {}),
+      };
+
       await prisma.call.update({
         where: { id: call.id },
         data: {
-          status: 'completed',
-          outcome: 'successful_contact',
+          status,
+          outcome,
           durationSeconds: durationSecs,
           transcript: formattedTranscript as any,
           extractedVariables: extractedVars as any,
         },
       });
 
-      // Create production UsageEvent linked to call
-      try {
-        await prisma.usageEvent.create({
-          data: {
-            id: `usg_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-            callId: call.id,
-            campaignId: call.campaignId || null,
-            agentId: call.agentId,
-            durationMinutes: durationMins,
-            providerCostUnits: providerCost,
-            platformCostUnits: platformCost,
-            timestamp: new Date(),
-          },
-        });
-      } catch (e: any) {
-        console.warn('UsageEvent creation skipped or already exists:', e?.message);
+      // Create production UsageEvent linked to call if not existing
+      if (durationSecs > 0) {
+        try {
+          await prisma.usageEvent.create({
+            data: {
+              id: `usg_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+              callId: call.id,
+              campaignId: call.campaignId || null,
+              agentId: call.agentId,
+              durationMinutes: durationMins,
+              providerCostUnits: providerCost,
+              platformCostUnits: platformCost,
+              timestamp: new Date(),
+            },
+          });
+        } catch (e: any) {
+          console.warn('UsageEvent creation skipped or already exists:', e?.message);
+        }
       }
 
-      call.status = 'completed';
-      call.outcome = 'successful_contact';
+      call.status = status as any;
+      call.outcome = outcome as any;
       call.durationSeconds = durationSecs;
       call.transcript = formattedTranscript as any;
       call.extractedVariables = extractedVars as any;
     }
 
     return { call, transcriptData };
+  }
+
+  async getCallAudio(callId: string): Promise<{ buffer: Buffer; contentType: string } | null> {
+    const call = await callRepository.getCallById(callId);
+    if (!call) return null;
+
+    let interactionId = (call.extractedVariables as any)?._sarvam_interaction_id;
+    if (!interactionId) {
+      if (call.externalCallId && call.externalCallId.includes('/')) {
+        interactionId = call.externalCallId;
+      } else {
+        const resolved = await backendSarvamProvider.resolveInteractionId(call.externalCallId, undefined, call.startedAt);
+        if (resolved) {
+          interactionId = resolved.interactionId;
+          try {
+            await prisma.call.update({
+              where: { id: call.id },
+              data: {
+                extractedVariables: {
+                  ...((call.extractedVariables as any) || {}),
+                  _sarvam_interaction_id: interactionId,
+                },
+              },
+            });
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+    }
+
+    if (!interactionId) {
+      return null;
+    }
+
+    return backendSarvamProvider.fetchCallRecording(interactionId);
   }
 }
 

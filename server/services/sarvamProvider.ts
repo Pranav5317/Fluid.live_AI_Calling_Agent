@@ -41,7 +41,9 @@ export interface IBackendSarvamProvider {
   normalizeWebhookPayload(payload: Record<string, any>): NormalizedSarvamEvent;
   provisionNumber(areaCode?: string): Promise<{ phoneNumber: string; providerId: string }>;
   getMapping(fluidVersionId: string): SarvamAgentMapping | undefined;
-  fetchCallTranscript(interactionId: string, appId?: string): Promise<any>;
+  fetchCallTranscript(interactionId: string, appId?: string, callDate?: Date | string): Promise<any>;
+  fetchCallRecording(interactionId: string, appId?: string): Promise<{ buffer: Buffer; contentType: string } | null>;
+  resolveInteractionId(jobOrInteractionId: string, appId?: string, callDate?: Date | string): Promise<{ interactionId: string; interactionItem?: any } | null>;
   fetchInteractions(params?: { startDatetime?: string; endDatetime?: string; limit?: number; appId?: string }): Promise<any>;
 }
 
@@ -468,9 +470,95 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
     return { status: 'paused' as const };
   }
 
-  async fetchCallTranscript(jobOrInteractionId: string, appId?: string): Promise<any> {
+  async resolveInteractionId(
+    jobOrInteractionId: string,
+    appId?: string,
+    callDate?: Date | string
+  ): Promise<{ interactionId: string; interactionItem?: any } | null> {
+    if (jobOrInteractionId.includes('/')) {
+      return { interactionId: jobOrInteractionId };
+    }
+
+    const targetAppId = appId || this.defaultAppId;
+    let start: string | undefined;
+    let end: string | undefined;
+
+    if (callDate) {
+      const dt = new Date(callDate);
+      start = new Date(dt.getTime() - 7 * 24 * 3600 * 1000).toISOString();
+      end = new Date(dt.getTime() + 2 * 24 * 3600 * 1000).toISOString();
+    } else {
+      const now = new Date();
+      start = new Date(now.getTime() - 30 * 24 * 3600 * 1000).toISOString();
+      end = now.toISOString();
+    }
+
+    const interactionsRes = await this.fetchInteractions({
+      appId: targetAppId,
+      limit: 50,
+      startDatetime: start,
+      endDatetime: end,
+    });
+
+    if (interactionsRes && Array.isArray(interactionsRes.items)) {
+      const matched = interactionsRes.items.find(
+        (item: any) =>
+          item.job_id === jobOrInteractionId ||
+          item.interaction_id?.endsWith(jobOrInteractionId) ||
+          item.interaction_id?.includes(jobOrInteractionId)
+      );
+      if (matched) {
+        return { interactionId: matched.interaction_id, interactionItem: matched };
+      }
+    }
+    return null;
+  }
+
+  async fetchCallRecording(
+    interactionId: string,
+    appId?: string
+  ): Promise<{ buffer: Buffer; contentType: string } | null> {
     const apiKey = this.getApiKey();
-    const targetAppId = appId || process.env.SARVAM_APP_ID || 'Conversatio-b063cf10-e735';
+    const targetAppId = appId || this.defaultAppId;
+    if (!apiKey) {
+      console.warn('[Sarvam Provider] SARVAM_API_KEY omitted. Cannot fetch call recording.');
+      return null;
+    }
+
+    try {
+      const endpoint = `${this.baseUrl}/analytics/v1/${this.orgId}/${this.workspaceId}/${targetAppId}/recordings/${interactionId}`;
+      console.log(`[Sarvam Provider] Fetching call recording audio from Sarvam Analytics API (${endpoint})...`);
+
+      const res = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'X-API-Key': apiKey,
+        },
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.warn(`[Sarvam Provider] HTTP ${res.status} fetching recording: ${errText}`);
+        return null;
+      }
+
+      const contentType = res.headers.get('content-type') || 'audio/wav';
+      const arrayBuffer = await res.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      return {
+        buffer,
+        contentType,
+      };
+    } catch (err: any) {
+      console.error(`[Sarvam Provider] Error fetching call recording: ${err?.message}`);
+      return null;
+    }
+  }
+
+  async fetchCallTranscript(jobOrInteractionId: string, appId?: string, callDate?: Date | string): Promise<any> {
+    const apiKey = this.getApiKey();
+    const targetAppId = appId || process.env.SARVAM_APP_ID || this.defaultAppId;
     
     if (!apiKey) {
       console.warn(`[Sarvam Provider] SARVAM_API_KEY omitted. Cannot fetch transcript for interaction ${jobOrInteractionId}`);
@@ -481,22 +569,20 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
       let realInteractionId = jobOrInteractionId;
       let extractedVariables: any = undefined;
       let callDuration: number | undefined = undefined;
+      let goalOverallStatus: string | undefined = undefined;
+      let endedBy: string | undefined = undefined;
 
       // If jobOrInteractionId doesn't contain a slash '/', resolve interaction_id & agent_variables via /interactions
       if (!jobOrInteractionId.includes('/')) {
         console.log(`[Sarvam Provider] Resolving job_id/attempt_id (${jobOrInteractionId}) to Sarvam interaction_id...`);
-        const interactionsRes = await this.fetchInteractions({ appId: targetAppId, limit: 30 });
-        if (interactionsRes && Array.isArray(interactionsRes.items)) {
-          const matchedItem = interactionsRes.items.find(
-            (item: any) => item.job_id === jobOrInteractionId || item.interaction_id?.endsWith(jobOrInteractionId)
-          ) || interactionsRes.items[0]; // Fallback to latest interaction if direct attempt match is processing
-
-          if (matchedItem) {
-            realInteractionId = matchedItem.interaction_id;
-            extractedVariables = matchedItem.agent_variables || matchedItem.extracted_variables;
-            callDuration = matchedItem.duration_in_seconds;
-            console.log(`[Sarvam Provider] Mapped attempt ${jobOrInteractionId} -> interaction_id: ${realInteractionId}`);
-          }
+        const resolved = await this.resolveInteractionId(jobOrInteractionId, targetAppId, callDate);
+        if (resolved && resolved.interactionItem) {
+          realInteractionId = resolved.interactionId;
+          extractedVariables = resolved.interactionItem.agent_variables || resolved.interactionItem.extracted_variables;
+          callDuration = resolved.interactionItem.duration_in_seconds;
+          goalOverallStatus = resolved.interactionItem.goal_overall_status;
+          endedBy = resolved.interactionItem.ended_by;
+          console.log(`[Sarvam Provider] Mapped attempt ${jobOrInteractionId} -> interaction_id: ${realInteractionId}`);
         }
       }
 
@@ -516,8 +602,11 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
         console.log(`[Sarvam Provider] Successfully fetched transcript for ${realInteractionId}. Messages count: ${data.messages?.length || 0}`);
         return {
           ...data,
+          real_interaction_id: realInteractionId,
           extracted_variables: extractedVariables || data.extracted_variables || data.agent_variables,
-          duration: callDuration || data.duration,
+          duration: callDuration !== undefined ? callDuration : data.duration,
+          goal_overall_status: goalOverallStatus,
+          ended_by: endedBy,
         };
       } else {
         const errText = await res.text();
@@ -532,7 +621,7 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
 
   async fetchInteractions(params?: { startDatetime?: string; endDatetime?: string; limit?: number; appId?: string }): Promise<any> {
     const apiKey = this.getApiKey();
-    const targetAppId = params?.appId || process.env.SARVAM_APP_ID || 'Conversatio-b063cf10-e735';
+    const targetAppId = params?.appId || process.env.SARVAM_APP_ID || this.defaultAppId;
     
     if (!apiKey) {
       return { items: [], total: 0 };
@@ -540,10 +629,10 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
 
     try {
       const now = new Date();
-      const past24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const start = params?.startDatetime || past24h.toISOString();
+      const past30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const start = params?.startDatetime || past30d.toISOString();
       const end = params?.endDatetime || now.toISOString();
-      const limit = params?.limit || 20;
+      const limit = params?.limit || 50;
 
       const endpoint = `${this.baseUrl}/analytics/v1/${this.orgId}/${this.workspaceId}/${targetAppId}/interactions?start_datetime=${encodeURIComponent(start)}&end_datetime=${encodeURIComponent(end)}&limit=${limit}`;
       console.log(`[Sarvam Provider] Fetching interactions from Sarvam Analytics API (${endpoint})...`);
