@@ -5,28 +5,24 @@ import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { Select } from '../../components/common/Select';
 import { Badge } from '../../components/common/Badge';
-import { CallFlowEditor } from '../../components/callFlow/CallFlowEditor';
 import { AgentConfig, ExtractedVariableConfig, KnowledgeBase } from '../../types';
 import {
   Bot,
   Mic,
-  MessageSquareText,
-  GitBranch,
-  BookOpen,
   Sliders,
-  Play,
-  Plus,
-  Trash2,
   Sparkles,
   Zap,
   Volume2,
-  Lock,
   ExternalLink,
-  Copy,
-  Check,
+  Plus,
+  Trash2,
+  Play,
+  ShieldCheck,
+  Server,
+  PhoneCall,
+  Info,
 } from 'lucide-react';
 import { agentService } from '../../services/agentService';
-import { INDUSTRY_TEMPLATES } from '../../data/industryTemplates';
 import { AgentSandboxSimulator } from './AgentSandboxSimulator';
 
 export interface AgentBuilderModalProps {
@@ -42,45 +38,37 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
   onClose,
   onSave,
   initialData,
-  knowledgeBases,
 }) => {
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState<string>('general');
   const [saving, setSaving] = useState(false);
   const [playingVoicePreview, setPlayingVoicePreview] = useState(false);
   const [voicePreviewError, setVoicePreviewError] = useState<string | null>(null);
 
-  // Normalize configuration to guarantee safe array & object defaults
-  const normalizeAgentConfig = (raw?: Partial<AgentConfig>): AgentConfig => {
-    return {
-      voiceModel: raw?.voiceModel || 'Shubh - Friendly Verification Indian Male',
-      language: raw?.language || 'en-IN',
-      openingLine: raw?.openingLine || (raw as any)?.firstGreeting || 'नमस्ते <user_name> ji, I am calling on behalf of Fluid.live for a quick verification. Do you have a moment?',
-      closingBehavior: raw?.closingBehavior || 'धन्यवाद <user_name> ji, आपका दिन शुभ हो!',
-      systemPrompt: raw?.systemPrompt || `Persona\nRole: Shubh, a friendly verification assistant calling on behalf of Fluid.live, a company that offers AI voice calling for businesses.\nTone: Warm, courteous, respectful, and efficient.\n\nObjective:\nVerify customer interest in AI voice calling for their business and note follow-up preference (demo, WhatsApp, or none).\n\nSpeaking style rules:\n- Keep turns concise (under 20 words).\n- Address user respectfully (ji, Sir, Madam).\n- Ask one question at a time and wait for their response.`,
-      sarvamAppId: raw?.sarvamAppId || (raw as any)?.app_id || 'Conversatio-b063cf10-e735',
-      sarvamConnectionId: raw?.sarvamConnectionId || (raw as any)?.connection_id || '7efd8897-87-220da5aa-1d5e',
-      flowNodes: Array.isArray(raw?.flowNodes) && raw!.flowNodes.length > 0 ? raw!.flowNodes : [
-        { id: 'fn_1', type: 'start', title: 'Call Connected', content: 'Establish telephony line connection' },
-        { id: 'fn_2', type: 'opening', title: 'Warm Greeting', content: 'Greet lead and confirm identity' },
-        { id: 'fn_3', type: 'question', title: 'Interest Verification', content: 'Check interest in AI voice calling' },
-        { id: 'fn_4', type: 'question', title: 'Follow-up Preference', content: 'Offer demo or WhatsApp details' },
-        { id: 'fn_5', type: 'closing', title: 'Polite Wrap-up', content: 'Deliver concise sign-off (< 10 words)' },
-        { id: 'fn_6', type: 'end', title: 'End Call', content: 'Call end_interaction' },
-      ],
-      knowledgeBaseIds: Array.isArray(raw?.knowledgeBaseIds) ? raw!.knowledgeBaseIds : [],
-      extractedVariables: Array.isArray(raw?.extractedVariables) && raw!.extractedVariables.length > 0 ? raw!.extractedVariables : [
-        { key: 'interest_level', label: 'Interest Level', type: 'enum', required: true, description: 'interested | not_interested | maybe_later', enumOptions: ['interested', 'not_interested', 'maybe_later'] },
-        { key: 'follow_up_preference', label: 'Follow-up Channel', type: 'enum', required: true, description: 'demo | whatsapp_details | none', enumOptions: ['demo', 'whatsapp_details', 'none'] },
-        { key: 'verification_status', label: 'Verification Status', type: 'string', required: true, description: 'completed | unreachable | refused' },
-      ],
-      runtimeSettings: raw?.runtimeSettings || {
-        maxDurationMinutes: 3,
-        silenceTimeoutSeconds: 5,
-        interruptionSensitivity: 'medium',
-        recordingEnabled: true,
-      },
-    };
-  };
+  // Normalize initial configuration safely
+  const normalizeAgentConfig = (cfg?: Partial<AgentConfig>): AgentConfig => ({
+    voiceModel: cfg?.voiceModel || 'Shubh - Friendly Verification Indian Male',
+    language: cfg?.language || 'hi-IN',
+    systemPrompt: cfg?.systemPrompt || '',
+    openingLine: cfg?.openingLine || 'नमस्ते! मैं Fluid.live से बात कर रहा हूँ।',
+    closingBehavior: cfg?.closingBehavior || 'धन्यवाद, आपका दिन शुभ हो!',
+    sarvamAppId: cfg?.sarvamAppId || 'Conversatio-b063cf10-e735',
+    sarvamConnectionId: cfg?.sarvamConnectionId || '7efd8897-87-220da5aa-1d5e',
+    flowNodes: cfg?.flowNodes || [],
+    knowledgeBaseIds: cfg?.knowledgeBaseIds || [],
+    extractedVariables: cfg?.extractedVariables || [
+      { key: 'user_name', label: 'Customer Name', type: 'string', required: true, description: 'Name of the recipient' },
+      { key: 'interest_level', label: 'Interest Level', type: 'string', required: false, description: 'Expressed interest (interested / not_interested)' },
+      { key: 'verification_status', label: 'Verification Status', type: 'string', required: false, description: 'Call goal status' },
+      { key: 'follow_up_preference', label: 'Follow Up Preference', type: 'string', required: false, description: 'Callback or WhatsApp details' },
+      { key: 'call_summary', label: 'AI Call Summary', type: 'string', required: false, description: 'Summary generated by Sarvam AI' },
+    ],
+    runtimeSettings: cfg?.runtimeSettings || {
+      maxDurationMinutes: 10,
+      silenceTimeoutSeconds: 5,
+      interruptionSensitivity: 'medium',
+      recordingEnabled: true,
+    },
+  });
 
   // Form State
   const [name, setName] = useState(initialData?.name || '');
@@ -102,31 +90,6 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
 
   // Simulated Live Preview State
   const [isPreviewActive, setIsPreviewActive] = useState(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState('');
-  const [copiedPrompt, setCopiedPrompt] = useState(false);
-
-  const handleCopyPrompt = () => {
-    if (!config.systemPrompt) return;
-    navigator.clipboard.writeText(config.systemPrompt);
-    setCopiedPrompt(true);
-    setTimeout(() => setCopiedPrompt(false), 2000);
-  };
-
-  const handleApplyTemplate = (templateId: string) => {
-    const selected = INDUSTRY_TEMPLATES.find(t => t.id === templateId);
-    if (!selected) return;
-    setSelectedTemplateId(templateId);
-    setName(selected.agentName);
-    setUseCase(selected.useCase);
-    setConfig(prev => ({
-      ...prev,
-      ...selected.config,
-      // ensure nested objects are preserved
-      flowNodes: selected.config.flowNodes || prev.flowNodes,
-      extractedVariables: selected.config.extractedVariables || prev.extractedVariables,
-      runtimeSettings: selected.config.runtimeSettings || prev.runtimeSettings,
-    }));
-  };
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -170,10 +133,10 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
         ? 'meera'
         : 'arvind';
 
-      const sampleText = config.openingLine || 'Namaste! Main Shubh bol raha hoon Fluid.live se. How can I assist you today?';
+      const sampleText = 'नमस्ते! मैं Fluid.live से बात कर रहा हूँ। How can I assist you today?';
       const audioBase64 = await agentService.previewVoice({
         speaker: speakerName,
-        languageCode: config.language || 'en-IN',
+        languageCode: config.language || 'hi-IN',
         text: sampleText,
       });
 
@@ -185,21 +148,13 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
           setVoicePreviewError('Audio playback failed in browser');
         };
         await audio.play();
-      } else if ('speechSynthesis' in window) {
-        // High fidelity browser synthesis fallback
-        window.speechSynthesis.cancel();
+        return;
+      }
+
+      // Browser fallback if network audio unavailable
+      if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(sampleText);
-        utterance.lang = config.language || 'en-IN';
-        if (speakerName === 'shubh') {
-          utterance.pitch = 0.95;
-          utterance.rate = 1.0;
-        } else if (speakerName === 'meera') {
-          utterance.pitch = 1.15;
-          utterance.rate = 1.05;
-        } else {
-          utterance.pitch = 0.85;
-          utterance.rate = 0.95;
-        }
+        utterance.lang = config.language || 'hi-IN';
         utterance.onend = () => setPlayingVoicePreview(false);
         utterance.onerror = () => setPlayingVoicePreview(false);
         window.speechSynthesis.speak(utterance);
@@ -217,7 +172,7 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={initialData ? 'Edit AI Calling Agent Configuration' : 'Build New AI Calling Agent'}
+      title={initialData ? 'Configure AI Calling Agent' : 'Connect New Calling Agent'}
       size="full"
       footer={
         <div className="flex items-center justify-between w-full">
@@ -227,7 +182,7 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
             leftIcon={<Play className="h-4 w-4 text-emerald-600" />}
             onClick={() => setIsPreviewActive(!isPreviewActive)}
           >
-            {isPreviewActive ? 'Hide Live Audio Test' : 'Test Live Audio Preview'}
+            {isPreviewActive ? 'Hide Live Audio Test' : 'Test Live Voice Preview'}
           </Button>
 
           <div className="flex gap-2">
@@ -235,7 +190,7 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
               Cancel
             </Button>
             <Button size="sm" onClick={handleSave} isLoading={saving}>
-              Publish & Sync Agent
+              Save Agent Configuration
             </Button>
           </div>
         </div>
@@ -244,50 +199,13 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Main Builder Form Workspace */}
         <div className="flex-1 space-y-4">
-          {/* 1-Click Enterprise Industry Blueprint Banner */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 rounded-xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white border border-indigo-900/40 shadow-sm gap-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-white tracking-wide">Enterprise Industry Blueprint</span>
-                  <Badge variant="brand" size="sm" className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] py-0 px-2">
-                    1-Click Auto-Fill
-                  </Badge>
-                </div>
-                <p className="text-[11px] text-slate-300 mt-0.5">
-                  Load Indian enterprise workflows with calibrated personas, bilingual scripts & extracted variables.
-                </p>
-              </div>
-            </div>
-
-            <div className="w-full sm:w-auto">
-              <select
-                className="w-full sm:w-auto bg-slate-800/90 border border-indigo-700/50 text-xs rounded-lg px-3 py-1.5 text-slate-100 font-medium focus:outline-none focus:border-amber-400 hover:border-slate-600 transition"
-                value={selectedTemplateId}
-                onChange={e => handleApplyTemplate(e.target.value)}
-              >
-                <option value="" disabled>Load Industry Blueprint...</option>
-                {INDUSTRY_TEMPLATES.map(t => (
-                  <option key={t.id} value={t.id}>
-                    [{t.category}] {t.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
           <Tabs
             tabs={[
               { id: 'general', label: 'General', icon: <Bot className="h-4 w-4" /> },
-              { id: 'voice', label: 'Voice & Audio', icon: <Mic className="h-4 w-4" /> },
-              { id: 'prompt', label: 'Voice Prompt (Sarvam)', icon: <MessageSquareText className="h-4 w-4" /> },
-              { id: 'flow', label: 'Call Flow', icon: <GitBranch className="h-4 w-4" /> },
-              { id: 'kb', label: 'Knowledge', icon: <BookOpen className="h-4 w-4" /> },
-              { id: 'variables', label: 'Variables', icon: <Sliders className="h-4 w-4" /> },
-              { id: 'advanced', label: 'Advanced', icon: <Sparkles className="h-4 w-4" /> },
+              { id: 'engine', label: 'Sarvam Voice Engine', icon: <Zap className="h-4 w-4 text-amber-500" /> },
+              { id: 'voice', label: 'Voice & Speech', icon: <Mic className="h-4 w-4" /> },
+              { id: 'variables', label: 'Extracted Variables', icon: <Sliders className="h-4 w-4" /> },
+              { id: 'advanced', label: 'Runtime Settings', icon: <Sparkles className="h-4 w-4" /> },
             ]}
             activeTab={activeTab}
             onChange={setActiveTab}
@@ -298,42 +216,112 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
             <div className="space-y-4 pt-2">
               <Input
                 label="Agent Name *"
-                placeholder="e.g. Customer Satisfaction Specialist"
+                placeholder="e.g. Lead Qualification Specialist"
                 value={name}
                 onChange={e => setName(e.target.value)}
               />
               <Input
                 label="Primary Business Use Case *"
-                placeholder="e.g. Post-service satisfaction survey & feedback collection"
+                placeholder="e.g. Outbound customer verification, inquiry follow-ups & satisfaction surveys"
                 value={useCase}
                 onChange={e => setUseCase(e.target.value)}
               />
 
-              {/* Sarvam Samvaad App Integration */}
-              <div className="p-3.5 rounded-lg border border-slate-200 bg-slate-50/80 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-amber-500" />
-                    <span className="font-bold text-xs text-slate-900">Sarvam Voice App ID Mapping</span>
-                  </div>
-                  <Badge variant="brand" size="sm">
-                    Samvaad Voice Agent
-                  </Badge>
-                </div>
-                <Input
-                  label="Sarvam Voice Agent App ID"
-                  placeholder="e.g. Conversatio-b063cf10-e735 (or custom app ID)"
-                  value={config.sarvamAppId || ''}
-                  onChange={e => setConfig({ ...config, sarvamAppId: e.target.value })}
-                />
-                <p className="text-[11px] text-slate-500 leading-normal">
-                  Outbound calls for this agent will directly invoke this Sarvam App. If left blank, it automatically uses your connected account's default Sarvam Voice App.
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
+                  Agent Operating Environment
+                </span>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  This calling agent handles automated outbound phone outreach for campaigns and single test calls. Telephony execution and voice synthesis run on Sarvam AI, with recordings archived to Cloudflare R2.
                 </p>
               </div>
             </div>
           )}
 
-          {/* TAB 2: VOICE */}
+          {/* TAB 2: SARVAM VOICE ENGINE (100% REAL & HONEST ARCHITECTURE) */}
+          {activeTab === 'engine' && (
+            <div className="space-y-4 pt-2">
+              <div className="p-4 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50/80 via-amber-50/40 to-white space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-lg bg-amber-500/20 text-amber-600 flex items-center justify-center font-bold">
+                      <Zap className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-slate-900">Sarvam AI Samvaad Engine</span>
+                        <Badge variant="success" size="sm">Connected Cloud</Badge>
+                      </div>
+                      <p className="text-xs text-slate-600">
+                        Voice conversational logic, prompt engineering, and speech synthesis are compiled directly in Sarvam AI.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="primary"
+                    className="bg-amber-600 hover:bg-amber-700 text-white text-xs shadow-xs font-semibold"
+                    leftIcon={<ExternalLink className="h-3.5 w-3.5" />}
+                    onClick={() => window.open('https://dashboard.sarvam.ai', '_blank')}
+                  >
+                    Open Sarvam Console ↗
+                  </Button>
+                </div>
+              </div>
+
+              {/* Real Connection Specs Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <Server className="h-4 w-4 text-brand-600" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Sarvam App Identifier</span>
+                  </div>
+                  <Input
+                    label="App ID"
+                    value={config.sarvamAppId || 'Conversatio-b063cf10-e735'}
+                    onChange={e => setConfig({ ...config, sarvamAppId: e.target.value })}
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    The identifier of your conversational voice app configured in the Sarvam dashboard.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <PhoneCall className="h-4 w-4 text-emerald-600" />
+                    <span className="text-xs font-bold uppercase tracking-wider">SIP Connection & Caller ID</span>
+                  </div>
+                  <Input
+                    label="Telephony Connection ID"
+                    value={config.sarvamConnectionId || '7efd8897-87-220da5aa-1d5e'}
+                    onChange={e => setConfig({ ...config, sarvamConnectionId: e.target.value })}
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    Trunk ID linked to Caller ID: <span className="font-mono font-semibold">+917965480599</span>.
+                  </p>
+                </div>
+              </div>
+
+              {/* Production Architecture Explanation Card */}
+              <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/50 space-y-2">
+                <div className="flex items-center gap-2 text-blue-900 font-bold text-xs">
+                  <ShieldCheck className="h-4 w-4 text-blue-600" />
+                  <span>Enterprise Separation of Concerns</span>
+                </div>
+                <div className="text-xs text-blue-800 space-y-1.5 leading-relaxed">
+                  <p>
+                    • <strong>Sarvam AI Platform:</strong> Compiles neural speech synthesis (Bulbul), Indic speech recognition (Saaras), and the master dialogue prompt. Changes made in the Sarvam Console take effect instantly on all live calls.
+                  </p>
+                  <p>
+                    • <strong>Fluid.live Dashboard:</strong> Orchestrates bulk campaign dialing, injects dynamic customer variables (<code className="bg-blue-100 px-1 py-0.5 rounded text-blue-900 font-mono">user_name</code>), securely archives call audio to Cloudflare R2, and tracks call outcomes.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: VOICE & SPEECH */}
           {activeTab === 'voice' && (
             <div className="space-y-4 pt-2">
               <Select
@@ -342,34 +330,31 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
                 options={[
                   { value: 'Shubh - Friendly Verification Indian Male', label: 'Shubh - Friendly Verification Indian Male (Recommended)' },
                   { value: 'Shreya - Courteous Professional Indian Female', label: 'Shreya - Courteous Professional Indian Female' },
-                  { value: 'Sarvam Neural Voice - English (IN) - Professional Female', label: 'Sarvam Neural Voice - English (IN) - Professional Female' },
                   { value: 'Sarvam Neural Voice - Hindi (IN) - Professional Female', label: 'Sarvam Neural Voice - Hindi (IN) - Professional Female' },
-                  { value: 'Sarvam Neural Voice - English (US) - Professional Female', label: 'Sarvam Neural Voice - English (US) - Professional Female' },
-                  { value: 'Sarvam Neural Voice - English (US) - Executive Male', label: 'Sarvam Neural Voice - English (US) - Executive Male' },
+                  { value: 'Sarvam Neural Voice - English (IN) - Professional Female', label: 'Sarvam Neural Voice - English (IN) - Professional Female' },
                 ]}
                 onChange={e => setConfig({ ...config, voiceModel: e.target.value })}
               />
               <Select
-                label="Primary Language"
+                label="Primary Speech Language"
                 value={config.language}
                 options={[
-                  { value: 'en-IN', label: 'English (India)' },
                   { value: 'hi-IN', label: 'Hindi (India)' },
+                  { value: 'en-IN', label: 'English (India)' },
+                  { value: 'mr-IN', label: 'Marathi (India)' },
                   { value: 'bn-IN', label: 'Bengali (India)' },
                   { value: 'gu-IN', label: 'Gujarati (India)' },
-                  { value: 'kn-IN', label: 'Kannada (India)' },
-                  { value: 'ml-IN', label: 'Malayalam (India)' },
-                  { value: 'mr-IN', label: 'Marathi (India)' },
-                  { value: 'pa-IN', label: 'Punjabi (India)' },
                   { value: 'ta-IN', label: 'Tamil (India)' },
                   { value: 'te-IN', label: 'Telugu (India)' },
-                  { value: 'en-US', label: 'English (US)' },
+                  { value: 'kn-IN', label: 'Kannada (India)' },
+                  { value: 'ml-IN', label: 'Malayalam (India)' },
+                  { value: 'pa-IN', label: 'Punjabi (India)' },
                 ]}
                 onChange={e => setConfig({ ...config, language: e.target.value })}
               />
 
               {/* Real-time Voice Audio Sample Player */}
-              <div className="p-4 rounded-lg bg-slate-900 text-white space-y-3 mt-4">
+              <div className="p-4 rounded-xl bg-slate-900 text-white space-y-3 mt-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -380,7 +365,7 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
                   </Badge>
                 </div>
                 <p className="text-xs text-slate-300 italic">
-                  "{config.openingLine || 'Namaste! Main Shubh bol raha hoon Fluid.live se. How can I assist you today?'}"
+                  "नमस्ते! मैं Fluid.live से बात कर रहा हूँ। How can I assist you today?"
                 </p>
                 <div className="flex items-center gap-2 pt-1">
                   <Button
@@ -392,7 +377,7 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
                     onClick={handlePlayVoicePreview}
                     isLoading={playingVoicePreview}
                   >
-                    {playingVoicePreview ? 'Synthesizing & Playing...' : 'Listen to Voice Sample'}
+                    {playingVoicePreview ? 'Synthesizing Audio...' : 'Listen to Voice Sample'}
                   </Button>
                 </div>
                 {voicePreviewError && (
@@ -402,152 +387,20 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
             </div>
           )}
 
-          {/* TAB 3: SARVAM MANAGED PROMPT (READ-ONLY REFERENCE) */}
-          {activeTab === 'prompt' && (
-            <div className="space-y-4 pt-2">
-              {/* Sarvam Dashboard Binding Card */}
-              <div className="p-3.5 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50/70 via-amber-50/40 to-white text-slate-800 space-y-2.5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                    <span className="text-xs font-bold text-slate-900">Sarvam AI Console Managed Prompt</span>
-                    <Badge variant="neutral" size="sm" className="bg-amber-100/80 text-amber-900 border-amber-300 text-[10px]">
-                      Read-Only Reference
-                    </Badge>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="border-amber-300 bg-white hover:bg-amber-100/50 text-amber-900 text-xs h-7 shadow-xs font-medium"
-                    leftIcon={<ExternalLink className="h-3 w-3" />}
-                    onClick={() => window.open('https://dashboard.sarvam.ai', '_blank')}
-                  >
-                    Open Prompt in Sarvam Console ↗
-                  </Button>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Sarvam AI compiles voice personas, Indic speech models, and dialog states directly inside its telephony engine (App ID: <span className="font-mono font-semibold text-slate-800">Conversatio-b063cf10-e735</span>). To change what this agent says during live phone calls, update the prompt in your Sarvam Dashboard.
-                </p>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700">
-                    <Lock className="h-3 w-3 text-slate-400" />
-                    <span>System Instructions & Persona Prompt (Master Reference)</span>
-                  </label>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-2 text-[11px] text-slate-600 hover:text-slate-900"
-                    leftIcon={copiedPrompt ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
-                    onClick={handleCopyPrompt}
-                  >
-                    {copiedPrompt ? 'Copied to Clipboard!' : 'Copy Prompt'}
-                  </Button>
-                </div>
-                <textarea
-                  readOnly
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 font-mono focus:outline-none cursor-default select-text leading-relaxed"
-                  rows={6}
-                  value={config.systemPrompt}
-                />
-              </div>
-
-              <div>
-                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                  <Lock className="h-3 w-3 text-slate-400" />
-                  <span>Opening Line Script (Configured in Sarvam)</span>
-                </label>
-                <textarea
-                  readOnly
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-700 focus:outline-none cursor-default select-text"
-                  rows={2}
-                  value={config.openingLine}
-                />
-              </div>
-
-              <div>
-                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                  <Lock className="h-3 w-3 text-slate-400" />
-                  <span>Closing Behavior Directive</span>
-                </label>
-                <input
-                  type="text"
-                  readOnly
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700 focus:outline-none cursor-default select-text"
-                  value={config.closingBehavior}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: CALL FLOW */}
-          {activeTab === 'flow' && (
-            <div className="pt-2">
-              <CallFlowEditor
-                nodes={config.flowNodes}
-                onChange={flowNodes => setConfig({ ...config, flowNodes })}
-              />
-            </div>
-          )}
-
-          {/* TAB 5: KNOWLEDGE BASE */}
-          {activeTab === 'kb' && (
-            <div className="space-y-3 pt-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                Attach Knowledge Base Documents
-              </h4>
-              <p className="text-xs text-slate-500">
-                The agent will retrieve facts from attached document collections to answer lead questions.
-              </p>
-              <div className="space-y-2">
-                {knowledgeBases.map(kb => {
-                  const isAttached = config.knowledgeBaseIds.includes(kb.id);
-                  return (
-                    <div
-                      key={kb.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-slate-200 bg-white"
-                    >
-                      <div>
-                        <span className="text-xs font-bold text-slate-900 block">{kb.name}</span>
-                        <span className="text-[11px] text-slate-500">{kb.description}</span>
-                      </div>
-                      <Button
-                        variant={isAttached ? 'outline' : 'secondary'}
-                        size="sm"
-                        onClick={() => {
-                          const updated = isAttached
-                            ? config.knowledgeBaseIds.filter(id => id !== kb.id)
-                            : [...config.knowledgeBaseIds, kb.id];
-                          setConfig({ ...config, knowledgeBaseIds: updated });
-                        }}
-                      >
-                        {isAttached ? 'Attached' : 'Attach'}
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 6: EXTRACTED VARIABLES (Arbitrary definitions - Principle #7) */}
+          {/* TAB 4: EXTRACTED VARIABLES */}
           {activeTab === 'variables' && (
             <div className="space-y-4 pt-2">
               <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                    Agent Output Extracted Variables
+                    Extracted & Dynamic Variables
                   </h4>
                   <p className="text-xs text-slate-500">
-                    Define custom structured variables extracted from call transcripts.
+                    Variables injected into the call or extracted by Sarvam AI from the customer conversation.
                   </p>
                 </div>
                 <Button size="sm" variant="outline" leftIcon={<Plus className="h-4 w-4" />} onClick={handleAddVariable}>
-                  Add Variable Definition
+                  Add Variable
                 </Button>
               </div>
 
@@ -598,85 +451,82 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
                         }}
                       />
                     </div>
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-slate-400 hover:text-rose-600 mt-5"
                       onClick={() => handleDeleteVariable(v.key)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded mt-5"
                     >
                       <Trash2 className="h-4 w-4" />
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* TAB 7: ADVANCED RUNTIME SETTINGS */}
+          {/* TAB 5: ADVANCED RUNTIME SETTINGS */}
           {activeTab === 'advanced' && (
             <div className="space-y-4 pt-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="Max Call Duration (Minutes)"
                   type="number"
-                  value={config.runtimeSettings.maxDurationMinutes}
+                  value={String(config.runtimeSettings?.maxDurationMinutes || 10)}
                   onChange={e =>
                     setConfig({
                       ...config,
                       runtimeSettings: {
                         ...config.runtimeSettings,
-                        maxDurationMinutes: Number(e.target.value),
+                        maxDurationMinutes: parseInt(e.target.value) || 10,
                       },
                     })
                   }
                 />
                 <Input
-                  label="Silence Timeout (Seconds)"
+                  label="Silence Disconnect Timeout (Seconds)"
                   type="number"
-                  value={config.runtimeSettings.silenceTimeoutSeconds}
+                  value={String(config.runtimeSettings?.silenceTimeoutSeconds || 5)}
                   onChange={e =>
                     setConfig({
                       ...config,
                       runtimeSettings: {
                         ...config.runtimeSettings,
-                        silenceTimeoutSeconds: Number(e.target.value),
+                        silenceTimeoutSeconds: parseInt(e.target.value) || 5,
                       },
                     })
                   }
                 />
               </div>
 
-              <Select
-                label="Lead Interruption Sensitivity"
-                value={config.runtimeSettings.interruptionSensitivity}
-                options={[
-                  { value: 'low', label: 'Low - Agent finishes line before yielding' },
-                  { value: 'medium', label: 'Medium - Balanced conversational pause' },
-                  { value: 'high', label: 'High - Immediate yielding upon speech detection' },
-                ]}
-                onChange={e =>
-                  setConfig({
-                    ...config,
-                    runtimeSettings: {
-                      ...config.runtimeSettings,
-                      interruptionSensitivity: e.target.value as any,
-                    },
-                  })
-                }
-              />
+              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 block">
+                      Cloudflare R2 Call Audio Archiving
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Completed call recordings are automatically stored permanently in your private Cloudflare R2 bucket (`call-recordings`).
+                    </span>
+                  </div>
+                  <Badge variant="success" size="sm">Active (S3 API)</Badge>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
-        {/* Live Two-Way Audio Sandbox Simulator */}
+        {/* Live Simulator Sidebar (Interactive voice test) */}
         {isPreviewActive && (
-          <AgentSandboxSimulator
-            agentName={name}
-            config={config}
-            onClose={() => setIsPreviewActive(false)}
-          />
+          <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-slate-200 pt-4 lg:pt-0 lg:pl-6">
+            <AgentSandboxSimulator
+              agentName={name || 'Agent'}
+              config={config}
+              onClose={() => setIsPreviewActive(false)}
+            />
+          </div>
         )}
       </div>
     </Modal>
   );
 };
-
