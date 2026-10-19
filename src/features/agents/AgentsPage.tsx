@@ -6,8 +6,7 @@ import { Badge } from '../../components/common/Badge';
 import { LoadingState } from '../../components/common/LoadingState';
 import { EmptyState } from '../../components/common/EmptyState';
 import { agentService } from '../../services/agentService';
-import { knowledgeService } from '../../services/knowledgeService';
-import { Agent, KnowledgeBase } from '../../types';
+import { Agent } from '../../types';
 import { AgentBuilderModal } from './AgentBuilderModal';
 import { AgentTestCallModal } from './AgentTestCallModal';
 import { formatDate } from '../../lib/formatters';
@@ -26,7 +25,6 @@ import {
 
 export const AgentsPage: React.FC = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal State
@@ -38,12 +36,8 @@ export const AgentsPage: React.FC = () => {
   const fetchAgents = async () => {
     setLoading(true);
     try {
-      const [list, kbList] = await Promise.all([
-        agentService.getAgents(),
-        knowledgeService.getKnowledgeBases(),
-      ]);
+      const list = await agentService.getAgents();
       setAgents(list);
-      setKnowledgeBases(kbList);
     } catch (err) {
       console.error(err);
     } finally {
@@ -200,7 +194,6 @@ export const AgentsPage: React.FC = () => {
           onClose={() => setIsBuilderOpen(false)}
           onSave={handleSaveAgent}
           initialData={editingInitialData}
-          knowledgeBases={knowledgeBases}
         />
       )}
 

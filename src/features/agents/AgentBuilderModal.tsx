@@ -5,7 +5,7 @@ import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { Select } from '../../components/common/Select';
 import { Badge } from '../../components/common/Badge';
-import { AgentConfig, ExtractedVariableConfig, KnowledgeBase } from '../../types';
+import { AgentConfig, ExtractedVariableConfig } from '../../types';
 import {
   Bot,
   Mic,
@@ -30,7 +30,6 @@ export interface AgentBuilderModalProps {
   onClose: () => void;
   onSave: (agentData: { name: string; useCase: string; config: AgentConfig }) => Promise<void>;
   initialData?: { name: string; useCase: string; config: AgentConfig };
-  knowledgeBases: KnowledgeBase[];
 }
 
 export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({

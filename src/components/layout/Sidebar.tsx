@@ -7,7 +7,6 @@ import {
   Bot,
   PhoneCall,
   Hash,
-  BookOpen,
   CreditCard,
   Settings,
   ChevronLeft,
@@ -23,7 +22,6 @@ export type NavRoute =
   | 'agents'
   | 'calls'
   | 'phoneNumbers'
-  | 'knowledgeBase'
   | 'billing'
   | 'settings';
 
@@ -51,7 +49,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { route: 'agents', label: 'Call Agents', icon: <Bot className="h-4 w-4" /> },
     { route: 'calls', label: 'Calls', icon: <PhoneCall className="h-4 w-4" /> },
     { route: 'phoneNumbers', label: 'Phone Numbers', icon: <Hash className="h-4 w-4" /> },
-    { route: 'knowledgeBase', label: 'Knowledge Base', icon: <BookOpen className="h-4 w-4" /> },
     { route: 'billing', label: 'Usage & Costs', icon: <BarChart3 className="h-4 w-4" /> },
   ];
 

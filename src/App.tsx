@@ -7,7 +7,6 @@ import { CampaignsPage } from './features/campaigns/CampaignsPage';
 import { AgentsPage } from './features/agents/AgentsPage';
 import { CallsPage } from './features/calls/CallsPage';
 import { PhoneNumbersPage } from './features/phoneNumbers/PhoneNumbersPage';
-import { KnowledgeBasePage } from './features/knowledgeBase/KnowledgeBasePage';
 import { BillingPage } from './features/billing/BillingPage';
 import { SettingsPage } from './features/settings/SettingsPage';
 
@@ -27,7 +26,6 @@ export function App() {
       {activeRoute === 'agents' && <AgentsPage />}
       {activeRoute === 'calls' && <CallsPage />}
       {activeRoute === 'phoneNumbers' && <PhoneNumbersPage />}
-      {activeRoute === 'knowledgeBase' && <KnowledgeBasePage />}
       {activeRoute === 'billing' && <BillingPage />}
       {activeRoute === 'settings' && <SettingsPage />}
     </AppShell>
