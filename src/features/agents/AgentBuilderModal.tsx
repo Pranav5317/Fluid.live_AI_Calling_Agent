@@ -20,6 +20,10 @@ import {
   Sparkles,
   Zap,
   Volume2,
+  Lock,
+  ExternalLink,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { agentService } from '../../services/agentService';
 import { INDUSTRY_TEMPLATES } from '../../data/industryTemplates';
@@ -99,6 +103,14 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
   // Simulated Live Preview State
   const [isPreviewActive, setIsPreviewActive] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+
+  const handleCopyPrompt = () => {
+    if (!config.systemPrompt) return;
+    navigator.clipboard.writeText(config.systemPrompt);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 2000);
+  };
 
   const handleApplyTemplate = (templateId: string) => {
     const selected = INDUSTRY_TEMPLATES.find(t => t.id === templateId);
@@ -271,7 +283,7 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
             tabs={[
               { id: 'general', label: 'General', icon: <Bot className="h-4 w-4" /> },
               { id: 'voice', label: 'Voice & Audio', icon: <Mic className="h-4 w-4" /> },
-              { id: 'prompt', label: 'Conversation', icon: <MessageSquareText className="h-4 w-4" /> },
+              { id: 'prompt', label: 'Voice Prompt (Sarvam)', icon: <MessageSquareText className="h-4 w-4" /> },
               { id: 'flow', label: 'Call Flow', icon: <GitBranch className="h-4 w-4" /> },
               { id: 'kb', label: 'Knowledge', icon: <BookOpen className="h-4 w-4" /> },
               { id: 'variables', label: 'Variables', icon: <Sliders className="h-4 w-4" /> },
@@ -390,42 +402,83 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
             </div>
           )}
 
-          {/* TAB 3: CONVERSATION PROMPT */}
+          {/* TAB 3: SARVAM MANAGED PROMPT (READ-ONLY REFERENCE) */}
           {activeTab === 'prompt' && (
             <div className="space-y-4 pt-2">
+              {/* Sarvam Dashboard Binding Card */}
+              <div className="p-3.5 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50/70 via-amber-50/40 to-white text-slate-800 space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="text-xs font-bold text-slate-900">Sarvam AI Console Managed Prompt</span>
+                    <Badge variant="neutral" size="sm" className="bg-amber-100/80 text-amber-900 border-amber-300 text-[10px]">
+                      Read-Only Reference
+                    </Badge>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="border-amber-300 bg-white hover:bg-amber-100/50 text-amber-900 text-xs h-7 shadow-xs font-medium"
+                    leftIcon={<ExternalLink className="h-3 w-3" />}
+                    onClick={() => window.open('https://dashboard.sarvam.ai', '_blank')}
+                  >
+                    Open Prompt in Sarvam Console ↗
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Sarvam AI compiles voice personas, Indic speech models, and dialog states directly inside its telephony engine (App ID: <span className="font-mono font-semibold text-slate-800">Conversatio-b063cf10-e735</span>). To change what this agent says during live phone calls, update the prompt in your Sarvam Dashboard.
+                </p>
+              </div>
+
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                  System Instructions & Persona Prompt *
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700">
+                    <Lock className="h-3 w-3 text-slate-400" />
+                    <span>System Instructions & Persona Prompt (Master Reference)</span>
+                  </label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-[11px] text-slate-600 hover:text-slate-900"
+                    leftIcon={copiedPrompt ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                    onClick={handleCopyPrompt}
+                  >
+                    {copiedPrompt ? 'Copied to Clipboard!' : 'Copy Prompt'}
+                  </Button>
+                </div>
                 <textarea
-                  className="w-full rounded-md border border-slate-300 p-3 text-xs text-slate-900 font-mono focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800"
+                  readOnly
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700 font-mono focus:outline-none cursor-default select-text leading-relaxed"
                   rows={6}
                   value={config.systemPrompt}
-                  onChange={e => setConfig({ ...config, systemPrompt: e.target.value })}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                  Opening Line Script
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                  <Lock className="h-3 w-3 text-slate-400" />
+                  <span>Opening Line Script (Configured in Sarvam)</span>
                 </label>
                 <textarea
-                  className="w-full rounded-md border border-slate-300 p-2.5 text-xs text-slate-900 focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800"
+                  readOnly
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-700 focus:outline-none cursor-default select-text"
                   rows={2}
                   value={config.openingLine}
-                  onChange={e => setConfig({ ...config, openingLine: e.target.value })}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                  Closing Behavior Directive
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+                  <Lock className="h-3 w-3 text-slate-400" />
+                  <span>Closing Behavior Directive</span>
                 </label>
                 <input
                   type="text"
-                  className="w-full rounded-md border border-slate-300 p-2 text-xs text-slate-900 focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800"
+                  readOnly
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700 focus:outline-none cursor-default select-text"
                   value={config.closingBehavior}
-                  onChange={e => setConfig({ ...config, closingBehavior: e.target.value })}
                 />
               </div>
             </div>
