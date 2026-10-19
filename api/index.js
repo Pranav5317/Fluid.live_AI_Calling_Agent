@@ -1515,6 +1515,146 @@ campaignRoutes.post("/:id/stop", async (req, res) => {
 // server/routes/callRoutes.ts
 import { Router as Router4 } from "express";
 
+// server/services/r2StorageService.ts
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand
+} from "@aws-sdk/client-s3";
+var R2StorageService = class {
+  client = null;
+  bucketName = "";
+  publicUrl;
+  constructor(config) {
+    this.initialize(config);
+  }
+  initialize(config) {
+    const clean = (val) => (val || "").replace(/^\uFEFF/, "").trim();
+    const accountId = clean(config?.accountId || process.env.R2_ACCOUNT_ID || process.env.CLOUDFLARE_R2_ACCOUNT_ID);
+    const accessKeyId = clean(config?.accessKeyId || process.env.R2_ACCESS_KEY_ID || process.env.CLOUDFLARE_R2_ACCESS_KEY_ID);
+    const secretAccessKey = clean(config?.secretAccessKey || process.env.R2_SECRET_ACCESS_KEY || process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY);
+    this.bucketName = clean(config?.bucketName || process.env.R2_BUCKET_NAME || process.env.CLOUDFLARE_R2_BUCKET_NAME);
+    const rawPublicUrl = config?.publicUrl || process.env.R2_PUBLIC_URL || process.env.CLOUDFLARE_R2_PUBLIC_URL;
+    this.publicUrl = rawPublicUrl ? clean(rawPublicUrl) : void 0;
+    if (accountId && accessKeyId && secretAccessKey && this.bucketName) {
+      try {
+        this.client = new S3Client({
+          region: "auto",
+          endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+          credentials: {
+            accessKeyId,
+            secretAccessKey
+          }
+        });
+        console.log(`[R2 Storage Service] Initialized Cloudflare R2 client for bucket: "${this.bucketName}"`);
+      } catch (err) {
+        console.error("[R2 Storage Service] Failed to initialize S3Client:", err?.message);
+        this.client = null;
+      }
+    } else {
+      this.client = null;
+    }
+  }
+  isConfigured() {
+    return this.client !== null && Boolean(this.bucketName);
+  }
+  getStorageStatus() {
+    return {
+      enabled: this.isConfigured(),
+      bucketName: this.bucketName || null,
+      provider: "Cloudflare R2 (S3 API)",
+      hasPublicUrl: Boolean(this.publicUrl)
+    };
+  }
+  /**
+   * Uploads call audio recording buffer to Cloudflare R2
+   */
+  async uploadCallAudio(callId, audioBuffer, contentType = "audio/wav") {
+    if (!this.client || !this.bucketName) {
+      return null;
+    }
+    const key = `recordings/${callId}.wav`;
+    try {
+      console.log(`[R2 Storage Service] Archiving call audio to Cloudflare R2: s3://${this.bucketName}/${key} (${audioBuffer.length} bytes)...`);
+      await this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+          Body: audioBuffer,
+          ContentType: contentType,
+          Metadata: {
+            callId,
+            archivedAt: (/* @__PURE__ */ new Date()).toISOString()
+          }
+        })
+      );
+      const publicUrl = this.publicUrl ? `${this.publicUrl.replace(/\/$/, "")}/${key}` : void 0;
+      console.log(`[R2 Storage Service] Successfully archived call audio to R2: ${key}`);
+      return { key, url: publicUrl };
+    } catch (err) {
+      console.error(`[R2 Storage Service] Failed to upload audio to R2 for call ${callId}:`, err?.message);
+      return null;
+    }
+  }
+  /**
+   * Retrieves call audio from Cloudflare R2
+   */
+  async getCallAudio(callId) {
+    if (!this.client || !this.bucketName) {
+      return null;
+    }
+    const key = `recordings/${callId}.wav`;
+    try {
+      const response = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.bucketName,
+          Key: key
+        })
+      );
+      if (!response.Body) {
+        return null;
+      }
+      const stream = response.Body;
+      const chunks = [];
+      for await (const chunk of stream) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+      const buffer = Buffer.concat(chunks);
+      const contentType = response.ContentType || "audio/wav";
+      console.log(`[R2 Storage Service] Served call recording directly from Cloudflare R2 for call: ${callId}`);
+      return { buffer, contentType };
+    } catch (err) {
+      if (err.name === "NoSuchKey" || err.$metadata?.httpStatusCode === 404) {
+        return null;
+      }
+      console.warn(`[R2 Storage Service] Error reading audio for call ${callId} from R2:`, err?.message);
+      return null;
+    }
+  }
+  /**
+   * Checks if audio recording already exists in Cloudflare R2
+   */
+  async hasCallAudio(callId) {
+    if (!this.client || !this.bucketName) {
+      return false;
+    }
+    const key = `recordings/${callId}.wav`;
+    try {
+      await this.client.send(
+        new HeadObjectCommand({
+          Bucket: this.bucketName,
+          Key: key
+        })
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+};
+var r2StorageService = new R2StorageService();
+
 // server/services/callService.ts
 var ServerCallService = class {
   async getCalls(options = {}) {
@@ -1653,12 +1793,23 @@ var ServerCallService = class {
       call.durationSeconds = durationSecs;
       call.transcript = formattedTranscript;
       call.extractedVariables = extractedVars;
+      if (durationSecs > 0 && r2StorageService.isConfigured()) {
+        this.getCallAudio(call.id).catch((err) => {
+          console.warn("[CallService] Proactive R2 background audio archive failed:", err?.message);
+        });
+      }
     }
     return { call, transcriptData };
   }
   async getCallAudio(callId) {
     const call = await callRepository.getCallById(callId);
     if (!call) return null;
+    if (r2StorageService.isConfigured()) {
+      const r2Audio = await r2StorageService.getCallAudio(call.id);
+      if (r2Audio) {
+        return r2Audio;
+      }
+    }
     let interactionId = call.extractedVariables?._sarvam_interaction_id;
     if (!interactionId) {
       if (call.externalCallId && call.externalCallId.includes("/")) {
@@ -1685,13 +1836,37 @@ var ServerCallService = class {
     if (!interactionId) {
       return null;
     }
-    return backendSarvamProvider.fetchCallRecording(interactionId);
+    const audioData = await backendSarvamProvider.fetchCallRecording(interactionId);
+    if (audioData && r2StorageService.isConfigured()) {
+      r2StorageService.uploadCallAudio(call.id, audioData.buffer, audioData.contentType).then((uploadResult) => {
+        if (uploadResult) {
+          prisma_default.call.update({
+            where: { id: call.id },
+            data: {
+              extractedVariables: {
+                ...call.extractedVariables || {},
+                _r2_audio_key: uploadResult.key,
+                ...uploadResult.url ? { _r2_audio_url: uploadResult.url } : {}
+              }
+            }
+          }).catch((e) => console.warn("Failed to update call with R2 key:", e?.message));
+        }
+      }).catch((err) => console.warn("R2 background archive failed:", err?.message));
+    }
+    return audioData;
   }
 };
 var serverCallService = new ServerCallService();
 
 // server/routes/callRoutes.ts
 var callRoutes = Router4();
+callRoutes.get("/storage/status", (req, res) => {
+  res.json({
+    success: true,
+    data: r2StorageService.getStorageStatus(),
+    timestamp: (/* @__PURE__ */ new Date()).toISOString()
+  });
+});
 callRoutes.get("/", async (req, res) => {
   try {
     const { search, status, outcome, campaignId, agentId } = req.query;

@@ -2,6 +2,7 @@ import prisma from '../lib/prisma';
 import { Call } from '../../src/types';
 import { callRepository, CallFilterParams } from '../repositories/callRepository';
 import { backendSarvamProvider } from './sarvamProvider';
+import { r2StorageService } from './r2StorageService';
 
 export interface InitiateTestCallDTO {
   agentVersionId: string;
@@ -180,6 +181,13 @@ export class ServerCallService {
       call.durationSeconds = durationSecs;
       call.transcript = formattedTranscript as any;
       call.extractedVariables = extractedVars as any;
+
+      // Proactively archive call audio to Cloudflare R2 in the background
+      if (durationSecs > 0 && r2StorageService.isConfigured()) {
+        this.getCallAudio(call.id).catch(err => {
+          console.warn('[CallService] Proactive R2 background audio archive failed:', err?.message);
+        });
+      }
     }
 
     return { call, transcriptData };
@@ -189,6 +197,15 @@ export class ServerCallService {
     const call = await callRepository.getCallById(callId);
     if (!call) return null;
 
+    // 1. Tier 1: Check if audio is already archived in Cloudflare R2
+    if (r2StorageService.isConfigured()) {
+      const r2Audio = await r2StorageService.getCallAudio(call.id);
+      if (r2Audio) {
+        return r2Audio;
+      }
+    }
+
+    // 2. Tier 2: Fallback to Sarvam Analytics recording endpoint
     let interactionId = (call.extractedVariables as any)?._sarvam_interaction_id;
     if (!interactionId) {
       if (call.externalCallId && call.externalCallId.includes('/')) {
@@ -218,7 +235,29 @@ export class ServerCallService {
       return null;
     }
 
-    return backendSarvamProvider.fetchCallRecording(interactionId);
+    const audioData = await backendSarvamProvider.fetchCallRecording(interactionId);
+
+    // 3. Automatically archive to Cloudflare R2 in background
+    if (audioData && r2StorageService.isConfigured()) {
+      r2StorageService.uploadCallAudio(call.id, audioData.buffer, audioData.contentType)
+        .then(uploadResult => {
+          if (uploadResult) {
+            prisma.call.update({
+              where: { id: call.id },
+              data: {
+                extractedVariables: {
+                  ...((call.extractedVariables as any) || {}),
+                  _r2_audio_key: uploadResult.key,
+                  ...(uploadResult.url ? { _r2_audio_url: uploadResult.url } : {}),
+                },
+              },
+            }).catch(e => console.warn('Failed to update call with R2 key:', e?.message));
+          }
+        })
+        .catch(err => console.warn('R2 background archive failed:', err?.message));
+    }
+
+    return audioData;
   }
 }
 

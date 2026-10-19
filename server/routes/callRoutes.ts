@@ -1,7 +1,17 @@
 import { Router } from 'express';
 import { serverCallService } from '../services/callService';
+import { r2StorageService } from '../services/r2StorageService';
 
 export const callRoutes = Router();
+
+// GET /api/calls/storage/status (Check Cloudflare R2 audio storage status)
+callRoutes.get('/storage/status', (req, res) => {
+  res.json({
+    success: true,
+    data: r2StorageService.getStorageStatus(),
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // GET /api/calls
 callRoutes.get('/', async (req, res) => {
