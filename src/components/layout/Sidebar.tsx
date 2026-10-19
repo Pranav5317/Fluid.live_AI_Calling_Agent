@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
+  BarChart3,
 } from 'lucide-react';
 
 export type NavRoute =
@@ -51,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { route: 'calls', label: 'Calls', icon: <PhoneCall className="h-4 w-4" /> },
     { route: 'phoneNumbers', label: 'Phone Numbers', icon: <Hash className="h-4 w-4" /> },
     { route: 'knowledgeBase', label: 'Knowledge Base', icon: <BookOpen className="h-4 w-4" /> },
-    { route: 'billing', label: 'Billing & Usage', icon: <CreditCard className="h-4 w-4" /> },
+    { route: 'billing', label: 'Usage & Costs', icon: <BarChart3 className="h-4 w-4" /> },
   ];
 
   const handleNavClick = (route: NavRoute) => {
