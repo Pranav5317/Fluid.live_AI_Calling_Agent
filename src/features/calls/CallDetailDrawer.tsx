@@ -25,6 +25,7 @@ import {
   Target,
   BarChart2,
   AlertTriangle,
+  MessageSquare,
 } from 'lucide-react';
 import { Call, CallIntelligence } from '../../types';
 import { formatDate, formatDuration } from '../../lib/formatters';
@@ -395,20 +396,16 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
 
               <div>
                 <p className="text-xs font-bold text-slate-900">{intelligence.nextBestAction.actionTitle}</p>
-                <div className="flex items-center gap-1.5 text-[11px] text-amber-800 font-medium mt-1">
-                  <Clock className="h-3 w-3 shrink-0" />
-                  <span>{intelligence.nextBestAction.slaDescription}</span>
-                </div>
               </div>
 
               {intelligence.nextBestAction.suggestedMessage && (
-                <div className="mt-2 bg-white p-3 rounded-lg border border-amber-100 space-y-1.5">
+                <div className="mt-2 bg-white p-3 rounded-lg border border-amber-100 space-y-2">
                   <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                    <span>Suggested WhatsApp / SMS Template</span>
+                    <span>Drafted Follow-Up Message</span>
                     <button
                       type="button"
                       onClick={() => handleCopy(intelligence.nextBestAction.suggestedMessage!)}
-                      className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 transition-colors font-medium lowercase"
+                      className="flex items-center gap-1 text-slate-600 hover:text-slate-800 transition-colors font-medium lowercase"
                     >
                       {copiedMessage ? (
                         <>
@@ -423,9 +420,29 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
                       )}
                     </button>
                   </div>
-                  <p className="text-xs text-slate-700 italic leading-relaxed">
+                  <p className="text-xs text-slate-700 italic leading-relaxed bg-slate-50 p-2.5 rounded border border-slate-100">
                     "{intelligence.nextBestAction.suggestedMessage}"
                   </p>
+
+                  {/* Direct WhatsApp Messaging Dispatch Button */}
+                  {intelligence.nextBestAction.actionType === 'dispatch_whatsapp' && (
+                    <div className="pt-1 flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500">
+                        Target: <strong className="text-slate-800">{currentCall.leadPhone || currentCall.leadName || 'Customer'}</strong>
+                      </span>
+                      <a
+                        href={`https://wa.me/${(currentCall.leadPhone || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                          intelligence.nextBestAction.suggestedMessage
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors"
+                      >
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        <span>Send via WhatsApp</span>
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

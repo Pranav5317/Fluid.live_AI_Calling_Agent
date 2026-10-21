@@ -494,7 +494,6 @@ export class CallAnalyticsService {
         actionTitle: `Dispatch WhatsApp Demo & One-Pager to ${leadName}`,
         actionType: 'dispatch_whatsapp',
         priority: 'urgent',
-        slaDescription: 'SLA: Send within 15 minutes while lead warmth is peak (95% conversion window).',
         suggestedMessage: `Namaste ${leadName} ji, thank you for speaking with Fluid.live! As requested, here is our 1-minute video demo and enterprise pricing brochure for AI Voice Calling. Let us know if you would like to test a sample workflow!`,
       };
     }
@@ -508,7 +507,6 @@ export class CallAnalyticsService {
         actionTitle: `Schedule Solution Architect Live Demo with ${leadName}`,
         actionType: 'book_demo',
         priority: 'high',
-        slaDescription: 'SLA: Contact within 2 business hours to reserve calendar slot.',
         suggestedMessage: `Namaste ${leadName} ji, following our conversation, our team would love to show you how Fluid.live automates 10,000+ customer calls daily. When is a convenient time for a 10-minute walkthrough?`,
       };
     }
@@ -519,7 +517,6 @@ export class CallAnalyticsService {
         actionTitle: `Auto-Schedule Follow-up Call for ${leadName}`,
         actionType: 'schedule_callback',
         priority: 'medium',
-        slaDescription: 'SLA: Queue next outbound dialer attempt in 4 hours or tomorrow morning.',
         suggestedMessage: `Namaste ${leadName} ji, sorry to have caught you at a busy moment! We will reach out again tomorrow at a better time. Have a wonderful day ahead!`,
       };
     }
@@ -530,7 +527,6 @@ export class CallAnalyticsService {
         actionTitle: `Mark Lead as Unqualified & Suppress Dialer`,
         actionType: 'suppress',
         priority: 'low',
-        slaDescription: 'SLA: Auto-suppress from active campaigns for 60 days.',
       };
     }
 
@@ -540,7 +536,6 @@ export class CallAnalyticsService {
         actionTitle: `Re-queue for Secondary Afternoon Calling Slot`,
         actionType: 're_queue',
         priority: 'medium',
-        slaDescription: 'SLA: Retry lead at 3:30 PM (optimal secondary pickup rate).',
       };
     }
 
@@ -549,7 +544,6 @@ export class CallAnalyticsService {
       actionTitle: `Log Interaction & Review Call Recording`,
       actionType: 'escalate_human',
       priority: 'medium',
-      slaDescription: 'SLA: Review within 24 hours.',
     };
   }
 }

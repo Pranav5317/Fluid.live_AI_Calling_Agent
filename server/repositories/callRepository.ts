@@ -37,6 +37,7 @@ export class CallRepository {
     const list = await prisma.call.findMany({
       where,
       orderBy: { startedAt: 'desc' },
+      include: { lead: true },
     });
 
     return list.map(c => ({
@@ -46,6 +47,8 @@ export class CallRepository {
       agentId: c.agentId,
       agentVersionId: c.agentVersionId,
       leadId: c.leadId,
+      leadName: c.lead?.name,
+      leadPhone: c.lead?.phone,
       phoneNumberId: c.phoneNumberId,
       status: c.status as CallStatus,
       outcome: c.outcome as CallOutcome,
@@ -59,7 +62,10 @@ export class CallRepository {
   }
 
   async getCallById(id: string): Promise<Call | null> {
-    const c = await prisma.call.findUnique({ where: { id } });
+    const c = await prisma.call.findUnique({
+      where: { id },
+      include: { lead: true },
+    });
     if (!c) return null;
     return {
       id: c.id,
@@ -68,6 +74,8 @@ export class CallRepository {
       agentId: c.agentId,
       agentVersionId: c.agentVersionId,
       leadId: c.leadId,
+      leadName: c.lead?.name,
+      leadPhone: c.lead?.phone,
       phoneNumberId: c.phoneNumberId,
       status: c.status as CallStatus,
       outcome: c.outcome as CallOutcome,

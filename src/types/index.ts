@@ -216,7 +216,6 @@ export interface NextBestAction {
   actionTitle: string;
   actionType: 'dispatch_whatsapp' | 'book_demo' | 'schedule_callback' | 'escalate_human' | 're_queue' | 'suppress';
   priority: 'urgent' | 'high' | 'medium' | 'low';
-  slaDescription: string;
   suggestedMessage?: string;
 }
 
@@ -242,6 +241,8 @@ export interface Call {
   agentId: string;
   agentVersionId: string;
   leadId: string;
+  leadName?: string;
+  leadPhone?: string;
   phoneNumberId: string;
   status: CallStatus;
   outcome: CallOutcome;
