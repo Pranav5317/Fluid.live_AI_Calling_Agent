@@ -3,6 +3,7 @@ import { Call } from '../../src/types';
 import { callRepository, CallFilterParams } from '../repositories/callRepository';
 import { backendSarvamProvider } from './sarvamProvider';
 import { r2StorageService } from './r2StorageService';
+import { callAnalyticsService } from './callAnalyticsService';
 
 export interface InitiateTestCallDTO {
   agentVersionId: string;
@@ -14,11 +15,21 @@ export interface InitiateTestCallDTO {
 
 export class ServerCallService {
   async getCalls(options: CallFilterParams = {}): Promise<Call[]> {
-    return callRepository.getCalls(options);
+    const calls = await callRepository.getCalls(options);
+    return calls.map(call => {
+      if (call.durationSeconds > 0 && !call.extractedVariables?.intelligence) {
+        call.extractedVariables.intelligence = callAnalyticsService.analyzeCall(call);
+      }
+      return call;
+    });
   }
 
   async getCallById(id: string): Promise<Call | null> {
-    return callRepository.getCallById(id);
+    const call = await callRepository.getCallById(id);
+    if (call && call.durationSeconds > 0 && !call.extractedVariables?.intelligence) {
+      call.extractedVariables.intelligence = callAnalyticsService.analyzeCall(call);
+    }
+    return call;
   }
 
   async initiateTestCall(dto: InitiateTestCallDTO): Promise<Call> {
@@ -139,11 +150,23 @@ export class ServerCallService {
 
       const status = durationSecs > 0 || formattedTranscript.length > 0 ? 'completed' : (outcome === 'unreachable' ? 'failed' : 'completed');
 
-      const extractedVars = {
+      const extractedVars: any = {
         ...((call.extractedVariables as any) || {}),
         ...rawVars,
         ...(transcriptData.real_interaction_id ? { _sarvam_interaction_id: transcriptData.real_interaction_id } : {}),
       };
+
+      // Run automated Post-Call Conversational Intelligence & Script Audit
+      const callForAnalytics: Call = {
+        ...call,
+        status: status as any,
+        outcome: outcome as any,
+        durationSeconds: durationSecs,
+        transcript: formattedTranscript as any,
+        extractedVariables: extractedVars,
+      };
+      const intelligence = callAnalyticsService.analyzeCall(callForAnalytics);
+      extractedVars.intelligence = intelligence;
 
       await prisma.call.update({
         where: { id: call.id },

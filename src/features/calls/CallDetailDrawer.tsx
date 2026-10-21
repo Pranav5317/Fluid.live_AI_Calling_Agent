@@ -13,8 +13,20 @@ import {
   Download,
   RotateCw,
   AlertCircle,
+  Copy,
+  Check,
+  Zap,
+  TrendingUp,
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  ThumbsUp,
+  Target,
+  BarChart2,
+  AlertTriangle,
 } from 'lucide-react';
-import { Call } from '../../types';
+import { Call, CallIntelligence } from '../../types';
 import { formatDate, formatDuration } from '../../lib/formatters';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
@@ -28,6 +40,8 @@ export interface CallDetailDrawerProps {
 export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClose }) => {
   const [activeCall, setActiveCall] = useState<Call | null>(call);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [copiedMessage, setCopiedMessage] = useState(false);
+  const [showQaChecklist, setShowQaChecklist] = useState(false);
 
   // Audio Playback State
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -39,6 +53,12 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
   const [audioError, setAudioError] = useState<string | null>(null);
 
   const currentCall = activeCall || call;
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedMessage(true);
+    setTimeout(() => setCopiedMessage(false), 2000);
+  };
 
   const handleSyncTranscript = async (callId: string) => {
     setIsSyncing(true);
@@ -84,6 +104,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
   if (!currentCall) return null;
 
   const isConnected = currentCall.durationSeconds > 0 || (Array.isArray(currentCall.transcript) && currentCall.transcript.length > 0);
+  const intelligence: CallIntelligence | undefined = currentCall.extractedVariables?.intelligence;
 
   // Dynamic Enterprise AI Summary directly from Sarvam
   const getExecutiveSummary = () => {
@@ -166,35 +187,37 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
         setAudioLoading(false);
       });
 
-      audio.addEventListener('canplay', () => {
-        setAudioLoading(false);
-      });
-
-      audio.addEventListener('play', () => setIsPlayingAudio(true));
-      audio.addEventListener('pause', () => setIsPlayingAudio(false));
       audio.addEventListener('ended', () => {
         setIsPlayingAudio(false);
         setCurrentTime(0);
       });
 
-      audio.addEventListener('error', () => {
-        setAudioLoading(false);
+      audio.addEventListener('error', (e) => {
+        console.error('[CallDetailDrawer] Audio playback error:', e);
+        setAudioError('Failed to load recording. Audio file may still be finalizing on Sarvam CDN.');
         setIsPlayingAudio(false);
-        setAudioError('Audio recording unavailable for this call.');
+        setAudioLoading(false);
       });
 
       setAudioLoading(true);
-      audio.play().catch(err => {
-        console.warn('[CallDetailDrawer] Audio playback blocked or failed:', err);
+      audio.play().then(() => {
+        setIsPlayingAudio(true);
         setAudioLoading(false);
+      }).catch(err => {
+        console.warn('[CallDetailDrawer] Playback failed:', err);
+        setAudioError('Playback failed. Please try again.');
         setIsPlayingAudio(false);
+        setAudioLoading(false);
       });
     } else {
       if (isPlayingAudio) {
         audioRef.current.pause();
+        setIsPlayingAudio(false);
       } else {
-        audioRef.current.play().catch(err => {
-          console.warn('[CallDetailDrawer] Audio resume failed:', err);
+        audioRef.current.play().then(() => {
+          setIsPlayingAudio(true);
+        }).catch(err => {
+          console.warn('[CallDetailDrawer] Resume failed:', err);
         });
       }
     }
@@ -234,7 +257,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
         <div className="flex items-center justify-between border-b border-slate-200 p-5 bg-slate-50/70">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-slate-900">Call Intelligence & Transcript</h3>
+              <h3 className="text-base font-bold text-slate-900">Conversational Intelligence & Audit</h3>
               <Badge variant={currentCall.status === 'completed' ? 'success' : 'neutral'} dot>
                 {currentCall.status}
               </Badge>
@@ -300,9 +323,298 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
             <p className="text-xs text-slate-700 leading-relaxed bg-white/80 p-3 rounded-lg border border-indigo-50">
               {aiIntelligence.summary}
             </p>
+
+            {/* Sentiment Trajectory Phases */}
+            {intelligence?.sentimentTrajectory && intelligence.sentimentTrajectory.phases.length > 0 && (
+              <div className="pt-2 border-t border-indigo-50">
+                <div className="flex items-center justify-between text-[11px] mb-1.5">
+                  <div className="flex items-center gap-1.5 font-semibold text-slate-700">
+                    <TrendingUp className="h-3.5 w-3.5 text-indigo-600" />
+                    <span>Sentiment Trajectory:</span>
+                    <span className="capitalize text-indigo-700 font-bold">
+                      {intelligence.sentimentTrajectory.trajectoryTrend.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <span className="font-mono text-slate-500">
+                    Score: {intelligence.sentimentTrajectory.overallScore > 0 ? `+${intelligence.sentimentTrajectory.overallScore}` : intelligence.sentimentTrajectory.overallScore}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {intelligence.sentimentTrajectory.phases.map(phase => (
+                    <div
+                      key={phase.phase}
+                      className={`p-2 rounded-lg border text-center transition-all ${
+                        phase.sentiment === 'positive'
+                          ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
+                          : phase.sentiment === 'negative'
+                          ? 'bg-rose-50/70 border-rose-200 text-rose-900'
+                          : 'bg-slate-50 border-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <span className="text-[10px] uppercase font-bold tracking-wider block opacity-75">
+                        {phase.phase}
+                      </span>
+                      <span className="text-xs font-bold capitalize mt-0.5 block">
+                        {phase.sentiment}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* 2. REAL CALL AUDIO STREAMING & SCRUBBER */}
+          {/* 2. NEXT BEST ACTION (SALES & CRM RECOMMENDATION) */}
+          {intelligence?.nextBestAction && (
+            <div className="p-4 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50/60 to-white space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-lg bg-amber-500 text-white flex items-center justify-center">
+                    <Zap className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                      Recommended Next Best Action
+                    </h4>
+                    <span className="text-[10px] text-slate-500">Autonomous CRM Routing</span>
+                  </div>
+                </div>
+                <Badge
+                  variant={
+                    intelligence.nextBestAction.priority === 'urgent'
+                      ? 'danger'
+                      : intelligence.nextBestAction.priority === 'high'
+                      ? 'warning'
+                      : 'neutral'
+                  }
+                  size="sm"
+                >
+                  {intelligence.nextBestAction.priority.toUpperCase()} PRIORITY
+                </Badge>
+              </div>
+
+              <div>
+                <p className="text-xs font-bold text-slate-900">{intelligence.nextBestAction.actionTitle}</p>
+                <div className="flex items-center gap-1.5 text-[11px] text-amber-800 font-medium mt-1">
+                  <Clock className="h-3 w-3 shrink-0" />
+                  <span>{intelligence.nextBestAction.slaDescription}</span>
+                </div>
+              </div>
+
+              {intelligence.nextBestAction.suggestedMessage && (
+                <div className="mt-2 bg-white p-3 rounded-lg border border-amber-100 space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <span>Suggested WhatsApp / SMS Template</span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(intelligence.nextBestAction.suggestedMessage!)}
+                      className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 transition-colors font-medium lowercase"
+                    >
+                      {copiedMessage ? (
+                        <>
+                          <Check className="h-3 w-3 text-emerald-600" />
+                          <span className="text-emerald-600 font-semibold">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3 w-3" />
+                          <span>Copy</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-700 italic leading-relaxed">
+                    "{intelligence.nextBestAction.suggestedMessage}"
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 3. TALK-TO-LISTEN RATIO & CONVERSATIONAL PACING DYNAMICS */}
+          {intelligence?.talkToListen && isConnected && (
+            <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BarChart2 className="h-4 w-4 text-indigo-600" />
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                    Talk-to-Listen Airtime & Pacing
+                  </h4>
+                </div>
+                <Badge
+                  variant={
+                    intelligence.talkToListen.pacingAssessment === 'optimal'
+                      ? 'success'
+                      : intelligence.talkToListen.pacingAssessment === 'fast_paced'
+                      ? 'warning'
+                      : 'neutral'
+                  }
+                  size="sm"
+                >
+                  {intelligence.talkToListen.pacingAssessment.replace('_', ' ').toUpperCase()}
+                </Badge>
+              </div>
+
+              {/* Stacked Talk-to-Listen Progress Bar */}
+              <div className="space-y-1.5">
+                <div className="h-3.5 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+                  <div
+                    style={{ width: `${intelligence.talkToListen.agentTalkPercentage}%` }}
+                    className="bg-indigo-600 h-full transition-all flex items-center justify-center text-[9px] font-bold text-white font-mono"
+                    title={`Agent: ${intelligence.talkToListen.agentTalkPercentage}%`}
+                  >
+                    {intelligence.talkToListen.agentTalkPercentage >= 15 ? `${intelligence.talkToListen.agentTalkPercentage}%` : ''}
+                  </div>
+                  <div
+                    style={{ width: `${intelligence.talkToListen.leadTalkPercentage}%` }}
+                    className="bg-emerald-500 h-full transition-all flex items-center justify-center text-[9px] font-bold text-slate-950 font-mono"
+                    title={`Customer: ${intelligence.talkToListen.leadTalkPercentage}%`}
+                  >
+                    {intelligence.talkToListen.leadTalkPercentage >= 15 ? `${intelligence.talkToListen.leadTalkPercentage}%` : ''}
+                  </div>
+                </div>
+
+                <div className="flex justify-between text-[11px] font-medium text-slate-600">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-indigo-600" />
+                    <span>Agent: <strong>{intelligence.talkToListen.agentTalkPercentage}%</strong> ({intelligence.talkToListen.agentWordCount} words • {intelligence.talkToListen.agentWPM} WPM)</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    <span>Lead: <strong>{intelligence.talkToListen.leadTalkPercentage}%</strong> ({intelligence.talkToListen.leadWordCount} words • {intelligence.talkToListen.leadWPM} WPM)</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-600 flex items-start gap-2">
+                <Target className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
+                <span>{intelligence.talkToListen.pacingSummary}</span>
+              </div>
+            </div>
+          )}
+
+          {/* 4. AUTOMATED QA SCRIPT COMPLIANCE AUDIT SCORECARD */}
+          {intelligence?.qaScorecard && (
+            <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                    Automated QA Script Compliance Audit
+                  </h4>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold font-mono px-2 py-0.5 rounded bg-slate-900 text-white">
+                    {intelligence.qaScorecard.overallScore}/100
+                  </span>
+                  <Badge
+                    variant={
+                      intelligence.qaScorecard.status === 'passed'
+                        ? 'success'
+                        : intelligence.qaScorecard.status === 'warning'
+                        ? 'warning'
+                        : 'danger'
+                    }
+                    size="sm"
+                  >
+                    Grade {intelligence.qaScorecard.grade}
+                  </Badge>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-snug">
+                {intelligence.qaScorecard.keyFeedback}
+              </p>
+
+              {/* Collapsible Script Checklist */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowQaChecklist(!showQaChecklist)}
+                  className="flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+                >
+                  <span>{showQaChecklist ? 'Hide' : 'View'} 5 Script Checkpoint Audits</span>
+                  {showQaChecklist ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </button>
+
+                {showQaChecklist && (
+                  <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+                    {intelligence.qaScorecard.checklist.map(item => (
+                      <div
+                        key={item.id}
+                        className="p-2.5 rounded-lg border border-slate-100 bg-slate-50/70 flex items-start justify-between gap-3 text-xs"
+                      >
+                        <div className="flex items-start gap-2">
+                          {item.passed ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                          ) : (
+                            <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                          )}
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900">{item.criterion}</span>
+                              <span className="text-[10px] text-slate-400 font-mono">({item.category})</span>
+                            </div>
+                            <p className="text-[11px] text-slate-600 mt-0.5">{item.details}</p>
+                          </div>
+                        </div>
+                        <span className={`font-mono font-bold text-xs shrink-0 ${item.passed ? 'text-emerald-700' : 'text-slate-400'}`}>
+                          {item.passed ? `+${item.score}` : '0'} pts
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 5. BUYING SIGNALS & OBJECTIONS INTELLIGENCE */}
+          {intelligence && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Buying Signals */}
+              <div className="p-3.5 rounded-xl border border-emerald-100 bg-emerald-50/40 space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900 uppercase tracking-wider">
+                  <ThumbsUp className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>Buying Signals ({intelligence.buyingSignals.length})</span>
+                </div>
+                {intelligence.buyingSignals.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 italic">No explicit buying signals detected in dialogue.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {intelligence.buyingSignals.map((sig, idx) => (
+                      <div key={idx} className="p-2 rounded bg-white border border-emerald-200 text-xs text-emerald-950 shadow-2xs">
+                        <span className="font-bold block text-[11px]">{sig.label}</span>
+                        <span className="text-[10px] text-slate-500 line-clamp-1 italic mt-0.5">"{sig.detectedText}"</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Objections / Hesitation */}
+              <div className="p-3.5 rounded-xl border border-amber-100 bg-amber-50/40 space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 uppercase tracking-wider">
+                  <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
+                  <span>Objections & Friction ({intelligence.objections.length})</span>
+                </div>
+                {intelligence.objections.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 italic">Zero customer objections or friction voiced.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {intelligence.objections.map((obj, idx) => (
+                      <div key={idx} className="p-2 rounded bg-white border border-amber-200 text-xs text-amber-950 shadow-2xs">
+                        <span className="font-bold block text-[11px]">{obj.label}</span>
+                        <span className="text-[10px] text-slate-500 line-clamp-1 italic mt-0.5">"{obj.detectedText}"</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 6. REAL CALL AUDIO STREAMING & SCRUBBER */}
           <div className="p-4 rounded-xl bg-slate-900 text-white space-y-3">
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
@@ -399,7 +711,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
             )}
           </div>
 
-          {/* 3. CALL METADATA GRID */}
+          {/* 7. CALL METADATA GRID */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-lg bg-slate-50 border border-slate-200 text-xs">
             <div>
               <span className="text-slate-400 block text-[10px] uppercase font-bold">Outcome</span>
@@ -427,19 +739,19 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
             </div>
           </div>
 
-          {/* 4. STRUCTURED EXTRACTED VARIABLES SECTION */}
+          {/* 8. STRUCTURED EXTRACTED VARIABLES SECTION */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700">
               <Database className="h-4 w-4 text-purple-600" />
               <span>Extracted Conversation Variables</span>
             </div>
             {!currentCall.extractedVariables ||
-            Object.entries(currentCall.extractedVariables).filter(([k]) => !k.startsWith('_')).length === 0 ? (
+            Object.entries(currentCall.extractedVariables).filter(([k]) => !k.startsWith('_') && k !== 'intelligence').length === 0 ? (
               <p className="text-xs text-slate-400 italic">No structured variables extracted from this call session.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {Object.entries(currentCall.extractedVariables)
-                  .filter(([key]) => !key.startsWith('_'))
+                  .filter(([key]) => !key.startsWith('_') && key !== 'intelligence')
                   .map(([key, value]) => (
                     <div key={key} className="p-3 rounded-lg border border-slate-200 bg-white flex items-center justify-between">
                       <div>
@@ -453,7 +765,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
             )}
           </div>
 
-          {/* 5. INTERACTIVE SPEAKER-SEGMENTED TRANSCRIPT */}
+          {/* 9. INTERACTIVE SPEAKER-SEGMENTED TRANSCRIPT */}
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200 pb-2">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700">

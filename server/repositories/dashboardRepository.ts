@@ -1,10 +1,11 @@
 import prisma from '../lib/prisma';
-import { DashboardMetrics, CallActivityPoint, RecentActivity } from '../../src/types';
+import { DashboardMetrics, CallActivityPoint, RecentActivity, DashboardIntelligenceSummary } from '../../src/types';
 import { billingRepository } from './billingRepository';
+import { callAnalyticsService } from '../services/callAnalyticsService';
 
 export class DashboardRepository {
   async getMetrics(): Promise<DashboardMetrics> {
-    const [totalLeads, untouchedLeads, campaignsBuilt, callsAttempted, completedCallsCount, billing] = await Promise.all([
+    const [totalLeads, untouchedLeads, campaignsBuilt, callsAttempted, completedCallsCount, billing, activeCalls] = await Promise.all([
       prisma.lead.count(),
       prisma.lead.count({
         where: {
@@ -18,9 +19,76 @@ export class DashboardRepository {
       prisma.call.count(),
       prisma.call.count({ where: { status: 'completed' } }),
       billingRepository.getCurrentBillingPeriod(),
+      prisma.call.findMany({
+        where: { durationSeconds: { gt: 0 } },
+      }),
     ]);
 
     const completionRate = callsAttempted > 0 ? Number(((completedCallsCount / callsAttempted) * 100).toFixed(1)) : 0;
+
+    // Compute Enterprise Conversational Intelligence Aggregates across real call sessions
+    let totalQaScore = 0;
+    let totalAgentTalkPct = 0;
+    let totalLeadTalkPct = 0;
+    let positiveSentimentCalls = 0;
+    let highIntentCalls = 0;
+    const objectionsMap = new Map<string, number>();
+    const buyingSignalsMap = new Map<string, number>();
+
+    for (const rawCall of activeCalls) {
+      const callObj: any = {
+        ...rawCall,
+        startedAt: rawCall.startedAt.toISOString(),
+        endedAt: rawCall.endedAt ? rawCall.endedAt.toISOString() : undefined,
+        transcript: (rawCall.transcript as any) || [],
+        extractedVariables: (rawCall.extractedVariables as any) || {},
+      };
+      const intelligence = callObj.extractedVariables?.intelligence || callAnalyticsService.analyzeCall(callObj);
+
+      totalQaScore += intelligence.qaScorecard.overallScore;
+      totalAgentTalkPct += intelligence.talkToListen.agentTalkPercentage;
+      totalLeadTalkPct += intelligence.talkToListen.leadTalkPercentage;
+
+      if (intelligence.sentimentTrajectory.overallSentiment === 'positive') {
+        positiveSentimentCalls += 1;
+      }
+      if (intelligence.buyingSignals.length > 0) {
+        highIntentCalls += 1;
+      }
+
+      for (const obj of intelligence.objections) {
+        objectionsMap.set(obj.label, (objectionsMap.get(obj.label) || 0) + 1);
+      }
+      for (const sig of intelligence.buyingSignals) {
+        buyingSignalsMap.set(sig.label, (buyingSignalsMap.get(sig.label) || 0) + 1);
+      }
+    }
+
+    const n = activeCalls.length || 1;
+    const avgQaScore = activeCalls.length > 0 ? Math.round(totalQaScore / n) : 100;
+    const avgTalkListenRatio = {
+      agentPct: activeCalls.length > 0 ? Math.round(totalAgentTalkPct / n) : 55,
+      leadPct: activeCalls.length > 0 ? Math.round(totalLeadTalkPct / n) : 45,
+    };
+    const positiveSentimentRate = activeCalls.length > 0 ? Math.round((positiveSentimentCalls / n) * 100) : 0;
+    const highIntentLeadRate = activeCalls.length > 0 ? Math.round((highIntentCalls / n) * 100) : 0;
+
+    const topObjections = Array.from(objectionsMap.entries())
+      .map(([label, count]) => ({ label, count, percentage: Math.round((count / n) * 100) }))
+      .sort((a, b) => b.count - a.count);
+
+    const topBuyingSignals = Array.from(buyingSignalsMap.entries())
+      .map(([label, count]) => ({ label, count, percentage: Math.round((count / n) * 100) }))
+      .sort((a, b) => b.count - a.count);
+
+    const intelligenceSummary: DashboardIntelligenceSummary = {
+      avgTalkListenRatio,
+      avgQaScore,
+      positiveSentimentRate,
+      highIntentLeadRate,
+      topObjections,
+      topBuyingSignals,
+    };
 
     return {
       totalLeads,
@@ -33,6 +101,7 @@ export class DashboardRepository {
       campaignsTrendPercentage: 0,
       callsTrendPercentage: completionRate,
       minutesTrendPercentage: 0,
+      intelligenceSummary,
     };
   }
 

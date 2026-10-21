@@ -26,6 +26,11 @@ import {
   Activity,
   ChevronRight,
   Bot,
+  Sparkles,
+  ShieldCheck,
+  BarChart2,
+  ThumbsUp,
+  Zap,
 } from 'lucide-react';
 
 export interface DashboardPageProps {
@@ -132,6 +137,161 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           icon={<Clock className="h-4 w-4" />}
         />
       </div>
+
+      {/* Enterprise Conversational Intelligence & Script Audit Summary */}
+      {metrics.intelligenceSummary && (
+        <Card className="border-indigo-100 bg-gradient-to-br from-indigo-50/40 via-white to-purple-50/20">
+          <CardHeader>
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                    Enterprise Conversational Intelligence & Quality Assurance
+                  </CardTitle>
+                  <CardDescription>
+                    Real-time conversational dynamics, script compliance audits, and intent signal analytics
+                  </CardDescription>
+                </div>
+              </div>
+              <Badge variant="neutral" size="sm">
+                Autonomous Engine
+              </Badge>
+            </div>
+          </CardHeader>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
+            {/* Metric 1: Avg Talk-to-Listen Ratio */}
+            <div className="p-3.5 rounded-xl border border-slate-200/80 bg-white/90 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Talk-to-Listen Ratio
+                </span>
+                <BarChart2 className="h-4 w-4 text-indigo-600" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl font-bold font-mono text-slate-900">
+                  {metrics.intelligenceSummary.avgTalkListenRatio.agentPct}% / {metrics.intelligenceSummary.avgTalkListenRatio.leadPct}%
+                </span>
+              </div>
+              <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+                <div
+                  style={{ width: `${metrics.intelligenceSummary.avgTalkListenRatio.agentPct}%` }}
+                  className="bg-indigo-600 h-full"
+                  title={`Agent: ${metrics.intelligenceSummary.avgTalkListenRatio.agentPct}%`}
+                />
+                <div
+                  style={{ width: `${metrics.intelligenceSummary.avgTalkListenRatio.leadPct}%` }}
+                  className="bg-emerald-500 h-full"
+                  title={`Lead: ${metrics.intelligenceSummary.avgTalkListenRatio.leadPct}%`}
+                />
+              </div>
+              <div className="flex justify-between text-[10px] text-slate-500 font-medium">
+                <span>Agent Airtime</span>
+                <span>Customer Response</span>
+              </div>
+            </div>
+
+            {/* Metric 2: Script Compliance Score */}
+            <div className="p-3.5 rounded-xl border border-slate-200/80 bg-white/90 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  QA Script Audit Score
+                </span>
+                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl font-bold font-mono text-slate-900">
+                  {metrics.intelligenceSummary.avgQaScore}/100
+                </span>
+                <Badge variant={metrics.intelligenceSummary.avgQaScore >= 80 ? 'success' : 'warning'} size="sm">
+                  {metrics.intelligenceSummary.avgQaScore >= 90 ? 'Grade A+' : metrics.intelligenceSummary.avgQaScore >= 80 ? 'Grade A' : 'Grade B'}
+                </Badge>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                5-point automated script audit: intro, verification, pitch, consent, sign-off
+              </p>
+            </div>
+
+            {/* Metric 3: High-Intent Lead Conversion */}
+            <div className="p-3.5 rounded-xl border border-slate-200/80 bg-white/90 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  High-Intent Lead Rate
+                </span>
+                <Zap className="h-4 w-4 text-amber-500" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl font-bold font-mono text-slate-900">
+                  {metrics.intelligenceSummary.highIntentLeadRate}%
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Calls exhibiting high-converting intent (WhatsApp/Demo request)
+              </p>
+            </div>
+
+            {/* Metric 4: Positive Dialogue Sentiment */}
+            <div className="p-3.5 rounded-xl border border-slate-200/80 bg-white/90 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Positive Sentiment Rate
+                </span>
+                <ThumbsUp className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl font-bold font-mono text-slate-900">
+                  {metrics.intelligenceSummary.positiveSentimentRate}%
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Multi-phase sentiment trajectory (opening → pitch → close)
+              </p>
+            </div>
+          </div>
+
+          {/* Top Buying Signals & Objections Breakdown */}
+          {metrics.intelligenceSummary.topBuyingSignals.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-indigo-50 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-3 rounded-lg bg-white/80 border border-slate-200/70">
+                <span className="font-bold text-slate-700 block mb-2 text-[11px] uppercase tracking-wider">
+                  Top Detected Intent Signals
+                </span>
+                <div className="space-y-1.5">
+                  {metrics.intelligenceSummary.topBuyingSignals.map((sig, i) => (
+                    <div key={i} className="flex items-center justify-between text-slate-700">
+                      <span className="truncate pr-2 font-medium">• {sig.label}</span>
+                      <span className="font-mono font-bold text-indigo-700 shrink-0">{sig.count} calls ({sig.percentage}%)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-white/80 border border-slate-200/70">
+                <span className="font-bold text-slate-700 block mb-2 text-[11px] uppercase tracking-wider">
+                  Customer Objections & Hesitation
+                </span>
+                {metrics.intelligenceSummary.topObjections.length === 0 ? (
+                  <p className="text-slate-400 italic text-[11px]">
+                    Zero friction or objections recorded across completed campaigns.
+                  </p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {metrics.intelligenceSummary.topObjections.map((obj, i) => (
+                      <div key={i} className="flex items-center justify-between text-slate-700">
+                        <span className="truncate pr-2 font-medium">• {obj.label}</span>
+                        <span className="font-mono font-bold text-amber-700 shrink-0">{obj.count} calls ({obj.percentage}%)</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Main Overview Grid: Call Activity Chart & Recent System Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -157,6 +157,84 @@ export interface TranscriptMessage {
   timestampSeconds: number;
 }
 
+export interface QAComplianceItem {
+  id: string;
+  category: string;
+  criterion: string;
+  passed: boolean;
+  score: number;
+  details: string;
+}
+
+export interface QAComplianceReport {
+  overallScore: number;
+  grade: 'A+' | 'A' | 'B' | 'C' | 'Needs Improvement';
+  status: 'passed' | 'warning' | 'failed';
+  checklist: QAComplianceItem[];
+  keyFeedback: string;
+}
+
+export interface ObjectionDetection {
+  category: 'pricing' | 'timing' | 'ai_skepticism' | 'competitor' | 'authority' | 'other';
+  label: string;
+  detectedText: string;
+  speaker: 'lead' | 'agent';
+  turnId: string;
+  confidence: number;
+}
+
+export interface BuyingSignal {
+  type: 'whatsapp_request' | 'demo_request' | 'pricing_inquiry' | 'affirmative_interest' | 'contact_verification';
+  label: string;
+  detectedText: string;
+  turnId: string;
+  confidence: number;
+}
+
+export interface SentimentPhase {
+  phase: 'opening' | 'pitch' | 'closing';
+  sentiment: 'positive' | 'neutral' | 'negative' | 'hesitant';
+  score: number;
+  snippet?: string;
+}
+
+export interface CallPacingDynamics {
+  agentWordCount: number;
+  leadWordCount: number;
+  totalWordCount: number;
+  agentTalkPercentage: number;
+  leadTalkPercentage: number;
+  agentWPM: number;
+  leadWPM: number;
+  turnCount: number;
+  avgTurnLengthWords: number;
+  pacingAssessment: 'optimal' | 'fast_paced' | 'slow_paced' | 'unbalanced';
+  pacingSummary: string;
+}
+
+export interface NextBestAction {
+  actionTitle: string;
+  actionType: 'dispatch_whatsapp' | 'book_demo' | 'schedule_callback' | 'escalate_human' | 're_queue' | 'suppress';
+  priority: 'urgent' | 'high' | 'medium' | 'low';
+  slaDescription: string;
+  suggestedMessage?: string;
+}
+
+export interface CallIntelligence {
+  talkToListen: CallPacingDynamics;
+  qaScorecard: QAComplianceReport;
+  objections: ObjectionDetection[];
+  buyingSignals: BuyingSignal[];
+  sentimentTrajectory: {
+    overallSentiment: 'positive' | 'neutral' | 'negative';
+    overallScore: number;
+    trajectoryTrend: 'consistently_positive' | 'ascending' | 'descending' | 'neutral' | 'disengaged';
+    phases: SentimentPhase[];
+  };
+  nextBestAction: NextBestAction;
+  analyzedAt: string;
+}
+
 export interface Call {
   id: string;
   externalCallId: string;
@@ -171,7 +249,7 @@ export interface Call {
   startedAt: string;
   endedAt?: string;
   transcript: TranscriptMessage[];
-  extractedVariables: Record<string, any>;
+  extractedVariables: Record<string, any> & { intelligence?: CallIntelligence };
   usageEventId?: string;
 }
 
@@ -268,6 +346,15 @@ export interface BillingPeriod {
   platformInvoice?: EnterpriseInvoice;
 }
 
+export interface DashboardIntelligenceSummary {
+  avgTalkListenRatio: { agentPct: number; leadPct: number };
+  avgQaScore: number;
+  positiveSentimentRate: number;
+  highIntentLeadRate: number;
+  topObjections: { label: string; count: number; percentage: number }[];
+  topBuyingSignals: { label: string; count: number; percentage: number }[];
+}
+
 export interface DashboardMetrics {
   totalLeads: number;
   untouchedLeads: number;
@@ -279,6 +366,7 @@ export interface DashboardMetrics {
   campaignsTrendPercentage: number;
   callsTrendPercentage: number;
   minutesTrendPercentage: number;
+  intelligenceSummary?: DashboardIntelligenceSummary;
 }
 
 export interface RecentActivity {
