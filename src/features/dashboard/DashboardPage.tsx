@@ -31,6 +31,8 @@ import {
   BarChart2,
   ThumbsUp,
   Zap,
+  TrendingDown,
+  Lightbulb,
 } from 'lucide-react';
 
 export interface DashboardPageProps {
@@ -287,6 +289,90 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Conversational Script Drop-Off Funnel & Waterfall */}
+          {metrics.intelligenceSummary.dropOffFunnel && (
+            <div className="mt-4 pt-4 border-t border-indigo-50 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                    <TrendingDown className="h-4 w-4 text-rose-500" />
+                    <span>Script Drop-Off Waterfall & Dialogue Retention</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Stage-by-stage conversational retention analysis across {metrics.intelligenceSummary.dropOffFunnel.totalConnectedCalls} active call sessions
+                  </p>
+                </div>
+                <Badge variant="warning" size="sm">
+                  Top Drop: {metrics.intelligenceSummary.dropOffFunnel.biggestDropOffStage}
+                </Badge>
+              </div>
+
+              {/* 5-Stage Waterfall Funnel Graphic */}
+              <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                {metrics.intelligenceSummary.dropOffFunnel.stages.map((stage, idx) => {
+                  const isBiggest = stage.stageName === metrics.intelligenceSummary?.dropOffFunnel?.biggestDropOffStage;
+                  return (
+                    <div
+                      key={stage.stageId}
+                      className={`p-3 rounded-xl border transition-all ${
+                        isBiggest
+                          ? 'bg-rose-50/70 border-rose-300 ring-2 ring-rose-200'
+                          : 'bg-white border-slate-200/80 shadow-2xs'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase">
+                        <span>Step {idx + 1}</span>
+                        {stage.dropOffCount > 0 && (
+                          <span className="text-rose-600 font-mono font-bold">-{stage.dropOffCount} left</span>
+                        )}
+                      </div>
+
+                      <span className="text-xs font-bold text-slate-900 block mt-1 line-clamp-1" title={stage.stageName}>
+                        {stage.stageName}
+                      </span>
+
+                      <div className="mt-2 space-y-1">
+                        <div className="flex items-baseline justify-between text-xs">
+                          <span className="text-base font-bold font-mono text-slate-900">
+                            {stage.retentionRate}%
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            {stage.callsReached} calls
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            style={{ width: `${stage.retentionRate}%` }}
+                            className={`h-full rounded-full transition-all ${
+                              isBiggest ? 'bg-rose-500' : 'bg-indigo-600'
+                            }`}
+                          />
+                        </div>
+                      </div>
+
+                      <p className="text-[10px] text-slate-500 mt-2 line-clamp-2 leading-tight">
+                        {stage.description}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* AI Script Recommendation Banner */}
+              <div className="p-3 rounded-lg bg-indigo-50/70 border border-indigo-100 flex items-start gap-2.5 text-xs text-indigo-950">
+                <Lightbulb className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold uppercase tracking-wider text-[10px] text-indigo-800 block">
+                    Autonomous Script Optimization Recommendation
+                  </span>
+                  <p className="mt-0.5 text-slate-700 leading-relaxed">
+                    {metrics.intelligenceSummary.dropOffFunnel.scriptRecommendation}
+                  </p>
+                </div>
               </div>
             </div>
           )}

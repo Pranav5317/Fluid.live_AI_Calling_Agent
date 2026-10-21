@@ -1681,6 +1681,7 @@ var CallAnalyticsService = class {
     const buyingSignals = this.detectBuyingSignals(transcript, extractedVars);
     const sentimentTrajectory = this.computeSentimentTrajectory(transcript, extractedVars);
     const nextBestAction = this.generateNextBestAction(call, buyingSignals, objections, extractedVars);
+    const milestones = this.computeMilestoneProgress(transcript, call);
     return {
       talkToListen,
       qaScorecard,
@@ -1688,6 +1689,7 @@ var CallAnalyticsService = class {
       buyingSignals,
       sentimentTrajectory,
       nextBestAction,
+      milestones,
       analyzedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
   }
@@ -2101,6 +2103,158 @@ var CallAnalyticsService = class {
       actionTitle: `Log Interaction & Review Call Recording`,
       actionType: "escalate_human",
       priority: "medium"
+    };
+  }
+  /**
+   * 7. Conversational Milestone Progress (Per-Call Funnel)
+   */
+  computeMilestoneProgress(transcript, call) {
+    const stagesCompleted = [];
+    const leadTurns = transcript.filter((t) => t.speaker === "lead");
+    const agentTurns = transcript.filter((t) => t.speaker === "agent");
+    if (call.durationSeconds > 0 || transcript.length >= 1) {
+      stagesCompleted.push("greeting");
+    }
+    const isVerified = call.extractedVariables?.verification_status === "completed" || leadTurns.length >= 1 || transcript.length >= 2;
+    if (isVerified && stagesCompleted.includes("greeting")) {
+      stagesCompleted.push("verification");
+    }
+    const hasPitched = agentTurns.length >= 2 || transcript.length >= 3;
+    if (hasPitched && stagesCompleted.includes("verification")) {
+      stagesCompleted.push("pitch");
+    }
+    const hasDiscovery = Boolean(call.extractedVariables?.follow_up_preference) || call.extractedVariables?.interest_level === "interested" || transcript.length >= 5;
+    if (hasDiscovery && stagesCompleted.includes("pitch")) {
+      stagesCompleted.push("discovery");
+    }
+    const hasClosed = stagesCompleted.includes("discovery") && (transcript.length >= 7 || call.outcome === "successful_contact" || call.outcome === "callback_requested");
+    if (hasClosed) {
+      stagesCompleted.push("close");
+    }
+    const currentStageId = stagesCompleted[stagesCompleted.length - 1] || "greeting";
+    const stageNames = {
+      greeting: "1. Initial Greeting",
+      verification: "2. Contact Verification",
+      pitch: "3. Value Pitch",
+      discovery: "4. Channel Discovery",
+      close: "5. Successful Close"
+    };
+    let dropOffStageId;
+    let dropOffReason;
+    if (!stagesCompleted.includes("close")) {
+      if (!stagesCompleted.includes("verification")) {
+        dropOffStageId = "greeting";
+        dropOffReason = "Customer remained silent or disconnected during opening verification question.";
+      } else if (!stagesCompleted.includes("pitch")) {
+        dropOffStageId = "verification";
+        dropOffReason = "Dialogue ended immediately after identity verification before value pitch.";
+      } else if (!stagesCompleted.includes("discovery")) {
+        dropOffStageId = "pitch";
+        dropOffReason = "Prospect disengaged or hung up during core value proposition pitch.";
+      } else {
+        dropOffStageId = "discovery";
+        dropOffReason = "Call ended before final channel confirmation and sign-off.";
+      }
+    }
+    return {
+      currentStageId,
+      currentStageName: stageNames[currentStageId] || "Initial Greeting",
+      stagesCompleted,
+      dropOffStageId,
+      dropOffReason
+    };
+  }
+  /**
+   * 8. Aggregate Script Drop-Off Funnel & AI Recommendations (Across All Calls)
+   */
+  computeScriptDropOffFunnel(calls) {
+    const connectedCalls = calls.filter((c) => c.durationSeconds > 0 || c.transcript && c.transcript.length > 0);
+    const total = connectedCalls.length || 1;
+    let greetingCount = 0;
+    let verificationCount = 0;
+    let pitchCount = 0;
+    let discoveryCount = 0;
+    let closeCount = 0;
+    for (const c of connectedCalls) {
+      const ms = c.extractedVariables?.intelligence?.milestones || this.computeMilestoneProgress(c.transcript || [], c);
+      if (ms.stagesCompleted.includes("greeting")) greetingCount++;
+      if (ms.stagesCompleted.includes("verification")) verificationCount++;
+      if (ms.stagesCompleted.includes("pitch")) pitchCount++;
+      if (ms.stagesCompleted.includes("discovery")) discoveryCount++;
+      if (ms.stagesCompleted.includes("close")) closeCount++;
+    }
+    const stageDefs = [
+      {
+        stageId: "greeting",
+        stageName: "1. Greeting Delivered",
+        description: "Agent initiated call and delivered introductory greeting.",
+        callsReached: greetingCount
+      },
+      {
+        stageId: "verification",
+        stageName: "2. Contact Verified",
+        description: "Prospect responded and confirmed identity.",
+        callsReached: verificationCount
+      },
+      {
+        stageId: "pitch",
+        stageName: "3. Value Proposition",
+        description: "Core AI voice calling capabilities presented.",
+        callsReached: pitchCount
+      },
+      {
+        stageId: "discovery",
+        stageName: "4. Channel Discovery",
+        description: "Follow-up channel preference (WhatsApp / Demo) discussed.",
+        callsReached: discoveryCount
+      },
+      {
+        stageId: "close",
+        stageName: "5. Successful Close",
+        description: "Follow-up agreed and courteous sign-off concluded.",
+        callsReached: closeCount
+      }
+    ];
+    const stages = [];
+    let prevCount = total;
+    for (let i = 0; i < stageDefs.length; i++) {
+      const def = stageDefs[i];
+      const reached = def.callsReached;
+      const dropOffCount = Math.max(0, prevCount - reached);
+      const retentionRate = Math.round(reached / total * 100);
+      const dropOffRate = prevCount > 0 ? Math.round(dropOffCount / prevCount * 100) : 0;
+      stages.push({
+        stageId: def.stageId,
+        stageName: def.stageName,
+        description: def.description,
+        callsReached: reached,
+        dropOffCount,
+        retentionRate,
+        dropOffRate
+      });
+      prevCount = reached;
+    }
+    let biggestDrop = stages[1];
+    for (let i = 1; i < stages.length; i++) {
+      if (stages[i].dropOffCount > biggestDrop.dropOffCount) {
+        biggestDrop = stages[i];
+      }
+    }
+    let scriptRecommendation = "";
+    if (biggestDrop.stageId === "verification") {
+      scriptRecommendation = 'Primary drop-off occurs during initial Contact Verification. Prospects remained silent or hung up during the opening monologue. Recommendation: Shorten the initial greeting from 4 sentences to 1 concise prompt ("Namaste Pranav ji?") to solicit an immediate response before pitching.';
+    } else if (biggestDrop.stageId === "pitch") {
+      scriptRecommendation = "Primary drop-off occurs during the Value Proposition. Recommendation: Shorten the explanation to under 15 words and immediately follow with an engaging discovery question.";
+    } else if (biggestDrop.stageId === "discovery") {
+      scriptRecommendation = 'Drop-off detected during Channel Discovery. Recommendation: Set WhatsApp as the default choice ("May I WhatsApp you the details?") rather than offering multiple competing options.';
+    } else {
+      scriptRecommendation = "Strong conversational progression across all funnel stages. Continue monitoring agent latency and response clarity.";
+    }
+    return {
+      totalConnectedCalls: connectedCalls.length,
+      stages,
+      biggestDropOffStage: biggestDrop.stageName,
+      scriptRecommendation
     };
   }
 };
@@ -3013,13 +3167,22 @@ var DashboardRepository = class {
     const highIntentLeadRate = activeCalls.length > 0 ? Math.round(highIntentCalls / n * 100) : 0;
     const topObjections = Array.from(objectionsMap.entries()).map(([label, count]) => ({ label, count, percentage: Math.round(count / n * 100) })).sort((a, b) => b.count - a.count);
     const topBuyingSignals = Array.from(buyingSignalsMap.entries()).map(([label, count]) => ({ label, count, percentage: Math.round(count / n * 100) })).sort((a, b) => b.count - a.count);
+    const callObjects = activeCalls.map((rawCall) => ({
+      ...rawCall,
+      startedAt: rawCall.startedAt.toISOString(),
+      endedAt: rawCall.endedAt ? rawCall.endedAt.toISOString() : void 0,
+      transcript: rawCall.transcript || [],
+      extractedVariables: rawCall.extractedVariables || {}
+    }));
+    const dropOffFunnel = callAnalyticsService.computeScriptDropOffFunnel(callObjects);
     const intelligenceSummary = {
       avgTalkListenRatio,
       avgQaScore,
       positiveSentimentRate,
       highIntentLeadRate,
       topObjections,
-      topBuyingSignals
+      topBuyingSignals,
+      dropOffFunnel
     };
     return {
       totalLeads,

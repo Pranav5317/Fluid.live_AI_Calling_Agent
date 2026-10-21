@@ -219,6 +219,31 @@ export interface NextBestAction {
   suggestedMessage?: string;
 }
 
+export interface CallMilestoneProgress {
+  currentStageId: 'greeting' | 'verification' | 'pitch' | 'discovery' | 'close';
+  currentStageName: string;
+  stagesCompleted: ('greeting' | 'verification' | 'pitch' | 'discovery' | 'close')[];
+  dropOffStageId?: 'greeting' | 'verification' | 'pitch' | 'discovery';
+  dropOffReason?: string;
+}
+
+export interface ScriptDropOffStage {
+  stageId: string;
+  stageName: string;
+  description: string;
+  callsReached: number;
+  dropOffCount: number;
+  retentionRate: number;
+  dropOffRate: number;
+}
+
+export interface ScriptDropOffFunnel {
+  totalConnectedCalls: number;
+  stages: ScriptDropOffStage[];
+  biggestDropOffStage: string;
+  scriptRecommendation: string;
+}
+
 export interface CallIntelligence {
   talkToListen: CallPacingDynamics;
   qaScorecard: QAComplianceReport;
@@ -231,6 +256,7 @@ export interface CallIntelligence {
     phases: SentimentPhase[];
   };
   nextBestAction: NextBestAction;
+  milestones?: CallMilestoneProgress;
   analyzedAt: string;
 }
 
@@ -354,6 +380,7 @@ export interface DashboardIntelligenceSummary {
   highIntentLeadRate: number;
   topObjections: { label: string; count: number; percentage: number }[];
   topBuyingSignals: { label: string; count: number; percentage: number }[];
+  dropOffFunnel?: ScriptDropOffFunnel;
 }
 
 export interface DashboardMetrics {

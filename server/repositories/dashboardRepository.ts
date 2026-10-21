@@ -81,6 +81,16 @@ export class DashboardRepository {
       .map(([label, count]) => ({ label, count, percentage: Math.round((count / n) * 100) }))
       .sort((a, b) => b.count - a.count);
 
+    // Compute Script Drop-Off Funnel & Diagnostic across active calls
+    const callObjects = activeCalls.map(rawCall => ({
+      ...rawCall,
+      startedAt: rawCall.startedAt.toISOString(),
+      endedAt: rawCall.endedAt ? rawCall.endedAt.toISOString() : undefined,
+      transcript: (rawCall.transcript as any) || [],
+      extractedVariables: (rawCall.extractedVariables as any) || {},
+    }));
+    const dropOffFunnel = callAnalyticsService.computeScriptDropOffFunnel(callObjects as any);
+
     const intelligenceSummary: DashboardIntelligenceSummary = {
       avgTalkListenRatio,
       avgQaScore,
@@ -88,6 +98,7 @@ export class DashboardRepository {
       highIntentLeadRate,
       topObjections,
       topBuyingSignals,
+      dropOffFunnel,
     };
 
     return {

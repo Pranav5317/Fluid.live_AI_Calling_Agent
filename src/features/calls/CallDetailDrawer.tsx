@@ -460,6 +460,63 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
                 </div>
               </div>
             )}
+
+            {/* Script Milestone Progress Stepper */}
+            {intelligence?.milestones && isConnected && (
+              <div className="pt-2 border-t border-indigo-50 space-y-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold uppercase tracking-wider text-slate-700">
+                    Conversational Stage Progression:
+                  </span>
+                  <span className="font-mono text-xs font-bold text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded">
+                    {intelligence.milestones.currentStageName}
+                  </span>
+                </div>
+
+                {/* 5-step horizontal milestone progression */}
+                <div className="grid grid-cols-5 gap-1.5 text-center">
+                  {[
+                    { id: 'greeting', label: '1. Greeting' },
+                    { id: 'verification', label: '2. Verify' },
+                    { id: 'pitch', label: '3. Pitch' },
+                    { id: 'discovery', label: '4. Discovery' },
+                    { id: 'close', label: '5. Close' },
+                  ].map(step => {
+                    const isPassed = intelligence.milestones?.stagesCompleted.includes(step.id as any);
+                    const isDrop = intelligence.milestones?.dropOffStageId === step.id;
+                    return (
+                      <div
+                        key={step.id}
+                        className={`p-1.5 rounded-lg border text-[10px] font-bold transition-all ${
+                          isPassed
+                            ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                            : isDrop
+                            ? 'bg-rose-50 border-rose-300 text-rose-800'
+                            : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-center justify-center gap-1">
+                          {isPassed ? (
+                            <CheckCircle2 className="h-3 w-3 text-emerald-600 shrink-0" />
+                          ) : isDrop ? (
+                            <AlertCircle className="h-3 w-3 text-rose-600 shrink-0" />
+                          ) : (
+                            <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                          )}
+                          <span className="truncate">{step.label}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {intelligence.milestones.dropOffReason && (
+                  <p className="text-[11px] text-rose-700 bg-rose-50/60 p-2 rounded border border-rose-100 italic">
+                    ⚠️ Drop-off Note: {intelligence.milestones.dropOffReason}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 2. NEXT BEST ACTION (SALES & CRM RECOMMENDATION) */}
