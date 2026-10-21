@@ -98,3 +98,4 @@ export function exportCallsToCSV(calls: Call[], filenamePrefix: string = 'fluid_
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+

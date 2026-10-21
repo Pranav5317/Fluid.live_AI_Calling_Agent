@@ -23,7 +23,10 @@ import {
   Calendar,
   Filter,
   FileSpreadsheet,
+  Eye,
+  Sparkles,
 } from 'lucide-react';
+import { LeadDetailDrawer } from './LeadDetailDrawer';
 
 import { callService } from '../../services/callService';
 import { agentService } from '../../services/agentService';
@@ -34,6 +37,7 @@ export const LeadsPage: React.FC = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [callingLeadId, setCallingLeadId] = useState<string | null>(null);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
 
   // Filters state
   const [search, setSearch] = useState('');
@@ -282,8 +286,19 @@ export const LeadsPage: React.FC = () => {
                   const attempts = campaignLead?.attemptCount || 0;
                   const lastAttempt = campaignLead?.lastAttemptAt;
                   return (
-                    <tr key={lead.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="px-5 py-3.5 font-semibold text-slate-900">{lead.name}</td>
+                    <tr
+                      key={lead.id}
+                      onClick={() => setSelectedLeadId(lead.id)}
+                      className="hover:bg-indigo-50/40 cursor-pointer transition-colors group"
+                    >
+                      <td className="px-5 py-3.5 font-semibold text-slate-900 group-hover:text-indigo-600">
+                        <div className="flex items-center gap-1.5">
+                          <span>{lead.name}</span>
+                          <span className="opacity-0 group-hover:opacity-100 text-[10px] bg-indigo-100 text-indigo-700 font-bold px-1.5 py-0.5 rounded transition-opacity">
+                            View 360°
+                          </span>
+                        </div>
+                      </td>
                       <td className="px-5 py-3.5">
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1 text-slate-800 font-mono">
@@ -326,16 +341,27 @@ export const LeadsPage: React.FC = () => {
                           ))}
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          isLoading={callingLeadId === lead.id}
-                          leftIcon={<Phone className="h-3.5 w-3.5 text-emerald-600" />}
-                          onClick={() => handleCallLead(lead.id, lead.phone)}
-                        >
-                          Call Now
-                        </Button>
+                      <td className="px-5 py-3.5 text-right" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setSelectedLeadId(lead.id)}
+                            leftIcon={<Eye className="h-3.5 w-3.5 text-indigo-600" />}
+                            title="Open Lead 360 Timeline"
+                          >
+                            360°
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            isLoading={callingLeadId === lead.id}
+                            leftIcon={<Phone className="h-3.5 w-3.5 text-emerald-600" />}
+                            onClick={() => handleCallLead(lead.id, lead.phone)}
+                          >
+                            Call Now
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -439,6 +465,13 @@ export const LeadsPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Lead 360° Profile & Call Timeline Drawer */}
+      <LeadDetailDrawer
+        leadId={selectedLeadId}
+        onClose={() => setSelectedLeadId(null)}
+        onCallInitiated={fetchLeads}
+      />
     </div>
   );
 };

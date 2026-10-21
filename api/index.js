@@ -15,6 +15,603 @@ if (process.env.NODE_ENV !== "production") {
 }
 var prisma_default = prisma;
 
+// server/services/callAnalyticsService.ts
+var CallAnalyticsService = class {
+  /**
+   * Performs deep, automated conversational analysis on a call session.
+   * Parses verbatim Hindi/Hinglish/English turns, computes airtime metrics,
+   * runs automated QA script audits, detects objections & buying signals,
+   * and provides a next-best-action recommendation for sales/operations.
+   */
+  analyzeCall(call) {
+    const transcript = Array.isArray(call.transcript) ? call.transcript : [];
+    const durationSecs = call.durationSeconds || 0;
+    const extractedVars = call.extractedVariables || {};
+    const talkToListen = this.computePacingDynamics(transcript, durationSecs);
+    const qaScorecard = this.auditQAScriptCompliance(transcript, call);
+    const objections = this.detectObjections(transcript);
+    const buyingSignals = this.detectBuyingSignals(transcript, extractedVars);
+    const sentimentTrajectory = this.computeSentimentTrajectory(transcript, extractedVars);
+    const nextBestAction = this.generateNextBestAction(call, buyingSignals, objections, extractedVars);
+    const milestones = this.computeMilestoneProgress(transcript, call);
+    return {
+      talkToListen,
+      qaScorecard,
+      objections,
+      buyingSignals,
+      sentimentTrajectory,
+      nextBestAction,
+      milestones,
+      analyzedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+  }
+  /**
+   * 1. Talk-to-Listen Ratio & Conversational Pacing Dynamics
+   */
+  computePacingDynamics(transcript, durationSecs) {
+    if (transcript.length === 0 || durationSecs === 0) {
+      return {
+        agentWordCount: 0,
+        leadWordCount: 0,
+        totalWordCount: 0,
+        agentTalkPercentage: 0,
+        leadTalkPercentage: 0,
+        agentWPM: 0,
+        leadWPM: 0,
+        turnCount: 0,
+        avgTurnLengthWords: 0,
+        pacingAssessment: "unbalanced",
+        pacingSummary: "No verbal turns recorded; call terminated without active dialogue."
+      };
+    }
+    let agentWords = 0;
+    let leadWords = 0;
+    for (const turn of transcript) {
+      const words = turn.text.trim().split(/\s+/).filter(Boolean).length;
+      if (turn.speaker === "agent") {
+        agentWords += words;
+      } else {
+        leadWords += words;
+      }
+    }
+    const totalWords = agentWords + leadWords;
+    let agentTalkPercentage = 50;
+    let leadTalkPercentage = 50;
+    if (totalWords > 0) {
+      agentTalkPercentage = Math.round(agentWords / totalWords * 100);
+      leadTalkPercentage = 100 - agentTalkPercentage;
+    } else if (agentWords > 0 && leadWords === 0) {
+      agentTalkPercentage = 100;
+      leadTalkPercentage = 0;
+    }
+    const durationMinutes = Math.max(durationSecs / 60, 0.1);
+    const agentWPM = Math.round(agentWords / durationMinutes);
+    const leadWPM = Math.round(leadWords / durationMinutes);
+    const avgTurnLengthWords = Math.round(totalWords / transcript.length);
+    let pacingAssessment = "optimal";
+    let pacingSummary = "Balanced enterprise conversational exchange.";
+    if (leadWords === 0) {
+      pacingAssessment = "unbalanced";
+      pacingSummary = "One-sided monologue. Customer remained silent or hung up during introduction.";
+    } else if (agentTalkPercentage > 75) {
+      pacingAssessment = "unbalanced";
+      pacingSummary = `Agent dominated airtime (${agentTalkPercentage}%). Consider shortening value pitch to encourage customer replies.`;
+    } else if (agentTalkPercentage < 35) {
+      pacingAssessment = "unbalanced";
+      pacingSummary = `Customer dominated airtime (${leadTalkPercentage}%). High prospect engagement or detailed feedback.`;
+    } else if (agentWPM > 175) {
+      pacingAssessment = "fast_paced";
+      pacingSummary = `Agent cadence is fast (${agentWPM} WPM). Recommended rate for Indian voice outreach is 120-145 WPM.`;
+    } else {
+      pacingAssessment = "optimal";
+      pacingSummary = `Ideal conversational ratio: Agent spoke ${agentTalkPercentage}% of words; prospect engaged for ${leadTalkPercentage}%.`;
+    }
+    return {
+      agentWordCount: agentWords,
+      leadWordCount: leadWords,
+      totalWordCount: totalWords,
+      agentTalkPercentage,
+      leadTalkPercentage,
+      agentWPM,
+      leadWPM,
+      turnCount: transcript.length,
+      avgTurnLengthWords,
+      pacingAssessment,
+      pacingSummary
+    };
+  }
+  /**
+   * 2. Automated QA Script Compliance Audit (0 - 100 Scorecard)
+   */
+  auditQAScriptCompliance(transcript, call) {
+    const checklist = [];
+    const agentTurns = transcript.filter((t) => t.speaker === "agent");
+    const combinedAgentText = agentTurns.map((t) => t.text.toLowerCase()).join(" ");
+    const brandPattern = /(fluid\.live|fluid\s*live|fluid)/i;
+    const agentNamePattern = /(shubh|शुभ|mera\s*naam|my\s*name)/i;
+    const passedBrand = brandPattern.test(combinedAgentText) && agentNamePattern.test(combinedAgentText);
+    checklist.push({
+      id: "qa_brand_id",
+      category: "Identification",
+      criterion: "Agent Identification & Brand Disclosure",
+      score: passedBrand ? 20 : 0,
+      passed: passedBrand,
+      details: passedBrand ? "Agent clearly introduced self as Shubh representing Fluid.live." : "Failed to mention both agent identity and company brand in opening."
+    });
+    const leadName = (call.extractedVariables?.user_name || "").toLowerCase();
+    const verifyPattern = new RegExp(`(${leadName || "pranav"}|kya\\s*meri\\s*baat|baat\\s*ho\\s*rahi\\s*hai|am\\s*i\\s*speaking|is\\s*this)`, "i");
+    const passedVerify = verifyPattern.test(combinedAgentText) || call.extractedVariables?.verification_status === "completed";
+    checklist.push({
+      id: "qa_verification",
+      category: "Verification",
+      criterion: "Target Contact Verification",
+      score: passedVerify ? 20 : 0,
+      passed: passedVerify,
+      details: passedVerify ? "Agent addressed customer respectfully by name and validated identity." : "Customer identity verification omitted in opening dialogue."
+    });
+    const pitchPattern = /(ai\s*voice\s*calling|calling|reminders|follow\s*ups|voice\s*calling|business|businesses)/i;
+    const passedPitch = pitchPattern.test(combinedAgentText);
+    checklist.push({
+      id: "qa_pitch",
+      category: "Pitch Clarity",
+      criterion: "Value Proposition Articulation",
+      score: passedPitch ? 20 : 0,
+      passed: passedPitch,
+      details: passedPitch ? "Articulated core AI voice calling capabilities and automated follow-up benefits." : "Value proposition was not delivered or call ended prematurely."
+    });
+    const discoveryPattern = /(chhota\s*sa\s*sawal|ek\s*sawal|quick\s*question|whatsapp|demo|preference|prefer)/i;
+    const passedDiscovery = discoveryPattern.test(combinedAgentText) || Boolean(call.extractedVariables?.follow_up_preference);
+    checklist.push({
+      id: "qa_discovery",
+      category: "Consent & Discovery",
+      criterion: "Explicit Consent & Channel Preference",
+      score: passedDiscovery ? 20 : 0,
+      passed: passedDiscovery,
+      details: passedDiscovery ? "Politely sought permission before pitching and gathered follow-up channel preference." : "No customer consent or follow-up preference captured."
+    });
+    const closingPattern = /(shukriya|शुक्रिया|din\s*shubh|thank\s*you|thanks|aapka\s*din|have\s*a\s*great\s*day)/i;
+    const passedClosing = closingPattern.test(combinedAgentText);
+    checklist.push({
+      id: "qa_closing",
+      category: "Professionalism",
+      criterion: "Courteous Enterprise Sign-off",
+      score: passedClosing ? 20 : 0,
+      passed: passedClosing,
+      details: passedClosing ? "Agent thanked prospect for their time and closed with polite cultural greeting." : "Call terminated abruptly without standard courteous sign-off."
+    });
+    const overallScore = checklist.reduce((sum, item) => sum + item.score, 0);
+    let grade = "Needs Improvement";
+    let status = "failed";
+    let keyFeedback = "";
+    if (overallScore >= 95) {
+      grade = "A+";
+      status = "passed";
+      keyFeedback = "Flawless execution. All compliance and conversational milestones fulfilled.";
+    } else if (overallScore >= 80) {
+      grade = "A";
+      status = "passed";
+      keyFeedback = "Strong compliance. Minor opportunities in discovery cadence.";
+    } else if (overallScore >= 60) {
+      grade = "B";
+      status = "warning";
+      keyFeedback = "Acceptable. Call completed partial workflow before disengagement.";
+    } else if (overallScore >= 40) {
+      grade = "C";
+      status = "warning";
+      keyFeedback = "Incomplete dialogue. Critical script checkpoints were missed.";
+    } else {
+      grade = "Needs Improvement";
+      status = "failed";
+      keyFeedback = "Call dropped early or customer hung up before core script delivery.";
+    }
+    return {
+      overallScore,
+      grade,
+      status,
+      checklist,
+      keyFeedback
+    };
+  }
+  /**
+   * 3. Objection & Friction Detection (Hindi / Hinglish / English)
+   */
+  detectObjections(transcript) {
+    const objections = [];
+    const leadTurns = transcript.filter((t) => t.speaker === "lead");
+    const patterns = [
+      {
+        category: "pricing",
+        label: "Pricing / Budget Concern",
+        regex: /(kitna\s*kharcha|rate\s*kya|expensive|mehenga|cost|price|kitne\s*paise|charges|fees|budget|kitna\s*lagega|kya\s*charge)/i
+      },
+      {
+        category: "timing",
+        label: "Timing / Busyness Hesitation",
+        regex: /(busy|baad\s*me|not\s*right\s*now|call\s*later|time\s*nahi|driving|meeting|abhi\s*nahi|kal\s*call|fursat\s*nahi|busy\s*hoon|free\s*nahi)/i
+      },
+      {
+        category: "ai_skepticism",
+        label: "AI / Bot Skepticism",
+        regex: /(ai\s*ho|robot|computer|machine|real\s*person|insaan|asli\s*insaan|recorded|automated|bot\s*ho)/i
+      },
+      {
+        category: "competitor",
+        label: "Existing Provider / Competitor",
+        regex: /(already\s*using|pehle\s*se|kisi\s*aur\s*se|dusra\s*software|dusri\s*service|already\s*have|vendor)/i
+      },
+      {
+        category: "authority",
+        label: "Authority / Gatekeeper Escalation",
+        regex: /(boss\s*se|owner\s*se|sir\s*se|decision\s*maker|papa\s*se|kisi\s*aur\s*ka\s*phone|puchna\s*padega)/i
+      }
+    ];
+    for (const turn of leadTurns) {
+      for (const p of patterns) {
+        if (p.regex.test(turn.text)) {
+          objections.push({
+            category: p.category,
+            label: p.label,
+            detectedText: turn.text,
+            speaker: "lead",
+            turnId: turn.id,
+            confidence: 0.92
+          });
+        }
+      }
+    }
+    return objections;
+  }
+  /**
+   * 4. Buying Signal & High Intent Detection
+   */
+  detectBuyingSignals(transcript, extractedVars) {
+    const signals = [];
+    const leadTurns = transcript.filter((t) => t.speaker === "lead");
+    for (const turn of leadTurns) {
+      const text = turn.text.toLowerCase();
+      if (/(whatsapp|whats\s*app|details\s*bhejo|bhej\s*do|bhejiye|pdf|catalogue|brochure|message\s*karo)/i.test(text)) {
+        signals.push({
+          type: "whatsapp_request",
+          label: "Requested WhatsApp Documentation & Pricing",
+          detectedText: turn.text,
+          turnId: turn.id,
+          confidence: 0.96
+        });
+      }
+      if (/(demo|sample|trial|dikhao|dekhna\s*hai|meeting|schedule|presentation)/i.test(text)) {
+        signals.push({
+          type: "demo_request",
+          label: "Requested Live Product Demonstration",
+          detectedText: turn.text,
+          turnId: turn.id,
+          confidence: 0.94
+        });
+      }
+      if (/(interested|haan\s*interest|bilkul|sure|sahi\s*hai|acha\s*laga|achha\s*laga|aur\s*batao|theek\s*hai)/i.test(text)) {
+        signals.push({
+          type: "affirmative_interest",
+          label: "Expressed Explicit Business Interest",
+          detectedText: turn.text,
+          turnId: turn.id,
+          confidence: 0.95
+        });
+      }
+      if (/(haan|bol\s*raha\s*hoon|speaking|yes\s*speaking|ji\s*haan)/i.test(text) && signals.length === 0) {
+        signals.push({
+          type: "contact_verification",
+          label: "Confirmed Target Identity",
+          detectedText: turn.text,
+          turnId: turn.id,
+          confidence: 0.9
+        });
+      }
+    }
+    if (extractedVars.interest_level === "interested" && !signals.some((s) => s.type === "affirmative_interest")) {
+      signals.push({
+        type: "affirmative_interest",
+        label: "Sarvam AI Flagged High Purchase Intent",
+        detectedText: extractedVars.call_summary || "Customer expressed positive interest during conversation.",
+        turnId: "sarvam_summary",
+        confidence: 0.95
+      });
+    }
+    if (extractedVars.follow_up_preference === "whatsapp_details" && !signals.some((s) => s.type === "whatsapp_request")) {
+      signals.push({
+        type: "whatsapp_request",
+        label: "WhatsApp Follow-Up Preference Recorded",
+        detectedText: "Preferred follow-up via WhatsApp details.",
+        turnId: "sarvam_follow_up",
+        confidence: 0.98
+      });
+    }
+    return signals;
+  }
+  /**
+   * 5. Sentiment Trajectory Analysis (Opening -> Pitch -> Closing)
+   */
+  computeSentimentTrajectory(transcript, extractedVars) {
+    if (transcript.length === 0) {
+      return {
+        overallSentiment: "neutral",
+        overallScore: 0,
+        trajectoryTrend: "neutral",
+        phases: []
+      };
+    }
+    const turnsCount = transcript.length;
+    const openingEnd = Math.max(1, Math.floor(turnsCount * 0.33));
+    const pitchEnd = Math.max(openingEnd + 1, Math.floor(turnsCount * 0.67));
+    const openingTurns = transcript.slice(0, openingEnd);
+    const pitchTurns = transcript.slice(openingEnd, pitchEnd);
+    const closingTurns = transcript.slice(pitchEnd);
+    const scorePhase = (phase, turns) => {
+      const combined = turns.map((t) => t.text).join(" ").toLowerCase();
+      let positiveMarkers = (combined.match(/(shukriya|शुक्रिया|achha|acha|great|interested|sure|haan|हाँ|bhejo|sahi|wah|good|whatsapp|शुभ|धन्यवाद|thanks)/gi) || []).length;
+      let negativeMarkers = (combined.match(/(nahi|नहीं|busy|mat|not|fursat|wrong|disconnect|bekaar)/gi) || []).length;
+      let score = 0;
+      let sentiment = "neutral";
+      if (positiveMarkers > negativeMarkers) {
+        score = Math.min(1, 0.4 + (positiveMarkers - negativeMarkers) * 0.2);
+        sentiment = "positive";
+      } else if (negativeMarkers > positiveMarkers) {
+        score = Math.max(-1, -0.4 - (negativeMarkers - positiveMarkers) * 0.2);
+        sentiment = "negative";
+      } else if (turns.length === 0 || turns.every((t) => t.speaker === "agent")) {
+        score = 0;
+        sentiment = "hesitant";
+      }
+      return {
+        phase,
+        sentiment,
+        score: Number(score.toFixed(2)),
+        snippet: turns.length > 0 ? turns[turns.length - 1].text.slice(0, 80) : void 0
+      };
+    };
+    const phases = [
+      scorePhase("opening", openingTurns),
+      scorePhase("pitch", pitchTurns),
+      scorePhase("closing", closingTurns)
+    ];
+    if (extractedVars.interest_level === "interested") {
+      if (phases[1]) {
+        phases[1].score = Math.max(phases[1].score, 0.8);
+        phases[1].sentiment = "positive";
+      }
+      if (phases[2]) {
+        phases[2].score = Math.max(phases[2].score, 0.9);
+        phases[2].sentiment = "positive";
+      }
+    }
+    let overallScore = phases.reduce((acc, p) => acc + p.score, 0) / phases.length;
+    if (extractedVars.interest_level === "interested") {
+      overallScore = Math.max(overallScore, 0.85);
+    } else if (extractedVars.interest_level === "not_interested") {
+      overallScore = Math.min(overallScore, -0.6);
+    }
+    let overallSentiment = "neutral";
+    if (overallScore > 0.2) overallSentiment = "positive";
+    else if (overallScore < -0.2) overallSentiment = "negative";
+    let trajectoryTrend = "neutral";
+    if (phases[0].score >= 0.3 && phases[2].score >= 0.5) {
+      trajectoryTrend = "consistently_positive";
+    } else if (phases[2].score > phases[0].score && phases[2].score > 0.3) {
+      trajectoryTrend = "ascending";
+    } else if (phases[2].score < phases[0].score && phases[2].score < 0) {
+      trajectoryTrend = "descending";
+    } else if (transcript.every((t) => t.speaker === "agent")) {
+      trajectoryTrend = "disengaged";
+    }
+    return {
+      overallSentiment,
+      overallScore: Number(overallScore.toFixed(2)),
+      trajectoryTrend,
+      phases
+    };
+  }
+  /**
+   * 6. Next Best Action Generator
+   */
+  generateNextBestAction(call, buyingSignals, objections, extractedVars) {
+    const leadName = extractedVars.user_name || "Customer";
+    if (extractedVars.follow_up_preference === "whatsapp_details" || buyingSignals.some((s) => s.type === "whatsapp_request")) {
+      return {
+        actionTitle: `Dispatch WhatsApp Demo & One-Pager to ${leadName}`,
+        actionType: "dispatch_whatsapp",
+        priority: "urgent",
+        suggestedMessage: `Namaste ${leadName} ji, thank you for speaking with Fluid.live! As requested, here is our 1-minute video demo and enterprise pricing brochure for AI Voice Calling. Let us know if you would like to test a sample workflow!`
+      };
+    }
+    if (extractedVars.follow_up_preference === "callback" || buyingSignals.some((s) => s.type === "demo_request")) {
+      return {
+        actionTitle: `Schedule Solution Architect Live Demo with ${leadName}`,
+        actionType: "book_demo",
+        priority: "high",
+        suggestedMessage: `Namaste ${leadName} ji, following our conversation, our team would love to show you how Fluid.live automates 10,000+ customer calls daily. When is a convenient time for a 10-minute walkthrough?`
+      };
+    }
+    if (objections.some((o) => o.category === "timing")) {
+      return {
+        actionTitle: `Auto-Schedule Follow-up Call for ${leadName}`,
+        actionType: "schedule_callback",
+        priority: "medium",
+        suggestedMessage: `Namaste ${leadName} ji, sorry to have caught you at a busy moment! We will reach out again tomorrow at a better time. Have a wonderful day ahead!`
+      };
+    }
+    if (extractedVars.interest_level === "not_interested" || call.outcome === "not_interested") {
+      return {
+        actionTitle: `Mark Lead as Unqualified & Suppress Dialer`,
+        actionType: "suppress",
+        priority: "low"
+      };
+    }
+    if (call.durationSeconds > 0 && (!call.transcript || call.transcript.length <= 1)) {
+      return {
+        actionTitle: `Re-queue for Secondary Afternoon Calling Slot`,
+        actionType: "re_queue",
+        priority: "medium"
+      };
+    }
+    return {
+      actionTitle: `Log Interaction & Review Call Recording`,
+      actionType: "escalate_human",
+      priority: "medium"
+    };
+  }
+  /**
+   * 7. Conversational Milestone Progress (Per-Call Funnel)
+   */
+  computeMilestoneProgress(transcript, call) {
+    const stagesCompleted = [];
+    const leadTurns = transcript.filter((t) => t.speaker === "lead");
+    const agentTurns = transcript.filter((t) => t.speaker === "agent");
+    if (call.durationSeconds > 0 || transcript.length >= 1) {
+      stagesCompleted.push("greeting");
+    }
+    const isVerified = call.extractedVariables?.verification_status === "completed" || leadTurns.length >= 1 || transcript.length >= 2;
+    if (isVerified && stagesCompleted.includes("greeting")) {
+      stagesCompleted.push("verification");
+    }
+    const hasPitched = agentTurns.length >= 2 || transcript.length >= 3;
+    if (hasPitched && stagesCompleted.includes("verification")) {
+      stagesCompleted.push("pitch");
+    }
+    const hasDiscovery = Boolean(call.extractedVariables?.follow_up_preference) || call.extractedVariables?.interest_level === "interested" || transcript.length >= 5;
+    if (hasDiscovery && stagesCompleted.includes("pitch")) {
+      stagesCompleted.push("discovery");
+    }
+    const hasClosed = stagesCompleted.includes("discovery") && (transcript.length >= 7 || call.outcome === "successful_contact" || call.outcome === "callback_requested");
+    if (hasClosed) {
+      stagesCompleted.push("close");
+    }
+    const currentStageId = stagesCompleted[stagesCompleted.length - 1] || "greeting";
+    const stageNames = {
+      greeting: "1. Initial Greeting",
+      verification: "2. Contact Verification",
+      pitch: "3. Value Pitch",
+      discovery: "4. Channel Discovery",
+      close: "5. Successful Close"
+    };
+    let dropOffStageId;
+    let dropOffReason;
+    if (!stagesCompleted.includes("close")) {
+      if (!stagesCompleted.includes("verification")) {
+        dropOffStageId = "greeting";
+        dropOffReason = "Customer remained silent or disconnected during opening verification question.";
+      } else if (!stagesCompleted.includes("pitch")) {
+        dropOffStageId = "verification";
+        dropOffReason = "Dialogue ended immediately after identity verification before value pitch.";
+      } else if (!stagesCompleted.includes("discovery")) {
+        dropOffStageId = "pitch";
+        dropOffReason = "Prospect disengaged or hung up during core value proposition pitch.";
+      } else {
+        dropOffStageId = "discovery";
+        dropOffReason = "Call ended before final channel confirmation and sign-off.";
+      }
+    }
+    return {
+      currentStageId,
+      currentStageName: stageNames[currentStageId] || "Initial Greeting",
+      stagesCompleted,
+      dropOffStageId,
+      dropOffReason
+    };
+  }
+  /**
+   * 8. Aggregate Script Drop-Off Funnel & AI Recommendations (Across All Calls)
+   */
+  computeScriptDropOffFunnel(calls) {
+    const connectedCalls = calls.filter((c) => c.durationSeconds > 0 || c.transcript && c.transcript.length > 0);
+    const total = connectedCalls.length || 1;
+    let greetingCount = 0;
+    let verificationCount = 0;
+    let pitchCount = 0;
+    let discoveryCount = 0;
+    let closeCount = 0;
+    for (const c of connectedCalls) {
+      const ms = c.extractedVariables?.intelligence?.milestones || this.computeMilestoneProgress(c.transcript || [], c);
+      if (ms.stagesCompleted.includes("greeting")) greetingCount++;
+      if (ms.stagesCompleted.includes("verification")) verificationCount++;
+      if (ms.stagesCompleted.includes("pitch")) pitchCount++;
+      if (ms.stagesCompleted.includes("discovery")) discoveryCount++;
+      if (ms.stagesCompleted.includes("close")) closeCount++;
+    }
+    const stageDefs = [
+      {
+        stageId: "greeting",
+        stageName: "1. Greeting Delivered",
+        description: "Agent initiated call and delivered introductory greeting.",
+        callsReached: greetingCount
+      },
+      {
+        stageId: "verification",
+        stageName: "2. Contact Verified",
+        description: "Prospect responded and confirmed identity.",
+        callsReached: verificationCount
+      },
+      {
+        stageId: "pitch",
+        stageName: "3. Value Proposition",
+        description: "Core AI voice calling capabilities presented.",
+        callsReached: pitchCount
+      },
+      {
+        stageId: "discovery",
+        stageName: "4. Channel Discovery",
+        description: "Follow-up channel preference (WhatsApp / Demo) discussed.",
+        callsReached: discoveryCount
+      },
+      {
+        stageId: "close",
+        stageName: "5. Successful Close",
+        description: "Follow-up agreed and courteous sign-off concluded.",
+        callsReached: closeCount
+      }
+    ];
+    const stages = [];
+    let prevCount = total;
+    for (let i = 0; i < stageDefs.length; i++) {
+      const def = stageDefs[i];
+      const reached = def.callsReached;
+      const dropOffCount = Math.max(0, prevCount - reached);
+      const retentionRate = Math.round(reached / total * 100);
+      const dropOffRate = prevCount > 0 ? Math.round(dropOffCount / prevCount * 100) : 0;
+      stages.push({
+        stageId: def.stageId,
+        stageName: def.stageName,
+        description: def.description,
+        callsReached: reached,
+        dropOffCount,
+        retentionRate,
+        dropOffRate
+      });
+      prevCount = reached;
+    }
+    let biggestDrop = stages[1];
+    for (let i = 1; i < stages.length; i++) {
+      if (stages[i].dropOffCount > biggestDrop.dropOffCount) {
+        biggestDrop = stages[i];
+      }
+    }
+    let scriptRecommendation = "";
+    if (biggestDrop.stageId === "verification") {
+      scriptRecommendation = 'Primary drop-off occurs during initial Contact Verification. Prospects remained silent or hung up during the opening monologue. Recommendation: Shorten the initial greeting from 4 sentences to 1 concise prompt ("Namaste Pranav ji?") to solicit an immediate response before pitching.';
+    } else if (biggestDrop.stageId === "pitch") {
+      scriptRecommendation = "Primary drop-off occurs during the Value Proposition. Recommendation: Shorten the explanation to under 15 words and immediately follow with an engaging discovery question.";
+    } else if (biggestDrop.stageId === "discovery") {
+      scriptRecommendation = 'Drop-off detected during Channel Discovery. Recommendation: Set WhatsApp as the default choice ("May I WhatsApp you the details?") rather than offering multiple competing options.';
+    } else {
+      scriptRecommendation = "Strong conversational progression across all funnel stages. Continue monitoring agent latency and response clarity.";
+    }
+    return {
+      totalConnectedCalls: connectedCalls.length,
+      stages,
+      biggestDropOffStage: biggestDrop.stageName,
+      scriptRecommendation
+    };
+  }
+};
+var callAnalyticsService = new CallAnalyticsService();
+
 // server/repositories/leadRepository.ts
 var LeadRepository = class {
   async getAllLeadsRaw() {
@@ -189,6 +786,79 @@ var LeadRepository = class {
     }
     return { enrolledCount: count };
   }
+  async getLeadTimeline(leadId) {
+    const lead = await prisma_default.lead.findUnique({
+      where: { id: leadId },
+      include: {
+        campaignLeads: {
+          include: { campaign: true }
+        },
+        calls: {
+          orderBy: { startedAt: "desc" },
+          include: {
+            agent: true,
+            agentVersion: true,
+            campaign: true
+          }
+        }
+      }
+    });
+    if (!lead) return null;
+    const callsWithIntelligence = lead.calls.map((c) => {
+      const callObj = {
+        id: c.id,
+        externalCallId: c.externalCallId,
+        campaignId: c.campaignId,
+        campaignName: c.campaign?.name || "Direct Outreach",
+        agentId: c.agentId,
+        agentName: c.agent?.name || "Voice Agent",
+        agentVersionId: c.agentVersionId,
+        leadId: c.leadId,
+        leadName: lead.name,
+        leadPhone: lead.phone,
+        phoneNumberId: c.phoneNumberId,
+        status: c.status,
+        outcome: c.outcome,
+        durationSeconds: c.durationSeconds,
+        startedAt: c.startedAt.toISOString(),
+        endedAt: c.endedAt ? c.endedAt.toISOString() : void 0,
+        transcript: c.transcript || [],
+        extractedVariables: c.extractedVariables || {}
+      };
+      if (c.durationSeconds > 0 && !callObj.extractedVariables.intelligence) {
+        callObj.extractedVariables.intelligence = callAnalyticsService.analyzeCall(callObj);
+      }
+      return callObj;
+    });
+    const totalDurationSeconds = lead.calls.reduce((sum, c) => sum + c.durationSeconds, 0);
+    return {
+      lead: {
+        id: lead.id,
+        name: lead.name,
+        phone: lead.phone,
+        email: lead.email || void 0,
+        metadata: lead.metadata || {},
+        createdAt: lead.createdAt.toISOString()
+      },
+      campaigns: lead.campaignLeads.map((cl) => ({
+        campaignId: cl.campaignId,
+        campaignName: cl.campaign?.name || cl.campaignId,
+        status: cl.status,
+        attemptCount: cl.attemptCount,
+        lastAttemptAt: cl.lastAttemptAt?.toISOString(),
+        nextAttemptAt: cl.nextAttemptAt?.toISOString()
+      })),
+      calls: callsWithIntelligence,
+      summary: {
+        totalCalls: lead.calls.length,
+        totalDurationSeconds,
+        latestOutcome: lead.calls[0]?.outcome || "untouched",
+        latestStatus: lead.calls[0]?.status || "untouched",
+        interestLevel: lead.calls.find((c) => c.extractedVariables?.interest_level)?.extractedVariables?.interest_level || "not_captured",
+        followUpPreference: lead.calls.find((c) => c.extractedVariables?.follow_up_preference)?.extractedVariables?.follow_up_preference || "none"
+      }
+    };
+  }
 };
 var leadRepository = new LeadRepository();
 
@@ -202,6 +872,9 @@ var ServerLeadService = class {
   }
   async getLeadById(id) {
     return leadRepository.getLeadById(id);
+  }
+  async getLeadTimeline(id) {
+    return leadRepository.getLeadTimeline(id);
   }
   async addLead(leadData, campaignId) {
     return leadRepository.addLead(leadData, campaignId);
@@ -234,6 +907,17 @@ leadRoutes.get("/", async (req, res) => {
       pageSize: pageSize ? Number(pageSize) : void 0
     });
     res.json({ success: true, data: result, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+leadRoutes.get("/:id/timeline", async (req, res) => {
+  try {
+    const timeline = await serverLeadService.getLeadTimeline(req.params.id);
+    if (!timeline) {
+      return res.status(404).json({ success: false, error: "Lead not found", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+    }
+    res.json({ success: true, data: timeline, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   } catch (err) {
     res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   }
@@ -1454,11 +2138,371 @@ var ServerCampaignService = class {
   async stopCampaign(id) {
     return campaignRepository.updateCampaignStatus(id, "cancelled");
   }
+  // --- FEATURE 2: LIVE BATCH CAMPAIGN DIALER & EXECUTION MONITOR ---
+  async dialBatch(campaignId, options) {
+    const campaign = await campaignRepository.getCampaignById(campaignId);
+    if (!campaign) throw new Error(`Campaign not found: ${campaignId}`);
+    const phoneNumberObj = await prisma_default.phoneNumber.findUnique({
+      where: { id: campaign.phoneNumberId }
+    });
+    const fromPhone = phoneNumberObj?.phoneNumber || process.env.SARVAM_AGENT_PHONE_NUMBER || "+917965480599";
+    const sarvamAppId = process.env.SARVAM_APP_ID || "Conversatio-b063cf10-e735";
+    const agentVersion = await prisma_default.agentVersion.findUnique({
+      where: { id: campaign.agentVersionId }
+    });
+    const config = agentVersion?.config || {};
+    let whereClause = { campaignId };
+    if (options?.leadIds && options.leadIds.length > 0) {
+      whereClause.leadId = { in: options.leadIds };
+    } else {
+      whereClause.status = { in: ["untouched", "queued", "retry_scheduled", "failed", "callback"] };
+    }
+    const campaignLeads = await prisma_default.campaignLead.findMany({
+      where: whereClause,
+      include: { lead: true },
+      take: options?.maxBatch || 10
+    });
+    if (campaignLeads.length === 0) {
+      return {
+        campaign,
+        totalTargeted: 0,
+        successfulDispatches: 0,
+        failedDispatches: 0,
+        results: [],
+        message: "No eligible leads waiting to be dialed in this campaign batch."
+      };
+    }
+    await campaignRepository.updateCampaignStatus(campaignId, "running");
+    const results = [];
+    for (const cl of campaignLeads) {
+      try {
+        console.log(`[Batch Dialer] Dialing lead ${cl.lead.name} (${cl.lead.phone}) for campaign "${campaign.name}"...`);
+        const callResult = await backendSarvamProvider.initiateOutboundCall({
+          agentVersionId: campaign.agentVersionId,
+          sarvamAgentId: config.sarvamAppId || sarvamAppId,
+          connectionId: config.sarvamConnectionId || phoneNumberObj?.providerId || void 0,
+          fromPhoneNumber: fromPhone,
+          toPhoneNumber: cl.lead.phone,
+          leadId: cl.lead.id,
+          campaignId: campaign.id,
+          userName: cl.lead.name,
+          initialBotMessage: config.firstGreeting || config.openingLine,
+          outroMessage: config.closingBehavior || config.outroMessage,
+          systemPrompt: config.systemPrompt
+        });
+        const call = await callRepository.createCall({
+          externalCallId: callResult.providerCallId,
+          campaignId: campaign.id,
+          agentId: campaign.agentId,
+          agentVersionId: campaign.agentVersionId,
+          leadId: cl.lead.id,
+          phoneNumberId: campaign.phoneNumberId,
+          status: "initiated"
+        });
+        const newAttemptCount = cl.attemptCount + 1;
+        await prisma_default.campaignLead.update({
+          where: { campaignId_leadId: { campaignId: campaign.id, leadId: cl.lead.id } },
+          data: {
+            status: "calling",
+            attemptCount: newAttemptCount,
+            lastAttemptAt: /* @__PURE__ */ new Date()
+          }
+        });
+        await prisma_default.campaign.update({
+          where: { id: campaign.id },
+          data: { callsAttempted: { increment: 1 } }
+        });
+        results.push({
+          leadId: cl.lead.id,
+          leadName: cl.lead.name,
+          phone: cl.lead.phone,
+          status: "initiated",
+          callId: call.id,
+          externalCallId: callResult.providerCallId,
+          attemptNumber: newAttemptCount
+        });
+      } catch (err) {
+        console.error(`[Batch Dialer] Error dialing ${cl.lead.phone}: ${err?.message}`);
+        const newAttemptCount = cl.attemptCount + 1;
+        const nextAttemptAt = newAttemptCount < 3 ? new Date(Date.now() + 4 * 36e5) : null;
+        const finalStatus = newAttemptCount >= 3 ? "exhausted" : "retry_scheduled";
+        await prisma_default.campaignLead.update({
+          where: { campaignId_leadId: { campaignId: campaign.id, leadId: cl.lead.id } },
+          data: {
+            status: finalStatus,
+            attemptCount: newAttemptCount,
+            lastAttemptAt: /* @__PURE__ */ new Date(),
+            nextAttemptAt
+          }
+        });
+        results.push({
+          leadId: cl.lead.id,
+          leadName: cl.lead.name,
+          phone: cl.lead.phone,
+          status: "failed",
+          error: err?.message || "Handshake failed",
+          attemptNumber: newAttemptCount
+        });
+      }
+    }
+    const successfulDispatches = results.filter((r) => r.status === "initiated").length;
+    const failedDispatches = results.filter((r) => r.status === "failed").length;
+    return {
+      campaign: await campaignRepository.getCampaignById(campaignId),
+      totalTargeted: results.length,
+      successfulDispatches,
+      failedDispatches,
+      results
+    };
+  }
+  async getExecutionMonitor(campaignId) {
+    const campaign = await campaignRepository.getCampaignById(campaignId);
+    if (!campaign) throw new Error(`Campaign not found: ${campaignId}`);
+    const [campaignLeads, recentCalls] = await Promise.all([
+      prisma_default.campaignLead.findMany({
+        where: { campaignId },
+        include: { lead: true }
+      }),
+      prisma_default.call.findMany({
+        where: { campaignId },
+        orderBy: { startedAt: "desc" },
+        take: 20,
+        include: { lead: true }
+      })
+    ]);
+    const breakdown = {
+      untouched: campaignLeads.filter((l) => l.status === "untouched").length,
+      queued: campaignLeads.filter((l) => l.status === "queued").length,
+      calling: campaignLeads.filter((l) => l.status === "calling").length,
+      completed: campaignLeads.filter((l) => l.status === "completed" || l.status === "contacted").length,
+      retry_scheduled: campaignLeads.filter((l) => l.status === "retry_scheduled" || l.status === "callback").length,
+      failed: campaignLeads.filter((l) => l.status === "failed" || l.status === "exhausted").length
+    };
+    return {
+      campaign,
+      totalLeads: campaignLeads.length,
+      breakdown,
+      recentCalls: recentCalls.map((c) => ({
+        id: c.id,
+        externalCallId: c.externalCallId,
+        leadId: c.leadId,
+        leadName: c.lead?.name || "Contact",
+        leadPhone: c.lead?.phone || "",
+        status: c.status,
+        outcome: c.outcome,
+        durationSeconds: c.durationSeconds,
+        startedAt: c.startedAt.toISOString()
+      })),
+      leads: campaignLeads.map((cl) => ({
+        id: cl.id,
+        leadId: cl.leadId,
+        name: cl.lead.name,
+        phone: cl.lead.phone,
+        status: cl.status,
+        attemptCount: cl.attemptCount,
+        lastAttemptAt: cl.lastAttemptAt?.toISOString(),
+        nextAttemptAt: cl.nextAttemptAt?.toISOString()
+      }))
+    };
+  }
+  // --- FEATURE 3: IN-HOUSE AUTOMATED RETRY WATERFALL & CADENCE ENGINE ---
+  async getRetryQueue(campaignId) {
+    const where = {
+      OR: [
+        { status: { in: ["retry_scheduled", "callback", "failed", "busy", "unanswered"] }, attemptCount: { lt: 3 } },
+        { nextAttemptAt: { not: null }, attemptCount: { lt: 3 } },
+        { status: "untouched", attemptCount: 0 }
+      ]
+    };
+    if (campaignId) {
+      where.campaignId = campaignId;
+    }
+    const leadsInQueue = await prisma_default.campaignLead.findMany({
+      where,
+      include: {
+        lead: true,
+        campaign: {
+          include: {
+            agent: true,
+            phoneNumber: true
+          }
+        },
+        calls: {
+          orderBy: { startedAt: "desc" },
+          take: 1
+        }
+      },
+      orderBy: [
+        { nextAttemptAt: "asc" },
+        { lastAttemptAt: "desc" }
+      ],
+      take: 50
+    });
+    const now = /* @__PURE__ */ new Date();
+    return leadsInQueue.map((cl) => {
+      const isDue = cl.nextAttemptAt ? new Date(cl.nextAttemptAt) <= now : true;
+      let cadenceTier = "Tier 1: Initial Outreach";
+      if (cl.attemptCount === 1) {
+        cadenceTier = "Tier 2: 4-Hour Spaced Interval";
+      } else if (cl.attemptCount === 2) {
+        cadenceTier = "Tier 3: 24-Hour Final Window";
+      } else if (cl.attemptCount >= 3) {
+        cadenceTier = "Cadence Exhausted";
+      }
+      return {
+        campaignLeadId: cl.id,
+        campaignId: cl.campaignId,
+        campaignName: cl.campaign?.name || "Direct Outreach",
+        leadId: cl.leadId,
+        leadName: cl.lead.name,
+        phone: cl.lead.phone,
+        email: cl.lead.email || void 0,
+        attemptCount: cl.attemptCount,
+        maxAttempts: 3,
+        status: cl.status,
+        cadenceTier,
+        lastAttemptAt: cl.lastAttemptAt?.toISOString() || null,
+        nextAttemptAt: cl.nextAttemptAt?.toISOString() || null,
+        isDue,
+        lastOutcome: cl.calls[0]?.outcome || cl.calls[0]?.status || (cl.attemptCount === 0 ? "not_yet_called" : "unreachable"),
+        agentName: cl.campaign?.agent?.name || "Sarvam AI Voice Agent"
+      };
+    });
+  }
+  async executeRetryNow(campaignLeadId) {
+    const campaignLead = await prisma_default.campaignLead.findUnique({
+      where: { id: campaignLeadId },
+      include: {
+        lead: true,
+        campaign: true
+      }
+    });
+    if (!campaignLead) throw new Error(`Campaign lead not found: ${campaignLeadId}`);
+    const campaign = campaignLead.campaign;
+    const lead = campaignLead.lead;
+    const phoneNumberObj = await prisma_default.phoneNumber.findUnique({
+      where: { id: campaign.phoneNumberId }
+    });
+    const fromPhone = phoneNumberObj?.phoneNumber || process.env.SARVAM_AGENT_PHONE_NUMBER || "+917965480599";
+    const sarvamAppId = process.env.SARVAM_APP_ID || "Conversatio-b063cf10-e735";
+    const agentVersion = await prisma_default.agentVersion.findUnique({
+      where: { id: campaign.agentVersionId }
+    });
+    const config = agentVersion?.config || {};
+    console.log(`[Cadence Engine] Executing immediate manual retry for ${lead.name} (${lead.phone}). Current attempt: ${campaignLead.attemptCount}...`);
+    const callResult = await backendSarvamProvider.initiateOutboundCall({
+      agentVersionId: campaign.agentVersionId,
+      sarvamAgentId: config.sarvamAppId || sarvamAppId,
+      connectionId: config.sarvamConnectionId || phoneNumberObj?.providerId || void 0,
+      fromPhoneNumber: fromPhone,
+      toPhoneNumber: lead.phone,
+      leadId: lead.id,
+      campaignId: campaign.id,
+      userName: lead.name,
+      initialBotMessage: config.firstGreeting || config.openingLine,
+      outroMessage: config.closingBehavior || config.outroMessage,
+      systemPrompt: config.systemPrompt
+    });
+    const newAttemptCount = campaignLead.attemptCount + 1;
+    let nextAttemptAt = null;
+    let newStatus = "calling";
+    if (newAttemptCount === 1) {
+      nextAttemptAt = new Date(Date.now() + 4 * 36e5);
+    } else if (newAttemptCount === 2) {
+      nextAttemptAt = new Date(Date.now() + 24 * 36e5);
+    } else {
+      newStatus = "exhausted";
+      nextAttemptAt = null;
+    }
+    const call = await callRepository.createCall({
+      externalCallId: callResult.providerCallId,
+      campaignId: campaign.id,
+      agentId: campaign.agentId,
+      agentVersionId: campaign.agentVersionId,
+      leadId: lead.id,
+      phoneNumberId: campaign.phoneNumberId,
+      status: "initiated"
+    });
+    const updatedCl = await prisma_default.campaignLead.update({
+      where: { id: campaignLeadId },
+      data: {
+        status: newStatus,
+        attemptCount: newAttemptCount,
+        lastAttemptAt: /* @__PURE__ */ new Date(),
+        nextAttemptAt
+      }
+    });
+    await prisma_default.campaign.update({
+      where: { id: campaign.id },
+      data: { callsAttempted: { increment: 1 } }
+    });
+    return {
+      success: true,
+      externalCallId: callResult.providerCallId,
+      callId: call.id,
+      attemptNumber: newAttemptCount,
+      nextAttemptAt: nextAttemptAt?.toISOString() || null,
+      status: newStatus
+    };
+  }
+  async processDueRetries(campaignId) {
+    const queue = await this.getRetryQueue(campaignId);
+    const dueItems = queue.filter((item) => item.isDue);
+    const executedResults = [];
+    for (const item of dueItems.slice(0, 10)) {
+      try {
+        const res = await this.executeRetryNow(item.campaignLeadId);
+        executedResults.push({
+          campaignLeadId: item.campaignLeadId,
+          leadName: item.leadName,
+          phone: item.phone,
+          ...res
+        });
+      } catch (err) {
+        executedResults.push({
+          campaignLeadId: item.campaignLeadId,
+          leadName: item.leadName,
+          phone: item.phone,
+          success: false,
+          error: err?.message
+        });
+      }
+    }
+    return {
+      processedCount: executedResults.length,
+      totalDue: dueItems.length,
+      results: executedResults
+    };
+  }
 };
 var serverCampaignService = new ServerCampaignService();
 
 // server/routes/campaignRoutes.ts
 var campaignRoutes = Router3();
+campaignRoutes.get("/retries/queue", async (req, res) => {
+  try {
+    const queue = await serverCampaignService.getRetryQueue(req.query.campaignId);
+    res.json({ success: true, data: queue, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+campaignRoutes.post("/retries/process-due", async (req, res) => {
+  try {
+    const result = await serverCampaignService.processDueRetries(req.body?.campaignId);
+    res.json({ success: true, data: result, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+campaignRoutes.post("/retries/:id/execute-now", async (req, res) => {
+  try {
+    const result = await serverCampaignService.executeRetryNow(req.params.id);
+    res.json({ success: true, data: result, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
 campaignRoutes.get("/", async (req, res) => {
   try {
     const { search, status } = req.query;
@@ -1517,6 +2561,22 @@ campaignRoutes.post("/:id/stop", async (req, res) => {
     res.json({ success: true, data: campaign, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   } catch (err) {
     res.status(400).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+campaignRoutes.post("/:id/dial-batch", async (req, res) => {
+  try {
+    const result = await serverCampaignService.dialBatch(req.params.id, req.body);
+    res.json({ success: true, data: result, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+campaignRoutes.get("/:id/monitor", async (req, res) => {
+  try {
+    const monitor = await serverCampaignService.getExecutionMonitor(req.params.id);
+    res.json({ success: true, data: monitor, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   }
 });
 
@@ -1662,603 +2722,6 @@ var R2StorageService = class {
   }
 };
 var r2StorageService = new R2StorageService();
-
-// server/services/callAnalyticsService.ts
-var CallAnalyticsService = class {
-  /**
-   * Performs deep, automated conversational analysis on a call session.
-   * Parses verbatim Hindi/Hinglish/English turns, computes airtime metrics,
-   * runs automated QA script audits, detects objections & buying signals,
-   * and provides a next-best-action recommendation for sales/operations.
-   */
-  analyzeCall(call) {
-    const transcript = Array.isArray(call.transcript) ? call.transcript : [];
-    const durationSecs = call.durationSeconds || 0;
-    const extractedVars = call.extractedVariables || {};
-    const talkToListen = this.computePacingDynamics(transcript, durationSecs);
-    const qaScorecard = this.auditQAScriptCompliance(transcript, call);
-    const objections = this.detectObjections(transcript);
-    const buyingSignals = this.detectBuyingSignals(transcript, extractedVars);
-    const sentimentTrajectory = this.computeSentimentTrajectory(transcript, extractedVars);
-    const nextBestAction = this.generateNextBestAction(call, buyingSignals, objections, extractedVars);
-    const milestones = this.computeMilestoneProgress(transcript, call);
-    return {
-      talkToListen,
-      qaScorecard,
-      objections,
-      buyingSignals,
-      sentimentTrajectory,
-      nextBestAction,
-      milestones,
-      analyzedAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-  }
-  /**
-   * 1. Talk-to-Listen Ratio & Conversational Pacing Dynamics
-   */
-  computePacingDynamics(transcript, durationSecs) {
-    if (transcript.length === 0 || durationSecs === 0) {
-      return {
-        agentWordCount: 0,
-        leadWordCount: 0,
-        totalWordCount: 0,
-        agentTalkPercentage: 0,
-        leadTalkPercentage: 0,
-        agentWPM: 0,
-        leadWPM: 0,
-        turnCount: 0,
-        avgTurnLengthWords: 0,
-        pacingAssessment: "unbalanced",
-        pacingSummary: "No verbal turns recorded; call terminated without active dialogue."
-      };
-    }
-    let agentWords = 0;
-    let leadWords = 0;
-    for (const turn of transcript) {
-      const words = turn.text.trim().split(/\s+/).filter(Boolean).length;
-      if (turn.speaker === "agent") {
-        agentWords += words;
-      } else {
-        leadWords += words;
-      }
-    }
-    const totalWords = agentWords + leadWords;
-    let agentTalkPercentage = 50;
-    let leadTalkPercentage = 50;
-    if (totalWords > 0) {
-      agentTalkPercentage = Math.round(agentWords / totalWords * 100);
-      leadTalkPercentage = 100 - agentTalkPercentage;
-    } else if (agentWords > 0 && leadWords === 0) {
-      agentTalkPercentage = 100;
-      leadTalkPercentage = 0;
-    }
-    const durationMinutes = Math.max(durationSecs / 60, 0.1);
-    const agentWPM = Math.round(agentWords / durationMinutes);
-    const leadWPM = Math.round(leadWords / durationMinutes);
-    const avgTurnLengthWords = Math.round(totalWords / transcript.length);
-    let pacingAssessment = "optimal";
-    let pacingSummary = "Balanced enterprise conversational exchange.";
-    if (leadWords === 0) {
-      pacingAssessment = "unbalanced";
-      pacingSummary = "One-sided monologue. Customer remained silent or hung up during introduction.";
-    } else if (agentTalkPercentage > 75) {
-      pacingAssessment = "unbalanced";
-      pacingSummary = `Agent dominated airtime (${agentTalkPercentage}%). Consider shortening value pitch to encourage customer replies.`;
-    } else if (agentTalkPercentage < 35) {
-      pacingAssessment = "unbalanced";
-      pacingSummary = `Customer dominated airtime (${leadTalkPercentage}%). High prospect engagement or detailed feedback.`;
-    } else if (agentWPM > 175) {
-      pacingAssessment = "fast_paced";
-      pacingSummary = `Agent cadence is fast (${agentWPM} WPM). Recommended rate for Indian voice outreach is 120-145 WPM.`;
-    } else {
-      pacingAssessment = "optimal";
-      pacingSummary = `Ideal conversational ratio: Agent spoke ${agentTalkPercentage}% of words; prospect engaged for ${leadTalkPercentage}%.`;
-    }
-    return {
-      agentWordCount: agentWords,
-      leadWordCount: leadWords,
-      totalWordCount: totalWords,
-      agentTalkPercentage,
-      leadTalkPercentage,
-      agentWPM,
-      leadWPM,
-      turnCount: transcript.length,
-      avgTurnLengthWords,
-      pacingAssessment,
-      pacingSummary
-    };
-  }
-  /**
-   * 2. Automated QA Script Compliance Audit (0 - 100 Scorecard)
-   */
-  auditQAScriptCompliance(transcript, call) {
-    const checklist = [];
-    const agentTurns = transcript.filter((t) => t.speaker === "agent");
-    const combinedAgentText = agentTurns.map((t) => t.text.toLowerCase()).join(" ");
-    const brandPattern = /(fluid\.live|fluid\s*live|fluid)/i;
-    const agentNamePattern = /(shubh|शुभ|mera\s*naam|my\s*name)/i;
-    const passedBrand = brandPattern.test(combinedAgentText) && agentNamePattern.test(combinedAgentText);
-    checklist.push({
-      id: "qa_brand_id",
-      category: "Identification",
-      criterion: "Agent Identification & Brand Disclosure",
-      score: passedBrand ? 20 : 0,
-      passed: passedBrand,
-      details: passedBrand ? "Agent clearly introduced self as Shubh representing Fluid.live." : "Failed to mention both agent identity and company brand in opening."
-    });
-    const leadName = (call.extractedVariables?.user_name || "").toLowerCase();
-    const verifyPattern = new RegExp(`(${leadName || "pranav"}|kya\\s*meri\\s*baat|baat\\s*ho\\s*rahi\\s*hai|am\\s*i\\s*speaking|is\\s*this)`, "i");
-    const passedVerify = verifyPattern.test(combinedAgentText) || call.extractedVariables?.verification_status === "completed";
-    checklist.push({
-      id: "qa_verification",
-      category: "Verification",
-      criterion: "Target Contact Verification",
-      score: passedVerify ? 20 : 0,
-      passed: passedVerify,
-      details: passedVerify ? "Agent addressed customer respectfully by name and validated identity." : "Customer identity verification omitted in opening dialogue."
-    });
-    const pitchPattern = /(ai\s*voice\s*calling|calling|reminders|follow\s*ups|voice\s*calling|business|businesses)/i;
-    const passedPitch = pitchPattern.test(combinedAgentText);
-    checklist.push({
-      id: "qa_pitch",
-      category: "Pitch Clarity",
-      criterion: "Value Proposition Articulation",
-      score: passedPitch ? 20 : 0,
-      passed: passedPitch,
-      details: passedPitch ? "Articulated core AI voice calling capabilities and automated follow-up benefits." : "Value proposition was not delivered or call ended prematurely."
-    });
-    const discoveryPattern = /(chhota\s*sa\s*sawal|ek\s*sawal|quick\s*question|whatsapp|demo|preference|prefer)/i;
-    const passedDiscovery = discoveryPattern.test(combinedAgentText) || Boolean(call.extractedVariables?.follow_up_preference);
-    checklist.push({
-      id: "qa_discovery",
-      category: "Consent & Discovery",
-      criterion: "Explicit Consent & Channel Preference",
-      score: passedDiscovery ? 20 : 0,
-      passed: passedDiscovery,
-      details: passedDiscovery ? "Politely sought permission before pitching and gathered follow-up channel preference." : "No customer consent or follow-up preference captured."
-    });
-    const closingPattern = /(shukriya|शुक्रिया|din\s*shubh|thank\s*you|thanks|aapka\s*din|have\s*a\s*great\s*day)/i;
-    const passedClosing = closingPattern.test(combinedAgentText);
-    checklist.push({
-      id: "qa_closing",
-      category: "Professionalism",
-      criterion: "Courteous Enterprise Sign-off",
-      score: passedClosing ? 20 : 0,
-      passed: passedClosing,
-      details: passedClosing ? "Agent thanked prospect for their time and closed with polite cultural greeting." : "Call terminated abruptly without standard courteous sign-off."
-    });
-    const overallScore = checklist.reduce((sum, item) => sum + item.score, 0);
-    let grade = "Needs Improvement";
-    let status = "failed";
-    let keyFeedback = "";
-    if (overallScore >= 95) {
-      grade = "A+";
-      status = "passed";
-      keyFeedback = "Flawless execution. All compliance and conversational milestones fulfilled.";
-    } else if (overallScore >= 80) {
-      grade = "A";
-      status = "passed";
-      keyFeedback = "Strong compliance. Minor opportunities in discovery cadence.";
-    } else if (overallScore >= 60) {
-      grade = "B";
-      status = "warning";
-      keyFeedback = "Acceptable. Call completed partial workflow before disengagement.";
-    } else if (overallScore >= 40) {
-      grade = "C";
-      status = "warning";
-      keyFeedback = "Incomplete dialogue. Critical script checkpoints were missed.";
-    } else {
-      grade = "Needs Improvement";
-      status = "failed";
-      keyFeedback = "Call dropped early or customer hung up before core script delivery.";
-    }
-    return {
-      overallScore,
-      grade,
-      status,
-      checklist,
-      keyFeedback
-    };
-  }
-  /**
-   * 3. Objection & Friction Detection (Hindi / Hinglish / English)
-   */
-  detectObjections(transcript) {
-    const objections = [];
-    const leadTurns = transcript.filter((t) => t.speaker === "lead");
-    const patterns = [
-      {
-        category: "pricing",
-        label: "Pricing / Budget Concern",
-        regex: /(kitna\s*kharcha|rate\s*kya|expensive|mehenga|cost|price|kitne\s*paise|charges|fees|budget|kitna\s*lagega|kya\s*charge)/i
-      },
-      {
-        category: "timing",
-        label: "Timing / Busyness Hesitation",
-        regex: /(busy|baad\s*me|not\s*right\s*now|call\s*later|time\s*nahi|driving|meeting|abhi\s*nahi|kal\s*call|fursat\s*nahi|busy\s*hoon|free\s*nahi)/i
-      },
-      {
-        category: "ai_skepticism",
-        label: "AI / Bot Skepticism",
-        regex: /(ai\s*ho|robot|computer|machine|real\s*person|insaan|asli\s*insaan|recorded|automated|bot\s*ho)/i
-      },
-      {
-        category: "competitor",
-        label: "Existing Provider / Competitor",
-        regex: /(already\s*using|pehle\s*se|kisi\s*aur\s*se|dusra\s*software|dusri\s*service|already\s*have|vendor)/i
-      },
-      {
-        category: "authority",
-        label: "Authority / Gatekeeper Escalation",
-        regex: /(boss\s*se|owner\s*se|sir\s*se|decision\s*maker|papa\s*se|kisi\s*aur\s*ka\s*phone|puchna\s*padega)/i
-      }
-    ];
-    for (const turn of leadTurns) {
-      for (const p of patterns) {
-        if (p.regex.test(turn.text)) {
-          objections.push({
-            category: p.category,
-            label: p.label,
-            detectedText: turn.text,
-            speaker: "lead",
-            turnId: turn.id,
-            confidence: 0.92
-          });
-        }
-      }
-    }
-    return objections;
-  }
-  /**
-   * 4. Buying Signal & High Intent Detection
-   */
-  detectBuyingSignals(transcript, extractedVars) {
-    const signals = [];
-    const leadTurns = transcript.filter((t) => t.speaker === "lead");
-    for (const turn of leadTurns) {
-      const text = turn.text.toLowerCase();
-      if (/(whatsapp|whats\s*app|details\s*bhejo|bhej\s*do|bhejiye|pdf|catalogue|brochure|message\s*karo)/i.test(text)) {
-        signals.push({
-          type: "whatsapp_request",
-          label: "Requested WhatsApp Documentation & Pricing",
-          detectedText: turn.text,
-          turnId: turn.id,
-          confidence: 0.96
-        });
-      }
-      if (/(demo|sample|trial|dikhao|dekhna\s*hai|meeting|schedule|presentation)/i.test(text)) {
-        signals.push({
-          type: "demo_request",
-          label: "Requested Live Product Demonstration",
-          detectedText: turn.text,
-          turnId: turn.id,
-          confidence: 0.94
-        });
-      }
-      if (/(interested|haan\s*interest|bilkul|sure|sahi\s*hai|acha\s*laga|achha\s*laga|aur\s*batao|theek\s*hai)/i.test(text)) {
-        signals.push({
-          type: "affirmative_interest",
-          label: "Expressed Explicit Business Interest",
-          detectedText: turn.text,
-          turnId: turn.id,
-          confidence: 0.95
-        });
-      }
-      if (/(haan|bol\s*raha\s*hoon|speaking|yes\s*speaking|ji\s*haan)/i.test(text) && signals.length === 0) {
-        signals.push({
-          type: "contact_verification",
-          label: "Confirmed Target Identity",
-          detectedText: turn.text,
-          turnId: turn.id,
-          confidence: 0.9
-        });
-      }
-    }
-    if (extractedVars.interest_level === "interested" && !signals.some((s) => s.type === "affirmative_interest")) {
-      signals.push({
-        type: "affirmative_interest",
-        label: "Sarvam AI Flagged High Purchase Intent",
-        detectedText: extractedVars.call_summary || "Customer expressed positive interest during conversation.",
-        turnId: "sarvam_summary",
-        confidence: 0.95
-      });
-    }
-    if (extractedVars.follow_up_preference === "whatsapp_details" && !signals.some((s) => s.type === "whatsapp_request")) {
-      signals.push({
-        type: "whatsapp_request",
-        label: "WhatsApp Follow-Up Preference Recorded",
-        detectedText: "Preferred follow-up via WhatsApp details.",
-        turnId: "sarvam_follow_up",
-        confidence: 0.98
-      });
-    }
-    return signals;
-  }
-  /**
-   * 5. Sentiment Trajectory Analysis (Opening -> Pitch -> Closing)
-   */
-  computeSentimentTrajectory(transcript, extractedVars) {
-    if (transcript.length === 0) {
-      return {
-        overallSentiment: "neutral",
-        overallScore: 0,
-        trajectoryTrend: "neutral",
-        phases: []
-      };
-    }
-    const turnsCount = transcript.length;
-    const openingEnd = Math.max(1, Math.floor(turnsCount * 0.33));
-    const pitchEnd = Math.max(openingEnd + 1, Math.floor(turnsCount * 0.67));
-    const openingTurns = transcript.slice(0, openingEnd);
-    const pitchTurns = transcript.slice(openingEnd, pitchEnd);
-    const closingTurns = transcript.slice(pitchEnd);
-    const scorePhase = (phase, turns) => {
-      const combined = turns.map((t) => t.text).join(" ").toLowerCase();
-      let positiveMarkers = (combined.match(/(shukriya|शुक्रिया|achha|acha|great|interested|sure|haan|हाँ|bhejo|sahi|wah|good|whatsapp|शुभ|धन्यवाद|thanks)/gi) || []).length;
-      let negativeMarkers = (combined.match(/(nahi|नहीं|busy|mat|not|fursat|wrong|disconnect|bekaar)/gi) || []).length;
-      let score = 0;
-      let sentiment = "neutral";
-      if (positiveMarkers > negativeMarkers) {
-        score = Math.min(1, 0.4 + (positiveMarkers - negativeMarkers) * 0.2);
-        sentiment = "positive";
-      } else if (negativeMarkers > positiveMarkers) {
-        score = Math.max(-1, -0.4 - (negativeMarkers - positiveMarkers) * 0.2);
-        sentiment = "negative";
-      } else if (turns.length === 0 || turns.every((t) => t.speaker === "agent")) {
-        score = 0;
-        sentiment = "hesitant";
-      }
-      return {
-        phase,
-        sentiment,
-        score: Number(score.toFixed(2)),
-        snippet: turns.length > 0 ? turns[turns.length - 1].text.slice(0, 80) : void 0
-      };
-    };
-    const phases = [
-      scorePhase("opening", openingTurns),
-      scorePhase("pitch", pitchTurns),
-      scorePhase("closing", closingTurns)
-    ];
-    if (extractedVars.interest_level === "interested") {
-      if (phases[1]) {
-        phases[1].score = Math.max(phases[1].score, 0.8);
-        phases[1].sentiment = "positive";
-      }
-      if (phases[2]) {
-        phases[2].score = Math.max(phases[2].score, 0.9);
-        phases[2].sentiment = "positive";
-      }
-    }
-    let overallScore = phases.reduce((acc, p) => acc + p.score, 0) / phases.length;
-    if (extractedVars.interest_level === "interested") {
-      overallScore = Math.max(overallScore, 0.85);
-    } else if (extractedVars.interest_level === "not_interested") {
-      overallScore = Math.min(overallScore, -0.6);
-    }
-    let overallSentiment = "neutral";
-    if (overallScore > 0.2) overallSentiment = "positive";
-    else if (overallScore < -0.2) overallSentiment = "negative";
-    let trajectoryTrend = "neutral";
-    if (phases[0].score >= 0.3 && phases[2].score >= 0.5) {
-      trajectoryTrend = "consistently_positive";
-    } else if (phases[2].score > phases[0].score && phases[2].score > 0.3) {
-      trajectoryTrend = "ascending";
-    } else if (phases[2].score < phases[0].score && phases[2].score < 0) {
-      trajectoryTrend = "descending";
-    } else if (transcript.every((t) => t.speaker === "agent")) {
-      trajectoryTrend = "disengaged";
-    }
-    return {
-      overallSentiment,
-      overallScore: Number(overallScore.toFixed(2)),
-      trajectoryTrend,
-      phases
-    };
-  }
-  /**
-   * 6. Next Best Action Generator
-   */
-  generateNextBestAction(call, buyingSignals, objections, extractedVars) {
-    const leadName = extractedVars.user_name || "Customer";
-    if (extractedVars.follow_up_preference === "whatsapp_details" || buyingSignals.some((s) => s.type === "whatsapp_request")) {
-      return {
-        actionTitle: `Dispatch WhatsApp Demo & One-Pager to ${leadName}`,
-        actionType: "dispatch_whatsapp",
-        priority: "urgent",
-        suggestedMessage: `Namaste ${leadName} ji, thank you for speaking with Fluid.live! As requested, here is our 1-minute video demo and enterprise pricing brochure for AI Voice Calling. Let us know if you would like to test a sample workflow!`
-      };
-    }
-    if (extractedVars.follow_up_preference === "callback" || buyingSignals.some((s) => s.type === "demo_request")) {
-      return {
-        actionTitle: `Schedule Solution Architect Live Demo with ${leadName}`,
-        actionType: "book_demo",
-        priority: "high",
-        suggestedMessage: `Namaste ${leadName} ji, following our conversation, our team would love to show you how Fluid.live automates 10,000+ customer calls daily. When is a convenient time for a 10-minute walkthrough?`
-      };
-    }
-    if (objections.some((o) => o.category === "timing")) {
-      return {
-        actionTitle: `Auto-Schedule Follow-up Call for ${leadName}`,
-        actionType: "schedule_callback",
-        priority: "medium",
-        suggestedMessage: `Namaste ${leadName} ji, sorry to have caught you at a busy moment! We will reach out again tomorrow at a better time. Have a wonderful day ahead!`
-      };
-    }
-    if (extractedVars.interest_level === "not_interested" || call.outcome === "not_interested") {
-      return {
-        actionTitle: `Mark Lead as Unqualified & Suppress Dialer`,
-        actionType: "suppress",
-        priority: "low"
-      };
-    }
-    if (call.durationSeconds > 0 && (!call.transcript || call.transcript.length <= 1)) {
-      return {
-        actionTitle: `Re-queue for Secondary Afternoon Calling Slot`,
-        actionType: "re_queue",
-        priority: "medium"
-      };
-    }
-    return {
-      actionTitle: `Log Interaction & Review Call Recording`,
-      actionType: "escalate_human",
-      priority: "medium"
-    };
-  }
-  /**
-   * 7. Conversational Milestone Progress (Per-Call Funnel)
-   */
-  computeMilestoneProgress(transcript, call) {
-    const stagesCompleted = [];
-    const leadTurns = transcript.filter((t) => t.speaker === "lead");
-    const agentTurns = transcript.filter((t) => t.speaker === "agent");
-    if (call.durationSeconds > 0 || transcript.length >= 1) {
-      stagesCompleted.push("greeting");
-    }
-    const isVerified = call.extractedVariables?.verification_status === "completed" || leadTurns.length >= 1 || transcript.length >= 2;
-    if (isVerified && stagesCompleted.includes("greeting")) {
-      stagesCompleted.push("verification");
-    }
-    const hasPitched = agentTurns.length >= 2 || transcript.length >= 3;
-    if (hasPitched && stagesCompleted.includes("verification")) {
-      stagesCompleted.push("pitch");
-    }
-    const hasDiscovery = Boolean(call.extractedVariables?.follow_up_preference) || call.extractedVariables?.interest_level === "interested" || transcript.length >= 5;
-    if (hasDiscovery && stagesCompleted.includes("pitch")) {
-      stagesCompleted.push("discovery");
-    }
-    const hasClosed = stagesCompleted.includes("discovery") && (transcript.length >= 7 || call.outcome === "successful_contact" || call.outcome === "callback_requested");
-    if (hasClosed) {
-      stagesCompleted.push("close");
-    }
-    const currentStageId = stagesCompleted[stagesCompleted.length - 1] || "greeting";
-    const stageNames = {
-      greeting: "1. Initial Greeting",
-      verification: "2. Contact Verification",
-      pitch: "3. Value Pitch",
-      discovery: "4. Channel Discovery",
-      close: "5. Successful Close"
-    };
-    let dropOffStageId;
-    let dropOffReason;
-    if (!stagesCompleted.includes("close")) {
-      if (!stagesCompleted.includes("verification")) {
-        dropOffStageId = "greeting";
-        dropOffReason = "Customer remained silent or disconnected during opening verification question.";
-      } else if (!stagesCompleted.includes("pitch")) {
-        dropOffStageId = "verification";
-        dropOffReason = "Dialogue ended immediately after identity verification before value pitch.";
-      } else if (!stagesCompleted.includes("discovery")) {
-        dropOffStageId = "pitch";
-        dropOffReason = "Prospect disengaged or hung up during core value proposition pitch.";
-      } else {
-        dropOffStageId = "discovery";
-        dropOffReason = "Call ended before final channel confirmation and sign-off.";
-      }
-    }
-    return {
-      currentStageId,
-      currentStageName: stageNames[currentStageId] || "Initial Greeting",
-      stagesCompleted,
-      dropOffStageId,
-      dropOffReason
-    };
-  }
-  /**
-   * 8. Aggregate Script Drop-Off Funnel & AI Recommendations (Across All Calls)
-   */
-  computeScriptDropOffFunnel(calls) {
-    const connectedCalls = calls.filter((c) => c.durationSeconds > 0 || c.transcript && c.transcript.length > 0);
-    const total = connectedCalls.length || 1;
-    let greetingCount = 0;
-    let verificationCount = 0;
-    let pitchCount = 0;
-    let discoveryCount = 0;
-    let closeCount = 0;
-    for (const c of connectedCalls) {
-      const ms = c.extractedVariables?.intelligence?.milestones || this.computeMilestoneProgress(c.transcript || [], c);
-      if (ms.stagesCompleted.includes("greeting")) greetingCount++;
-      if (ms.stagesCompleted.includes("verification")) verificationCount++;
-      if (ms.stagesCompleted.includes("pitch")) pitchCount++;
-      if (ms.stagesCompleted.includes("discovery")) discoveryCount++;
-      if (ms.stagesCompleted.includes("close")) closeCount++;
-    }
-    const stageDefs = [
-      {
-        stageId: "greeting",
-        stageName: "1. Greeting Delivered",
-        description: "Agent initiated call and delivered introductory greeting.",
-        callsReached: greetingCount
-      },
-      {
-        stageId: "verification",
-        stageName: "2. Contact Verified",
-        description: "Prospect responded and confirmed identity.",
-        callsReached: verificationCount
-      },
-      {
-        stageId: "pitch",
-        stageName: "3. Value Proposition",
-        description: "Core AI voice calling capabilities presented.",
-        callsReached: pitchCount
-      },
-      {
-        stageId: "discovery",
-        stageName: "4. Channel Discovery",
-        description: "Follow-up channel preference (WhatsApp / Demo) discussed.",
-        callsReached: discoveryCount
-      },
-      {
-        stageId: "close",
-        stageName: "5. Successful Close",
-        description: "Follow-up agreed and courteous sign-off concluded.",
-        callsReached: closeCount
-      }
-    ];
-    const stages = [];
-    let prevCount = total;
-    for (let i = 0; i < stageDefs.length; i++) {
-      const def = stageDefs[i];
-      const reached = def.callsReached;
-      const dropOffCount = Math.max(0, prevCount - reached);
-      const retentionRate = Math.round(reached / total * 100);
-      const dropOffRate = prevCount > 0 ? Math.round(dropOffCount / prevCount * 100) : 0;
-      stages.push({
-        stageId: def.stageId,
-        stageName: def.stageName,
-        description: def.description,
-        callsReached: reached,
-        dropOffCount,
-        retentionRate,
-        dropOffRate
-      });
-      prevCount = reached;
-    }
-    let biggestDrop = stages[1];
-    for (let i = 1; i < stages.length; i++) {
-      if (stages[i].dropOffCount > biggestDrop.dropOffCount) {
-        biggestDrop = stages[i];
-      }
-    }
-    let scriptRecommendation = "";
-    if (biggestDrop.stageId === "verification") {
-      scriptRecommendation = 'Primary drop-off occurs during initial Contact Verification. Prospects remained silent or hung up during the opening monologue. Recommendation: Shorten the initial greeting from 4 sentences to 1 concise prompt ("Namaste Pranav ji?") to solicit an immediate response before pitching.';
-    } else if (biggestDrop.stageId === "pitch") {
-      scriptRecommendation = "Primary drop-off occurs during the Value Proposition. Recommendation: Shorten the explanation to under 15 words and immediately follow with an engaging discovery question.";
-    } else if (biggestDrop.stageId === "discovery") {
-      scriptRecommendation = 'Drop-off detected during Channel Discovery. Recommendation: Set WhatsApp as the default choice ("May I WhatsApp you the details?") rather than offering multiple competing options.';
-    } else {
-      scriptRecommendation = "Strong conversational progression across all funnel stages. Continue monitoring agent latency and response clarity.";
-    }
-    return {
-      totalConnectedCalls: connectedCalls.length,
-      stages,
-      biggestDropOffStage: biggestDrop.stageName,
-      scriptRecommendation
-    };
-  }
-};
-var callAnalyticsService = new CallAnalyticsService();
 
 // server/services/callService.ts
 var ServerCallService = class {

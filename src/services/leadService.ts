@@ -89,6 +89,10 @@ class LeadService implements ILeadService {
   ): Promise<CampaignLead> {
     return await apiClient.patch<CampaignLead>(`/campaigns/leads/${campaignLeadId}/status`, { status });
   }
+
+  async getLeadTimeline(leadId: string): Promise<any> {
+    return await apiClient.get<any>(`/leads/${leadId}/timeline`);
+  }
 }
 
 export const leadService = new LeadService();

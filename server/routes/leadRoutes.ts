@@ -20,6 +20,19 @@ leadRoutes.get('/', async (req, res) => {
   }
 });
 
+// GET /api/leads/:id/timeline (Full Lead 360 profile, chronological calls & audio recordings)
+leadRoutes.get('/:id/timeline', async (req, res) => {
+  try {
+    const timeline = await serverLeadService.getLeadTimeline(req.params.id);
+    if (!timeline) {
+      return res.status(404).json({ success: false, error: 'Lead not found', timestamp: new Date().toISOString() });
+    }
+    res.json({ success: true, data: timeline, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
 // GET /api/leads/:id
 leadRoutes.get('/:id', async (req, res) => {
   try {

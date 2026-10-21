@@ -24,6 +24,11 @@ export interface ICampaignService {
   pauseCampaign(id: string): Promise<Campaign>;
   resumeCampaign(id: string): Promise<Campaign>;
   stopCampaign(id: string): Promise<Campaign>;
+  dialBatch(id: string, options?: { leadIds?: string[]; maxBatch?: number }): Promise<any>;
+  getExecutionMonitor(id: string): Promise<any>;
+  getRetryQueue(campaignId?: string): Promise<any[]>;
+  executeRetryNow(campaignLeadId: string): Promise<any>;
+  processDueRetries(campaignId?: string): Promise<any>;
 }
 
 class CampaignService implements ICampaignService {
@@ -56,6 +61,27 @@ class CampaignService implements ICampaignService {
 
   async stopCampaign(id: string): Promise<Campaign> {
     return await apiClient.post<Campaign>(`/campaigns/${id}/stop`);
+  }
+
+  async dialBatch(id: string, options?: { leadIds?: string[]; maxBatch?: number }): Promise<any> {
+    return await apiClient.post<any>(`/campaigns/${id}/dial-batch`, options || {});
+  }
+
+  async getExecutionMonitor(id: string): Promise<any> {
+    return await apiClient.get<any>(`/campaigns/${id}/monitor`);
+  }
+
+  async getRetryQueue(campaignId?: string): Promise<any[]> {
+    const q = campaignId ? `?campaignId=${campaignId}` : '';
+    return await apiClient.get<any[]>(`/campaigns/retries/queue${q}`);
+  }
+
+  async executeRetryNow(campaignLeadId: string): Promise<any> {
+    return await apiClient.post<any>(`/campaigns/retries/${campaignLeadId}/execute-now`);
+  }
+
+  async processDueRetries(campaignId?: string): Promise<any> {
+    return await apiClient.post<any>(`/campaigns/retries/process-due`, { campaignId });
   }
 }
 

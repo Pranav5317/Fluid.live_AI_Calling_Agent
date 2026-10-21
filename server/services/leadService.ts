@@ -31,6 +31,10 @@ export class ServerLeadService {
     return leadRepository.getLeadById(id);
   }
 
+  async getLeadTimeline(id: string) {
+    return leadRepository.getLeadTimeline(id);
+  }
+
   async addLead(leadData: Omit<Lead, 'id' | 'createdAt'>, campaignId?: string): Promise<Lead> {
     return leadRepository.addLead(leadData, campaignId);
   }

@@ -1,5 +1,6 @@
 import prisma from '../lib/prisma';
 import { Lead, CampaignLead, CampaignLeadStatus } from '../../src/types';
+import { callAnalyticsService } from '../services/callAnalyticsService';
 
 export class LeadRepository {
   async getAllLeadsRaw(): Promise<Lead[]> {
@@ -195,6 +196,84 @@ export class LeadRepository {
       count++;
     }
     return { enrolledCount: count };
+  }
+
+  async getLeadTimeline(leadId: string) {
+    const lead = await prisma.lead.findUnique({
+      where: { id: leadId },
+      include: {
+        campaignLeads: {
+          include: { campaign: true },
+        },
+        calls: {
+          orderBy: { startedAt: 'desc' },
+          include: {
+            agent: true,
+            agentVersion: true,
+            campaign: true,
+          },
+        },
+      },
+    });
+
+    if (!lead) return null;
+
+    const callsWithIntelligence = lead.calls.map(c => {
+      const callObj: any = {
+        id: c.id,
+        externalCallId: c.externalCallId,
+        campaignId: c.campaignId,
+        campaignName: c.campaign?.name || 'Direct Outreach',
+        agentId: c.agentId,
+        agentName: c.agent?.name || 'Voice Agent',
+        agentVersionId: c.agentVersionId,
+        leadId: c.leadId,
+        leadName: lead.name,
+        leadPhone: lead.phone,
+        phoneNumberId: c.phoneNumberId,
+        status: c.status,
+        outcome: c.outcome,
+        durationSeconds: c.durationSeconds,
+        startedAt: c.startedAt.toISOString(),
+        endedAt: c.endedAt ? c.endedAt.toISOString() : undefined,
+        transcript: (c.transcript as any) || [],
+        extractedVariables: (c.extractedVariables as any) || {},
+      };
+      if (c.durationSeconds > 0 && !callObj.extractedVariables.intelligence) {
+        callObj.extractedVariables.intelligence = callAnalyticsService.analyzeCall(callObj);
+      }
+      return callObj;
+    });
+
+    const totalDurationSeconds = lead.calls.reduce((sum, c) => sum + c.durationSeconds, 0);
+
+    return {
+      lead: {
+        id: lead.id,
+        name: lead.name,
+        phone: lead.phone,
+        email: lead.email || undefined,
+        metadata: (lead.metadata as Record<string, any>) || {},
+        createdAt: lead.createdAt.toISOString(),
+      },
+      campaigns: lead.campaignLeads.map(cl => ({
+        campaignId: cl.campaignId,
+        campaignName: cl.campaign?.name || cl.campaignId,
+        status: cl.status,
+        attemptCount: cl.attemptCount,
+        lastAttemptAt: cl.lastAttemptAt?.toISOString(),
+        nextAttemptAt: cl.nextAttemptAt?.toISOString(),
+      })),
+      calls: callsWithIntelligence,
+      summary: {
+        totalCalls: lead.calls.length,
+        totalDurationSeconds,
+        latestOutcome: lead.calls[0]?.outcome || 'untouched',
+        latestStatus: lead.calls[0]?.status || 'untouched',
+        interestLevel: (lead.calls.find(c => (c.extractedVariables as any)?.interest_level)?.extractedVariables as any)?.interest_level || 'not_captured',
+        followUpPreference: (lead.calls.find(c => (c.extractedVariables as any)?.follow_up_preference)?.extractedVariables as any)?.follow_up_preference || 'none',
+      },
+    };
   }
 }
 

@@ -3,6 +3,37 @@ import { serverCampaignService } from '../services/campaignService';
 
 export const campaignRoutes = Router();
 
+// --- FEATURE 3: CADENCE & RETRY ENGINE ROUTES (Placed before /:id) ---
+// GET /api/campaigns/retries/queue
+campaignRoutes.get('/retries/queue', async (req, res) => {
+  try {
+    const queue = await serverCampaignService.getRetryQueue(req.query.campaignId as string);
+    res.json({ success: true, data: queue, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
+// POST /api/campaigns/retries/process-due
+campaignRoutes.post('/retries/process-due', async (req, res) => {
+  try {
+    const result = await serverCampaignService.processDueRetries(req.body?.campaignId);
+    res.json({ success: true, data: result, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
+// POST /api/campaigns/retries/:id/execute-now
+campaignRoutes.post('/retries/:id/execute-now', async (req, res) => {
+  try {
+    const result = await serverCampaignService.executeRetryNow(req.params.id);
+    res.json({ success: true, data: result, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
 // GET /api/campaigns
 campaignRoutes.get('/', async (req, res) => {
   try {
@@ -74,6 +105,27 @@ campaignRoutes.post('/:id/stop', async (req, res) => {
     res.json({ success: true, data: campaign, timestamp: new Date().toISOString() });
   } catch (err: any) {
     res.status(400).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
+// --- FEATURE 2: BATCH DIALER & EXECUTION MONITOR ROUTES ---
+// POST /api/campaigns/:id/dial-batch
+campaignRoutes.post('/:id/dial-batch', async (req, res) => {
+  try {
+    const result = await serverCampaignService.dialBatch(req.params.id, req.body);
+    res.json({ success: true, data: result, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
+// GET /api/campaigns/:id/monitor
+campaignRoutes.get('/:id/monitor', async (req, res) => {
+  try {
+    const monitor = await serverCampaignService.getExecutionMonitor(req.params.id);
+    res.json({ success: true, data: monitor, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
   }
 });
 

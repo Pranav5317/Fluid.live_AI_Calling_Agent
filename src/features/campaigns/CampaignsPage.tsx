@@ -30,7 +30,12 @@ import {
   History,
   Users,
   Download,
+  Activity,
+  Layers,
+  PhoneForwarded,
 } from 'lucide-react';
+import { CampaignExecutionModal } from './CampaignExecutionModal';
+import { CampaignRetryQueueCard } from './CampaignRetryQueueCard';
 
 export const CampaignsPage: React.FC = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -63,6 +68,10 @@ export const CampaignsPage: React.FC = () => {
   const [targetCampaign, setTargetCampaign] = useState<Campaign | null>(null);
   const [actionType, setActionType] = useState<'start' | 'pause' | 'stop' | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Feature 2: Live Execution Monitor Modal
+  const [executionModalCampaignId, setExecutionModalCampaignId] = useState<string | null>(null);
+  const [isExecutionModalOpen, setIsExecutionModalOpen] = useState(false);
 
   const fetchCampaigns = async () => {
     setLoading(true);
@@ -374,6 +383,19 @@ export const CampaignsPage: React.FC = () => {
                       </td>
                       <td className="px-5 py-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            leftIcon={<Activity className="h-3.5 w-3.5 text-indigo-600" />}
+                            onClick={() => {
+                              setExecutionModalCampaignId(cmp.id);
+                              setIsExecutionModalOpen(true);
+                            }}
+                            title="Open Real-time Telephony Execution Monitor"
+                          >
+                            Monitor
+                          </Button>
+
                           {cmp.status === 'draft' || cmp.status === 'scheduled' || cmp.status === 'paused' ? (
                             <Button
                               variant="outline"
@@ -426,6 +448,11 @@ export const CampaignsPage: React.FC = () => {
           </div>
         )}
       </Card>
+
+      {/* Feature 3: Automated Retry Waterfall & Cadence Engine */}
+      <div className="mt-8">
+        <CampaignRetryQueueCard onRetryExecuted={fetchCampaigns} />
+      </div>
 
       {/* Step-by-Step Create Campaign Wizard Modal */}
       <Modal
@@ -565,6 +592,17 @@ export const CampaignsPage: React.FC = () => {
         title={`${actionType === 'start' ? 'Start' : actionType === 'pause' ? 'Pause' : 'Stop'} Campaign`}
         message={`Are you sure you want to ${actionType} "${targetCampaign?.name}" using locked agent version ${targetCampaign?.agentVersionId}? This will trigger calls through Sarvam's voice provider bridge.`}
         isDanger={actionType === 'stop'}
+      />
+
+      {/* Feature 2: Live Batch Campaign Dialer & Execution Monitor */}
+      <CampaignExecutionModal
+        campaignId={executionModalCampaignId}
+        isOpen={isExecutionModalOpen}
+        onClose={() => {
+          setIsExecutionModalOpen(false);
+          setExecutionModalCampaignId(null);
+        }}
+        onCampaignUpdated={fetchCampaigns}
       />
     </div>
   );
