@@ -11,7 +11,8 @@ import { callService } from '../../services/callService';
 import { Call, CallStatus, CallOutcome } from '../../types';
 import { formatDate, formatDuration } from '../../lib/formatters';
 import { CallDetailDrawer } from './CallDetailDrawer';
-import { Search, PhoneCall, FileText, ChevronRight, Filter } from 'lucide-react';
+import { Search, PhoneCall, FileText, ChevronRight, Filter, Download } from 'lucide-react';
+import { exportCallsToCSV } from '../../lib/exportUtils';
 
 export const CallsPage: React.FC = () => {
   const [calls, setCalls] = useState<Call[]>([]);
@@ -65,7 +66,18 @@ export const CallsPage: React.FC = () => {
     <div className="space-y-6">
       <PageHeader
         title="Call Logs & Transcripts"
-        description="Historical execution records, transcript playback, call outcomes and extracted variables."
+        description="Historical execution records, transcript playback, call outcomes and conversational QA audits."
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Download className="h-4 w-4 text-slate-600" />}
+            onClick={() => exportCallsToCSV(calls, 'fluid_live_call_audit')}
+            disabled={calls.length === 0}
+          >
+            Export Audit CSV ({calls.length})
+          </Button>
+        }
       />
 
       {/* Filter Bar */}

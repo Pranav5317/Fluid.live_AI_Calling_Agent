@@ -32,6 +32,7 @@ import { formatDate, formatDuration } from '../../lib/formatters';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { callService } from '../../services/callService';
+import { exportCallsToCSV } from '../../lib/exportUtils';
 
 export interface CallDetailDrawerProps {
   call: Call | null;
@@ -245,6 +246,91 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
     }
   };
 
+  const handleJumpToTimestamp = (seconds: number) => {
+    if (!isConnected || !currentCall || currentCall.durationSeconds === 0) return;
+
+    if (!audioRef.current) {
+      const audio = new Audio(`/api/calls/${currentCall.id}/audio`);
+      audio.playbackRate = playbackSpeed;
+      audioRef.current = audio;
+
+      audio.addEventListener('timeupdate', () => {
+        setCurrentTime(audio.currentTime);
+      });
+
+      audio.addEventListener('loadedmetadata', () => {
+        if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+          setAudioDuration(audio.duration);
+        }
+        audio.currentTime = seconds;
+        setCurrentTime(seconds);
+        setAudioLoading(false);
+      });
+
+      audio.addEventListener('ended', () => {
+        setIsPlayingAudio(false);
+        setCurrentTime(0);
+      });
+
+      audio.addEventListener('error', (e) => {
+        console.error('[CallDetailDrawer] Audio playback error:', e);
+        setAudioError('Failed to load recording. Audio file may still be finalizing on Sarvam CDN.');
+        setIsPlayingAudio(false);
+        setAudioLoading(false);
+      });
+
+      setAudioLoading(true);
+      audio.play().then(() => {
+        audio.currentTime = seconds;
+        setCurrentTime(seconds);
+        setIsPlayingAudio(true);
+        setAudioLoading(false);
+      }).catch(err => {
+        console.warn('[CallDetailDrawer] Playback failed:', err);
+        setAudioError('Playback failed. Please try again.');
+        setIsPlayingAudio(false);
+        setAudioLoading(false);
+      });
+    } else {
+      audioRef.current.currentTime = seconds;
+      setCurrentTime(seconds);
+      if (!isPlayingAudio) {
+        audioRef.current.play().then(() => {
+          setIsPlayingAudio(true);
+        }).catch(err => {
+          console.warn('[CallDetailDrawer] Resume failed:', err);
+        });
+      }
+    }
+  };
+
+  const turnRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const activeTurnId = React.useMemo(() => {
+    if (!isPlayingAudio || !currentCall?.transcript || currentCall.transcript.length === 0) return null;
+    const turns = currentCall.transcript;
+    for (let i = 0; i < turns.length; i++) {
+      const start = turns[i].timestampSeconds;
+      const end = i < turns.length - 1 ? turns[i + 1].timestampSeconds : (audioDuration || currentCall.durationSeconds || 9999);
+      if (currentTime >= start && currentTime < end) {
+        return turns[i].id;
+      }
+    }
+    if (turns.length > 0 && currentTime >= turns[turns.length - 1].timestampSeconds) {
+      return turns[turns.length - 1].id;
+    }
+    return null;
+  }, [currentTime, isPlayingAudio, currentCall?.transcript, audioDuration, currentCall?.durationSeconds]);
+
+  useEffect(() => {
+    if (activeTurnId && turnRefs.current[activeTurnId]) {
+      turnRefs.current[activeTurnId]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [activeTurnId]);
+
   const effectiveDuration = audioDuration || currentCall.durationSeconds || 0;
 
   return (
@@ -269,6 +355,17 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs text-slate-700 bg-white hover:bg-slate-50 shadow-sm"
+              leftIcon={<Download className="h-3.5 w-3.5 text-slate-600" />}
+              onClick={() => exportCallsToCSV([currentCall], `call_audit_${currentCall.id}`)}
+              title="Download call audit and transcript as CSV"
+            >
+              Export CSV
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -782,16 +879,23 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
             )}
           </div>
 
-          {/* 9. INTERACTIVE SPEAKER-SEGMENTED TRANSCRIPT */}
+          {/* 9. AUDIO-SYNCED SPEAKER-SEGMENTED TRANSCRIPT */}
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200 pb-2">
               <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700">
                 <FileText className="h-4 w-4 text-brand-600" />
-                <span>Call Audio Transcript</span>
+                <span>Audio-Synced Transcript Playback</span>
               </div>
-              <span className="text-[11px] text-slate-400 font-mono">
-                {currentCall.transcript?.length || 0} Messages
-              </span>
+              <div className="flex items-center gap-2">
+                {isConnected && currentCall.durationSeconds > 0 && (
+                  <span className="text-[10px] text-slate-400 italic hidden sm:inline">
+                    Click any dialogue bubble to jump audio
+                  </span>
+                )}
+                <span className="text-[11px] text-slate-500 font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded">
+                  {currentCall.transcript?.length || 0} Turns
+                </span>
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -802,30 +906,66 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
               ) : (
                 currentCall.transcript.map(msg => {
                   const isAgent = msg.speaker === 'agent';
+                  const isActive = activeTurnId === msg.id;
+
                   return (
                     <div
                       key={msg.id}
-                      className={`flex gap-3 text-xs ${isAgent ? 'pl-0 pr-8' : 'pl-8 pr-0'}`}
+                      ref={el => (turnRefs.current[msg.id] = el)}
+                      onClick={() => isConnected && currentCall.durationSeconds > 0 && handleJumpToTimestamp(msg.timestampSeconds)}
+                      className={`flex gap-3 text-xs transition-all group ${
+                        isConnected && currentCall.durationSeconds > 0 ? 'cursor-pointer' : ''
+                      } ${isAgent ? 'pl-0 pr-8' : 'pl-8 pr-0'}`}
+                      title={isConnected && currentCall.durationSeconds > 0 ? `Click to jump audio to ${formatDuration(msg.timestampSeconds)}` : undefined}
                     >
                       <div
-                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-bold text-[10px] ${
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-bold text-[10px] transition-all ${
+                          isActive
+                            ? 'scale-110 shadow-sm ring-2 ring-offset-1 ' + (isAgent ? 'ring-indigo-500' : 'ring-emerald-500')
+                            : ''
+                        } ${
                           isAgent ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-700'
                         }`}
                       >
                         {isAgent ? <Bot className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
                       </div>
                       <div
-                        className={`flex-1 rounded-lg p-3 border ${
-                          isAgent
-                            ? 'bg-slate-50 border-slate-200 text-slate-900'
-                            : 'bg-white border-slate-200 text-slate-800'
+                        className={`flex-1 rounded-lg p-3 border transition-all ${
+                          isActive
+                            ? isAgent
+                              ? 'bg-indigo-50/90 border-indigo-400 shadow-md ring-2 ring-indigo-200 text-slate-900'
+                              : 'bg-emerald-50/90 border-emerald-400 shadow-md ring-2 ring-emerald-200 text-slate-900'
+                            : isAgent
+                            ? 'bg-slate-50 border-slate-200 text-slate-900 group-hover:border-indigo-300 group-hover:bg-indigo-50/30'
+                            : 'bg-white border-slate-200 text-slate-800 group-hover:border-emerald-300 group-hover:bg-emerald-50/30'
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-1 text-[10px] text-slate-400">
-                          <span className="font-bold uppercase">{isAgent ? 'Shubh (Fluid.live AI)' : 'Lead Contact'}</span>
-                          <span className="font-mono">{formatDuration(msg.timestampSeconds)}</span>
+                        <div className="flex items-center justify-between mb-1.5 text-[10px] text-slate-400">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold uppercase tracking-wider text-slate-700">
+                              {isAgent ? 'Shubh (Fluid.live AI)' : (currentCall.leadName || 'Lead Contact')}
+                            </span>
+                            {isActive && (
+                              <span className={`flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                                isAgent ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'
+                              } animate-pulse`}>
+                                <span className={`h-1.5 w-1.5 rounded-full ${isAgent ? 'bg-indigo-600' : 'bg-emerald-600'} animate-ping`} />
+                                Playing Now
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isConnected && currentCall.durationSeconds > 0 && (
+                              <span className="opacity-0 group-hover:opacity-100 transition-opacity font-semibold text-indigo-600 flex items-center gap-0.5 text-[10px]">
+                                <Play className="h-2.5 w-2.5 fill-current" /> Jump here
+                              </span>
+                            )}
+                            <span className="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-600 font-medium">
+                              {formatDuration(msg.timestampSeconds)}
+                            </span>
+                          </div>
                         </div>
-                        <p className="leading-relaxed">{msg.text}</p>
+                        <p className="leading-relaxed text-[12px]">{msg.text}</p>
                       </div>
                     </div>
                   );

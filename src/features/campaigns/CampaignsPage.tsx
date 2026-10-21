@@ -13,6 +13,8 @@ import { campaignService } from '../../services/campaignService';
 import { agentService } from '../../services/agentService';
 import { phoneService } from '../../services/phoneService';
 import { leadService } from '../../services/leadService';
+import { callService } from '../../services/callService';
+import { exportCallsToCSV } from '../../lib/exportUtils';
 import { Campaign, CampaignStatus, Agent, AgentVersion, PhoneNumber, Lead } from '../../types';
 import { formatDate } from '../../lib/formatters';
 import {
@@ -27,6 +29,7 @@ import {
   CheckCircle,
   History,
   Users,
+  Download,
 } from 'lucide-react';
 
 export const CampaignsPage: React.FC = () => {
@@ -238,13 +241,30 @@ export const CampaignsPage: React.FC = () => {
         title="Campaigns Workspace"
         description="Build, schedule, launch and manage automated AI voice calling campaigns."
         actions={
-          <Button
-            size="sm"
-            leftIcon={<Plus className="h-4 w-4" />}
-            onClick={openWizard}
-          >
-            Create Campaign
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Download className="h-4 w-4 text-slate-600" />}
+              onClick={async () => {
+                try {
+                  const allCalls = await callService.getCalls();
+                  exportCallsToCSV(allCalls, 'fluid_live_campaigns_audit');
+                } catch (e) {
+                  console.error(e);
+                }
+              }}
+            >
+              Export Audit CSV
+            </Button>
+            <Button
+              size="sm"
+              leftIcon={<Plus className="h-4 w-4" />}
+              onClick={openWizard}
+            >
+              Create Campaign
+            </Button>
+          </div>
         }
       />
 
