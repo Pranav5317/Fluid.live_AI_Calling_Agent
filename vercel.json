@@ -6,7 +6,7 @@
   "crons": [
     {
       "path": "/api/campaigns/scheduler/tick",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 5 * * *"
     }
   ],
   "rewrites": [
