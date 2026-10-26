@@ -27,6 +27,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { LeadDetailDrawer } from './LeadDetailDrawer';
+import { LeadCsvImportModal } from './LeadCsvImportModal';
 
 import { callService } from '../../services/callService';
 import { agentService } from '../../services/agentService';
@@ -116,17 +117,6 @@ export const LeadsPage: React.FC = () => {
     );
     setIsAddModalOpen(false);
     setNewLead({ name: '', phone: '', email: '', region: 'IN-MH' });
-    fetchLeads();
-  };
-
-  const handleImportSubmit = async () => {
-    // Batch import of consumer leads
-    await leadService.importLeads([
-      { name: 'Aarav Mehta', phone: '+919876543210', email: 'aarav@example.in', metadata: { state: 'Maharashtra', source: 'Web Inquiry' } },
-      { name: 'Pooja Sharma', phone: '+919823012345', email: 'pooja@example.in', metadata: { state: 'Delhi NCR', source: 'Direct Lead' } },
-      { name: 'Vikram Patel', phone: '+919712345678', email: 'vikram@example.in', metadata: { state: 'Gujarat', source: 'Partner Network' } },
-    ]);
-    setIsImportModalOpen(false);
     fetchLeads();
   };
 
@@ -433,38 +423,13 @@ export const LeadsPage: React.FC = () => {
         </form>
       </Modal>
 
-      {/* Import CSV Simulation Modal */}
-      <Modal
+      {/* Real CSV Import Modal with Drag-and-Drop, Field Parser & Preview */}
+      <LeadCsvImportModal
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
-        title="Import Leads CSV"
-        description="Upload a CSV file containing consumer names, phone numbers, and custom metadata."
-        footer={
-          <>
-            <Button variant="outline" size="sm" onClick={() => setIsImportModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button size="sm" onClick={handleImportSubmit} leftIcon={<FileSpreadsheet className="h-4 w-4" />}>
-              Process Batch Import
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center bg-slate-50 hover:bg-slate-100/50 cursor-pointer transition-colors">
-            <Upload className="h-8 w-8 text-slate-400 mx-auto mb-2" />
-            <p className="text-xs font-semibold text-slate-800">Drop CSV file here or click to browse</p>
-            <p className="text-[11px] text-slate-500 mt-1">Headers supported: name, phone, email, metadata</p>
-          </div>
-          <div className="bg-slate-100/70 p-3 rounded text-xs text-slate-600">
-            <span className="font-semibold block text-slate-800 mb-1">CSV Format Template Sample:</span>
-            <code className="block text-[11px] font-mono text-slate-700">
-              name,phone,email,region<br />
-              Aarav Mehta,+919876543210,aarav@example.in,Maharashtra
-            </code>
-          </div>
-        </div>
-      </Modal>
+        campaigns={campaigns}
+        onImportComplete={fetchLeads}
+      />
 
       {/* Lead 360° Profile & Call Timeline Drawer */}
       <LeadDetailDrawer
