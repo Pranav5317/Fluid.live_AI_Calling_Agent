@@ -198,6 +198,7 @@ export class CallSchedulerService {
         where: {
           campaign: { status: 'running' },
           attemptCount: { lt: 3 },
+          status: { in: ['retry_scheduled', 'callback', 'queued', 'untouched', 'failed'] },
           OR: [
             { nextAttemptAt: { lte: now } },
             { status: 'queued' },
@@ -383,6 +384,7 @@ export class CallSchedulerService {
         where: {
           attemptCount: { lt: 3 },
           campaign: { status: 'running' },
+          status: { in: ['retry_scheduled', 'callback', 'queued', 'untouched', 'failed'] },
           OR: [
             { nextAttemptAt: { lte: now } },
             { status: 'queued' },

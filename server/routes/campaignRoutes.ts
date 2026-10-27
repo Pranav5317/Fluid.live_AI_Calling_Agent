@@ -18,7 +18,8 @@ campaignRoutes.get('/scheduler/status', async (req, res) => {
 // POST & GET /api/campaigns/scheduler/tick (Supports both manual trigger and Vercel Cron)
 const handleSchedulerTick = async (req: any, res: any) => {
   try {
-    const result = await callSchedulerService.runSchedulerTick(req.body || {});
+    const options = { ...(req.body || {}), ...(req.query?.forceIgnoreWindow ? { forceIgnoreWindow: req.query.forceIgnoreWindow === 'true' } : {}) };
+    const result = await callSchedulerService.runSchedulerTick(options);
     res.json({ success: true, data: result, timestamp: new Date().toISOString() });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });

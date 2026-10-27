@@ -2618,6 +2618,7 @@ var CallSchedulerService = class {
         where: {
           campaign: { status: "running" },
           attemptCount: { lt: 3 },
+          status: { in: ["retry_scheduled", "callback", "queued", "untouched", "failed"] },
           OR: [
             { nextAttemptAt: { lte: now } },
             { status: "queued" },
@@ -2781,6 +2782,7 @@ var CallSchedulerService = class {
         where: {
           attemptCount: { lt: 3 },
           campaign: { status: "running" },
+          status: { in: ["retry_scheduled", "callback", "queued", "untouched", "failed"] },
           OR: [
             { nextAttemptAt: { lte: now } },
             { status: "queued" },
@@ -2840,7 +2842,8 @@ campaignRoutes.get("/scheduler/status", async (req, res) => {
 });
 var handleSchedulerTick = async (req, res) => {
   try {
-    const result = await callSchedulerService.runSchedulerTick(req.body || {});
+    const options = { ...req.body || {}, ...req.query?.forceIgnoreWindow ? { forceIgnoreWindow: req.query.forceIgnoreWindow === "true" } : {} };
+    const result = await callSchedulerService.runSchedulerTick(options);
     res.json({ success: true, data: result, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   } catch (err) {
     res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
