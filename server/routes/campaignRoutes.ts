@@ -1,7 +1,31 @@
 import { Router } from 'express';
 import { serverCampaignService } from '../services/campaignService';
+import { callSchedulerService } from '../services/callSchedulerService';
 
 export const campaignRoutes = Router();
+
+// --- AUTONOMOUS DYNAMIC CALL SCHEDULER & DISPATCH ENGINE ROUTES ---
+// GET /api/campaigns/scheduler/status
+campaignRoutes.get('/scheduler/status', async (req, res) => {
+  try {
+    const status = await callSchedulerService.getSchedulerStatus();
+    res.json({ success: true, data: status, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
+// POST & GET /api/campaigns/scheduler/tick (Supports both manual trigger and Vercel Cron)
+const handleSchedulerTick = async (req: any, res: any) => {
+  try {
+    const result = await callSchedulerService.runSchedulerTick(req.body || {});
+    res.json({ success: true, data: result, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+};
+campaignRoutes.post('/scheduler/tick', handleSchedulerTick);
+campaignRoutes.get('/scheduler/tick', handleSchedulerTick);
 
 // --- FEATURE 3: CADENCE & RETRY ENGINE ROUTES (Placed before /:id) ---
 // GET /api/campaigns/retries/queue

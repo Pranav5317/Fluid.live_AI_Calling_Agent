@@ -29,6 +29,8 @@ export interface ICampaignService {
   getRetryQueue(campaignId?: string): Promise<any[]>;
   executeRetryNow(campaignLeadId: string): Promise<any>;
   processDueRetries(campaignId?: string): Promise<any>;
+  getSchedulerStatus(): Promise<any>;
+  triggerSchedulerTick(options?: any): Promise<any>;
 }
 
 class CampaignService implements ICampaignService {
@@ -82,6 +84,14 @@ class CampaignService implements ICampaignService {
 
   async processDueRetries(campaignId?: string): Promise<any> {
     return await apiClient.post<any>(`/campaigns/retries/process-due`, { campaignId });
+  }
+
+  async getSchedulerStatus(): Promise<any> {
+    return await apiClient.get<any>(`/campaigns/scheduler/status`);
+  }
+
+  async triggerSchedulerTick(options?: any): Promise<any> {
+    return await apiClient.post<any>(`/campaigns/scheduler/tick`, options || {});
   }
 }
 

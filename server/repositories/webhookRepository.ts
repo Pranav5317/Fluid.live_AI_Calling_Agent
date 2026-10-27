@@ -2,6 +2,7 @@ import prisma from '../lib/prisma';
 import { WebhookEvent } from '../../src/types';
 import { WebhookProcessingResult } from '../contracts/apiContracts';
 import { backendSarvamProvider } from '../services/sarvamProvider';
+import { callSchedulerService } from '../services/callSchedulerService';
 
 export class WebhookRepository {
   async getWebhookEvents(): Promise<WebhookEvent[]> {
@@ -169,12 +170,33 @@ export class WebhookRepository {
           });
 
           if (cmpLead) {
+            const newAttemptCount = cmpLead.attemptCount + 1;
+            const isCompleted = norm.canonicalStatus === 'completed' && norm.outcome !== 'unreachable';
+            const requestedCallback = (norm.extractedVariables as any)?.callback_time;
+
+            let nextStatus = isCompleted ? 'completed' : 'retry_scheduled';
+            let nextAttemptAt: Date | null = null;
+
+            if (requestedCallback) {
+              nextStatus = 'callback';
+              nextAttemptAt = callSchedulerService.snapToCallingWindow(new Date(requestedCallback));
+            } else if (!isCompleted) {
+              if (newAttemptCount >= 3) {
+                nextStatus = 'exhausted';
+                nextAttemptAt = null;
+              } else {
+                nextAttemptAt = callSchedulerService.calculateNextAttempt(newAttemptCount, norm.outcome || 'unreachable');
+              }
+            }
+
             await tx.campaignLead.update({
               where: { id: cmpLead.id },
               data: {
-                status: norm.canonicalStatus === 'completed' ? 'completed' : 'failed',
-                attemptCount: { increment: 1 },
+                status: nextStatus,
+                attemptCount: newAttemptCount,
                 lastAttemptAt: receivedAt,
+                nextAttemptAt,
+                ...(isCompleted ? { completedAt: receivedAt } : {}),
               },
             });
           }

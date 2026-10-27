@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { CampaignExecutionModal } from './CampaignExecutionModal';
 import { CampaignRetryQueueCard } from './CampaignRetryQueueCard';
+import { AutonomousSchedulerCard } from './AutonomousSchedulerCard';
 
 export const CampaignsPage: React.FC = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -448,6 +449,11 @@ export const CampaignsPage: React.FC = () => {
           </div>
         )}
       </Card>
+
+      {/* Feature 4: Autonomous Telephony Scheduler & Dispatch Engine */}
+      <div className="mt-8">
+        <AutonomousSchedulerCard onDispatched={fetchCampaigns} />
+      </div>
 
       {/* Feature 3: Automated Retry Waterfall & Cadence Engine */}
       <div className="mt-8">

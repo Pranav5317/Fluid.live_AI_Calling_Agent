@@ -2477,8 +2477,377 @@ var ServerCampaignService = class {
 };
 var serverCampaignService = new ServerCampaignService();
 
+// server/services/callSchedulerService.ts
+var CallSchedulerService = class {
+  isTickRunning = false;
+  /**
+   * Evaluates if current time falls within legal/safe consumer calling windows (TRAI / IST).
+   * Safe Calling Window: 10:00 AM - 7:30 PM IST (Monday - Saturday). Sunday cold outreach is blocked.
+   */
+  getCallingWindowInfo(date = /* @__PURE__ */ new Date()) {
+    const istOffsetMs = 5.5 * 60 * 60 * 1e3;
+    const istDate = new Date(date.getTime() + istOffsetMs);
+    const utcDay = istDate.getUTCDay();
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const dayOfWeek = days[utcDay];
+    const currentISTHour = istDate.getUTCHours();
+    const currentISTMinute = istDate.getUTCMinutes();
+    const currentTimeFraction = currentISTHour + currentISTMinute / 60;
+    const windowStartHour = 10;
+    const windowEndHour = 19.5;
+    const isSunday = utcDay === 0;
+    const isWithinHours = currentTimeFraction >= windowStartHour && currentTimeFraction < windowEndHour;
+    const isOpen = !isSunday && isWithinHours;
+    let nextStartIST = new Date(istDate);
+    if (currentTimeFraction >= windowEndHour || isSunday) {
+      const daysToAdd = isSunday ? 1 : utcDay === 6 ? 2 : 1;
+      nextStartIST.setUTCDate(nextStartIST.getUTCDate() + daysToAdd);
+    }
+    nextStartIST.setUTCHours(10, 0, 0, 0);
+    const nextWindowStartUTC = new Date(nextStartIST.getTime() - istOffsetMs);
+    const formattedIST = `${String(currentISTHour).padStart(2, "0")}:${String(currentISTMinute).padStart(2, "0")} IST`;
+    return {
+      isOpen,
+      currentISTTime: formattedIST,
+      currentISTHour,
+      currentISTMinute,
+      dayOfWeek,
+      nextWindowStart: nextWindowStartUTC.toISOString(),
+      windowRules: "TRAI / Indian Telephony Safe Hours: 10:00 AM - 7:30 PM IST (Mon-Sat)"
+    };
+  }
+  /**
+   * Calculates the next attempt date with dynamic interval waterfall,
+   * random jitter (anti-spam), and snaps to safe calling windows.
+   */
+  calculateNextAttempt(attemptCount, outcome = "unreachable", customTarget) {
+    if (attemptCount >= 3) {
+      return null;
+    }
+    const now = /* @__PURE__ */ new Date();
+    let targetTime;
+    if (customTarget) {
+      targetTime = new Date(customTarget);
+    } else if (attemptCount === 1) {
+      const jitterMs = Math.floor(Math.random() * 18 * 60 * 1e3);
+      const outcomeBonusMs = outcome === "busy" ? 30 * 60 * 1e3 : 0;
+      targetTime = new Date(now.getTime() + 4 * 36e5 + jitterMs + outcomeBonusMs);
+    } else {
+      const jitterMs = Math.floor(Math.random() * 20 * 60 * 1e3);
+      targetTime = new Date(now.getTime() + (24 + 3.5) * 36e5 + jitterMs);
+    }
+    return this.snapToCallingWindow(targetTime);
+  }
+  /**
+   * Ensures any calculated target timestamp lands inside valid calling hours (10:00 AM - 7:30 PM IST).
+   * If target is at 9:30 PM, it snaps to 10:30 AM + random jitter the next business morning.
+   */
+  snapToCallingWindow(target) {
+    const istOffsetMs = 5.5 * 60 * 60 * 1e3;
+    let targetIST = new Date(target.getTime() + istOffsetMs);
+    let day = targetIST.getUTCDay();
+    let hour = targetIST.getUTCHours();
+    let minute = targetIST.getUTCMinutes();
+    let timeFrac = hour + minute / 60;
+    if (timeFrac < 10) {
+      const jitterMin = 5 + Math.floor(Math.random() * 20);
+      targetIST.setUTCHours(10, jitterMin, 0, 0);
+    } else if (timeFrac >= 19.5) {
+      const daysToAdd = day === 6 ? 2 : 1;
+      targetIST.setUTCDate(targetIST.getUTCDate() + daysToAdd);
+      const jitterMin = 15 + Math.floor(Math.random() * 25);
+      targetIST.setUTCHours(10, jitterMin, 0, 0);
+    }
+    if (targetIST.getUTCDay() === 0) {
+      targetIST.setUTCDate(targetIST.getUTCDate() + 1);
+      targetIST.setUTCHours(10, 20, 0, 0);
+    }
+    return new Date(targetIST.getTime() - istOffsetMs);
+  }
+  /**
+   * Main Dynamic Scheduler Engine Tick.
+   * Can be invoked via Vercel Cron, background setInterval, or Manual Trigger.
+   */
+  async runSchedulerTick(options) {
+    if (this.isTickRunning) {
+      return {
+        success: true,
+        skipped: true,
+        message: "A scheduler tick is already in progress. Skipping concurrent run."
+      };
+    }
+    this.isTickRunning = true;
+    const startTime = Date.now();
+    const windowInfo = this.getCallingWindowInfo();
+    try {
+      if (!windowInfo.isOpen && !options?.forceIgnoreWindow) {
+        console.log(`[Dynamic Scheduler] Calling window closed (${windowInfo.currentISTTime}, ${windowInfo.dayOfWeek}). Dispatches paused until ${windowInfo.nextWindowStart}.`);
+        return {
+          success: true,
+          skipped: true,
+          reason: "outside_calling_window",
+          message: `Consumer calling window is closed (${windowInfo.currentISTTime}). Dispatches pause outside 10:00 AM - 7:30 PM IST.`,
+          windowInfo,
+          dispatchedCount: 0
+        };
+      }
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1e3);
+      const activeCallsCount = await prisma_default.call.count({
+        where: {
+          status: "initiated",
+          startedAt: { gte: tenMinutesAgo }
+        }
+      });
+      const maxAllowedConcurrency = options?.maxConcurrency || 6;
+      const availableCapacity = Math.max(0, maxAllowedConcurrency - activeCallsCount);
+      if (availableCapacity <= 0) {
+        console.log(`[Dynamic Scheduler] Capacity full (${activeCallsCount} active lines in progress). Throttle engaged.`);
+        return {
+          success: true,
+          skipped: true,
+          reason: "telephony_capacity_full",
+          message: `Active calls (${activeCallsCount}) at maximum line capacity (${maxAllowedConcurrency}). Waiting for line clearance.`,
+          windowInfo,
+          activeCallsCount,
+          dispatchedCount: 0
+        };
+      }
+      const now = /* @__PURE__ */ new Date();
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 36e5);
+      const dueLeads = await prisma_default.campaignLead.findMany({
+        where: {
+          campaign: { status: "running" },
+          attemptCount: { lt: 3 },
+          OR: [
+            { nextAttemptAt: { lte: now } },
+            { status: "queued" },
+            { status: "untouched", attemptCount: 0 },
+            { status: "retry_scheduled", nextAttemptAt: { lte: now } },
+            { status: "callback", nextAttemptAt: { lte: now } }
+          ]
+        },
+        include: {
+          lead: true,
+          campaign: {
+            include: {
+              phoneNumber: true,
+              agentVersion: true
+            }
+          }
+        },
+        orderBy: [
+          { status: "asc" },
+          // Prioritize callbacks and retries
+          { nextAttemptAt: "asc" }
+        ],
+        take: availableCapacity * 2
+      });
+      if (dueLeads.length === 0) {
+        return {
+          success: true,
+          skipped: false,
+          reason: "queue_empty",
+          message: "No leads currently due for dynamic dispatch.",
+          windowInfo,
+          activeCallsCount,
+          dispatchedCount: 0
+        };
+      }
+      const eligibleLeads = [];
+      for (const cl of dueLeads) {
+        const callsIn24h = await prisma_default.call.count({
+          where: {
+            leadId: cl.leadId,
+            startedAt: { gte: twentyFourHoursAgo }
+          }
+        });
+        if (callsIn24h >= 2) {
+          const postponed = this.snapToCallingWindow(new Date(Date.now() + 18 * 36e5));
+          await prisma_default.campaignLead.update({
+            where: { id: cl.id },
+            data: { nextAttemptAt: postponed }
+          });
+          console.log(`[Dynamic Scheduler] Lead ${cl.lead.phone} reached 2 dials in 24h. Postponing to ${postponed.toISOString()}`);
+          continue;
+        }
+        eligibleLeads.push(cl);
+        if (eligibleLeads.length >= availableCapacity) break;
+      }
+      const sarvamAppId = process.env.SARVAM_APP_ID || "Conversatio-b063cf10-e735";
+      const dispatches = [];
+      for (const cl of eligibleLeads) {
+        const campaign = cl.campaign;
+        const config = campaign.agentVersion?.config || {};
+        const fromPhone = campaign.phoneNumber?.phoneNumber || process.env.SARVAM_AGENT_PHONE_NUMBER || "+917965480599";
+        try {
+          console.log(`[Dynamic Scheduler] Autonomous dispatch to ${cl.lead.name} (${cl.lead.phone}) for campaign "${campaign.name}"...`);
+          const callResult = await backendSarvamProvider.initiateOutboundCall({
+            agentVersionId: campaign.agentVersionId,
+            sarvamAgentId: config.sarvamAppId || sarvamAppId,
+            connectionId: config.sarvamConnectionId || campaign.phoneNumber?.providerId || void 0,
+            fromPhoneNumber: fromPhone,
+            toPhoneNumber: cl.lead.phone,
+            leadId: cl.lead.id,
+            campaignId: campaign.id,
+            userName: cl.lead.name,
+            initialBotMessage: config.firstGreeting || config.openingLine,
+            outroMessage: config.closingBehavior || config.outroMessage,
+            systemPrompt: config.systemPrompt
+          });
+          const call = await callRepository.createCall({
+            externalCallId: callResult.providerCallId,
+            campaignId: campaign.id,
+            agentId: campaign.agentId,
+            agentVersionId: campaign.agentVersionId,
+            leadId: cl.lead.id,
+            phoneNumberId: campaign.phoneNumberId,
+            status: "initiated"
+          });
+          const newAttemptCount = cl.attemptCount + 1;
+          const nextAttemptAt = this.calculateNextAttempt(newAttemptCount, "dialed");
+          await prisma_default.campaignLead.update({
+            where: { id: cl.id },
+            data: {
+              status: "calling",
+              attemptCount: newAttemptCount,
+              lastAttemptAt: /* @__PURE__ */ new Date(),
+              nextAttemptAt
+            }
+          });
+          await prisma_default.campaign.update({
+            where: { id: campaign.id },
+            data: { callsAttempted: { increment: 1 } }
+          });
+          dispatches.push({
+            campaignLeadId: cl.id,
+            leadName: cl.lead.name,
+            phone: cl.lead.phone,
+            campaignName: campaign.name,
+            externalCallId: callResult.providerCallId,
+            callId: call.id,
+            attemptNumber: newAttemptCount,
+            nextCalculatedAttempt: nextAttemptAt?.toISOString() || "exhausted",
+            status: "dispatched"
+          });
+        } catch (err) {
+          console.error(`[Dynamic Scheduler] Error dispatching to ${cl.lead.phone}: ${err?.message}`);
+          const newAttemptCount = cl.attemptCount + 1;
+          const nextAttemptAt = this.calculateNextAttempt(newAttemptCount, "carrier_error");
+          await prisma_default.campaignLead.update({
+            where: { id: cl.id },
+            data: {
+              status: newAttemptCount >= 3 ? "exhausted" : "retry_scheduled",
+              attemptCount: newAttemptCount,
+              lastAttemptAt: /* @__PURE__ */ new Date(),
+              nextAttemptAt
+            }
+          });
+          dispatches.push({
+            campaignLeadId: cl.id,
+            leadName: cl.lead.name,
+            phone: cl.lead.phone,
+            status: "failed",
+            error: err?.message
+          });
+        }
+      }
+      return {
+        success: true,
+        message: `Dynamic Scheduler dispatched ${dispatches.filter((d) => d.status === "dispatched").length} call(s) autonomously.`,
+        durationMs: Date.now() - startTime,
+        windowInfo,
+        activeCallsCount: activeCallsCount + dispatches.filter((d) => d.status === "dispatched").length,
+        dispatchedCount: dispatches.filter((d) => d.status === "dispatched").length,
+        dispatches
+      };
+    } finally {
+      this.isTickRunning = false;
+    }
+  }
+  /**
+   * Retrieves overall telemetry and queued upcoming dispatches for the UI.
+   */
+  async getSchedulerStatus() {
+    const windowInfo = this.getCallingWindowInfo();
+    const now = /* @__PURE__ */ new Date();
+    const [totalScheduled, dueNow, runningCampaigns, upcomingLeads] = await Promise.all([
+      prisma_default.campaignLead.count({
+        where: {
+          attemptCount: { lt: 3 },
+          status: { in: ["retry_scheduled", "callback", "queued", "untouched"] }
+        }
+      }),
+      prisma_default.campaignLead.count({
+        where: {
+          attemptCount: { lt: 3 },
+          campaign: { status: "running" },
+          OR: [
+            { nextAttemptAt: { lte: now } },
+            { status: "queued" },
+            { status: "untouched", attemptCount: 0 }
+          ]
+        }
+      }),
+      prisma_default.campaign.count({ where: { status: "running" } }),
+      prisma_default.campaignLead.findMany({
+        where: {
+          attemptCount: { lt: 3 },
+          status: { in: ["retry_scheduled", "callback", "queued", "untouched"] }
+        },
+        include: {
+          lead: true,
+          campaign: true
+        },
+        orderBy: [
+          { nextAttemptAt: "asc" },
+          { lastAttemptAt: "desc" }
+        ],
+        take: 20
+      })
+    ]);
+    return {
+      windowInfo,
+      runningCampaigns,
+      totalScheduledInCadence: totalScheduled,
+      dueNowForDialing: dueNow,
+      schedulerEngine: "Active (Autonomous Polling & Event-Driven)",
+      upcomingSchedule: upcomingLeads.map((cl) => ({
+        campaignLeadId: cl.id,
+        leadName: cl.lead.name,
+        phone: cl.lead.phone,
+        campaignName: cl.campaign?.name || "Direct Outreach",
+        attemptCount: cl.attemptCount,
+        maxAttempts: 3,
+        status: cl.status,
+        nextAttemptAt: cl.nextAttemptAt?.toISOString() || null,
+        isDue: cl.nextAttemptAt ? cl.nextAttemptAt <= now : true,
+        cadenceTier: cl.attemptCount === 0 ? "Tier 1: Initial Dispatch" : cl.attemptCount === 1 ? "Tier 2: 4h Backoff + Jitter" : "Tier 3: 24h Spaced Window"
+      }))
+    };
+  }
+};
+var callSchedulerService = new CallSchedulerService();
+
 // server/routes/campaignRoutes.ts
 var campaignRoutes = Router3();
+campaignRoutes.get("/scheduler/status", async (req, res) => {
+  try {
+    const status = await callSchedulerService.getSchedulerStatus();
+    res.json({ success: true, data: status, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+var handleSchedulerTick = async (req, res) => {
+  try {
+    const result = await callSchedulerService.runSchedulerTick(req.body || {});
+    res.json({ success: true, data: result, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+};
+campaignRoutes.post("/scheduler/tick", handleSchedulerTick);
+campaignRoutes.get("/scheduler/tick", handleSchedulerTick);
 campaignRoutes.get("/retries/queue", async (req, res) => {
   try {
     const queue = await serverCampaignService.getRetryQueue(req.query.campaignId);
@@ -3972,12 +4341,30 @@ var WebhookRepository = class {
             where: { campaignId_leadId: { campaignId, leadId: existingCall.leadId } }
           });
           if (cmpLead) {
+            const newAttemptCount = cmpLead.attemptCount + 1;
+            const isCompleted = norm.canonicalStatus === "completed" && norm.outcome !== "unreachable";
+            const requestedCallback = norm.extractedVariables?.callback_time;
+            let nextStatus = isCompleted ? "completed" : "retry_scheduled";
+            let nextAttemptAt = null;
+            if (requestedCallback) {
+              nextStatus = "callback";
+              nextAttemptAt = callSchedulerService.snapToCallingWindow(new Date(requestedCallback));
+            } else if (!isCompleted) {
+              if (newAttemptCount >= 3) {
+                nextStatus = "exhausted";
+                nextAttemptAt = null;
+              } else {
+                nextAttemptAt = callSchedulerService.calculateNextAttempt(newAttemptCount, norm.outcome || "unreachable");
+              }
+            }
             await tx.campaignLead.update({
               where: { id: cmpLead.id },
               data: {
-                status: norm.canonicalStatus === "completed" ? "completed" : "failed",
-                attemptCount: { increment: 1 },
-                lastAttemptAt: receivedAt
+                status: nextStatus,
+                attemptCount: newAttemptCount,
+                lastAttemptAt: receivedAt,
+                nextAttemptAt,
+                ...isCompleted ? { completedAt: receivedAt } : {}
               }
             });
           }
@@ -4210,6 +4597,13 @@ var server_default = app;
 if (!process.env.VERCEL && process.env.NODE_ENV !== "test") {
   app.listen(PORT, () => {
     console.log(`[Fluid.Live Backend API] Modular Monolith Server running on http://localhost:${PORT}`);
+    setInterval(async () => {
+      try {
+        await callSchedulerService.runSchedulerTick();
+      } catch (err) {
+        console.warn("[Autonomous Scheduler Worker]:", err?.message);
+      }
+    }, 6e4);
   });
 }
 export {

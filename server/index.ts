@@ -11,6 +11,7 @@ import { dashboardRoutes } from './routes/dashboardRoutes';
 import { webhookRoutes } from './routes/webhookRoutes';
 import { businessRoutes } from './routes/businessRoutes';
 import { sarvamRoutes } from './routes/sarvamRoutes';
+import { callSchedulerService } from './services/callSchedulerService';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -64,6 +65,15 @@ export default app;
 if (!process.env.VERCEL && process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`[Fluid.Live Backend API] Modular Monolith Server running on http://localhost:${PORT}`);
+
+    // Autonomous Dynamic Call Scheduler Worker (runs every 60s when active)
+    setInterval(async () => {
+      try {
+        await callSchedulerService.runSchedulerTick();
+      } catch (err: any) {
+        console.warn('[Autonomous Scheduler Worker]:', err?.message);
+      }
+    }, 60000);
   });
 }
 
