@@ -3,8 +3,19 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased;
+    @apply bg-slate-50 text-slate-900 font-sans antialiased selection:bg-indigo-100 selection:text-indigo-900;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight font-sans;
   }
 }
 

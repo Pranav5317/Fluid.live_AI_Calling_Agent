@@ -67,7 +67,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
       } else {
         setFeedback({
           type: 'success',
-          text: `✓ ${res.message} (${res.dispatches?.length || 0} calls placed via Sarvam AI)`,
+          text: `✓ ${res.message} (${res.dispatches?.length || 0} calls placed via Fluid Voice Engine)`,
         });
       }
 

@@ -55,7 +55,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
     setFeedbackMessage(null);
     try {
       const res = await campaignService.executeRetryNow(campaignLeadId);
-      setFeedbackMessage(`✓ Outbound retry successfully launched for ${leadName} (Attempt #${res.attemptNumber}) via Sarvam AI!`);
+      setFeedbackMessage(`✓ Outbound retry successfully launched for ${leadName} (Attempt #${res.attemptNumber}) via Fluid Voice Engine!`);
       await fetchQueue();
       if (onRetryExecuted) onRetryExecuted();
     } catch (err: any) {

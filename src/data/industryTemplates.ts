@@ -102,7 +102,7 @@ Objectives:
     agentName: 'Apollo Diagnostics Care Concierge',
     useCase: 'Patient lab appointment confirmation and 10-hour fasting preparation instruction',
     config: {
-      voiceModel: 'Sarvam Neural Voice - English (IN) - Professional Female',
+      voiceModel: 'Neural Voice - English (IN) - Professional Female',
       language: 'en-IN',
       openingLine: 'Hello <user_name>, this is Meera calling from Apollo Diagnostics regarding your health checkup scheduled for tomorrow morning at 8:00 AM.',
       closingBehavior: 'Wonderful! Our phlebotomist will arrive with a sterilized kit between 8:00 and 8:30 AM. Have a healthy day ahead!',

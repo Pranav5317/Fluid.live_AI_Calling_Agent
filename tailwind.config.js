@@ -35,14 +35,28 @@ export default {
       },
       fontFamily: {
         sans: [
+          '"Plus Jakarta Sans"',
           'Inter',
           '-apple-system',
           'BlinkMacSystemFont',
           'Segoe UI',
           'Roboto',
-          'Helvetica Neue',
-          'Arial',
           'sans-serif',
+        ],
+        body: [
+          'Inter',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'sans-serif',
+        ],
+        mono: [
+          '"JetBrains Mono"',
+          'ui-monospace',
+          'SFMono-Regular',
+          'Menlo',
+          'Monaco',
+          'Consolas',
+          'monospace',
         ],
       },
       boxShadow: {

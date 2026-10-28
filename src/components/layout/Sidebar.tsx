@@ -135,15 +135,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Sarvam Infrastructure Status Footprint */}
+      {/* Infrastructure Status Footprint */}
       {!isCollapsed && (
         <div className="border-t border-slate-800 p-3 m-3 rounded-md bg-slate-950/60 text-xs">
           <div className="flex items-center gap-2 text-slate-300 font-semibold mb-1">
-            <Zap className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-            <span>Sarvam Provider Bridge</span>
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Voice Telephony Cloud</span>
           </div>
           <p className="text-[11px] text-slate-400 leading-tight">
-            Abstraction layer ready. Telephony backend connected.
+            Carrier gateway active. Real-time SIP pipeline ready.
           </p>
         </div>
       )}

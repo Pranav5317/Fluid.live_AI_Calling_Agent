@@ -108,7 +108,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
   const isConnected = currentCall.durationSeconds > 0 || (Array.isArray(currentCall.transcript) && currentCall.transcript.length > 0);
   const intelligence: CallIntelligence | undefined = currentCall.extractedVariables?.intelligence;
 
-  // Dynamic Enterprise AI Summary directly from Sarvam
+  // Dynamic Enterprise AI Summary
   const getExecutiveSummary = () => {
     const vars = currentCall.extractedVariables || {};
     const interest = vars.interest_level;
@@ -119,7 +119,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
       return {
         summary:
           sarvamSummary ||
-          'Outbound call initiated through Sarvam telephony infrastructure. The line was not answered before dialer timeout window. No customer voice dialogue was exchanged.',
+          'Outbound call initiated through Fluid Voice Carrier infrastructure. The line was not answered before dialer timeout window. No customer voice dialogue was exchanged.',
         sentiment: 'neutral' as const,
         intentScore: 0,
         statusText: 'Unconnected / No Answer',
@@ -196,7 +196,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
 
       audio.addEventListener('error', (e) => {
         console.error('[CallDetailDrawer] Audio playback error:', e);
-        setAudioError('Failed to load recording. Audio file may still be finalizing on Sarvam CDN.');
+        setAudioError('Failed to load recording. Audio file may still be finalizing on carrier CDN.');
         setIsPlayingAudio(false);
         setAudioLoading(false);
       });
@@ -274,7 +274,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
 
       audio.addEventListener('error', (e) => {
         console.error('[CallDetailDrawer] Audio playback error:', e);
-        setAudioError('Failed to load recording. Audio file may still be finalizing on Sarvam CDN.');
+        setAudioError('Failed to load recording. Audio file may still be finalizing on carrier CDN.');
         setIsPlayingAudio(false);
         setAudioLoading(false);
       });
@@ -350,7 +350,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
               </Badge>
             </div>
             <span className="text-xs font-mono text-slate-500 mt-0.5 block">
-              Internal ID: {currentCall.id} • Sarvam Ref: {currentCall.externalCallId}
+              Internal ID: {currentCall.id} • Carrier Ref: {currentCall.externalCallId}
             </span>
           </div>
 
@@ -375,7 +375,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
               onClick={() => handleSyncTranscript(currentCall.id)}
               disabled={isSyncing}
             >
-              {isSyncing ? 'Syncing...' : 'Sync from Sarvam'}
+              {isSyncing ? 'Syncing...' : 'Sync Carrier Telemetry'}
             </Button>
             <button
               type="button"
@@ -400,7 +400,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
                   <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                     AI Conversational Intelligence Brief
                   </h4>
-                  <span className="text-[10px] text-slate-500">Autonomous Synthesis • Sarvam Saaras + Samvaad</span>
+                  <span className="text-[10px] text-slate-500">Autonomous Neural Synthesis • Fluid Voice Engine</span>
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
@@ -793,7 +793,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
                 <span className="font-bold">Live Audio Stream & Recording</span>
               </div>
               <span className="text-[11px] font-mono text-slate-400">
-                Sarvam Master Audio (WAV / PCM)
+                Master Call Audio (WAV / PCM)
               </span>
             </div>
 
@@ -871,7 +871,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
                 {isConnected && currentCall.durationSeconds > 0 && (
                   <a
                     href={`/api/calls/${currentCall.id}/audio`}
-                    download={`sarvam_call_${currentCall.id}.wav`}
+                    download={`fluid_call_${currentCall.id}.wav`}
                     className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded transition-colors"
                     title="Download original WAV recording"
                   >

@@ -12,9 +12,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { businessService } from '../../services/businessService';
-import { sarvamService } from '../../services/sarvamService';
-import { SarvamConnectModal } from '../sarvam/SarvamConnectModal';
-import { Business, SarvamAccountStatus } from '../../types';
+import { Business } from '../../types';
 
 export interface HeaderProps {
   onMobileSidebarToggle: () => void;
@@ -30,12 +28,9 @@ export const Header: React.FC<HeaderProps> = ({
   const [business, setBusiness] = useState<Business | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [bizMenuOpen, setBizMenuOpen] = useState(false);
-  const [sarvamStatus, setSarvamStatus] = useState<SarvamAccountStatus | null>(null);
-  const [sarvamModalOpen, setSarvamModalOpen] = useState(false);
 
   useEffect(() => {
     businessService.getBusinessProfile().then(setBusiness);
-    sarvamService.getStatus().then(setSarvamStatus).catch(console.error);
   }, []);
 
   return (
@@ -63,29 +58,11 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right items: Business Switcher, Notifications & Profile */}
       <div className="flex items-center gap-3">
-        {/* Sarvam AI Status Pill */}
-        {sarvamStatus?.connected ? (
-          <button
-            type="button"
-            onClick={() => setSarvamModalOpen(true)}
-            className="hidden sm:flex items-center gap-1.5 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-slate-800 transition-colors shadow-subtle border border-slate-800"
-            title="Configure Sarvam AI Voice Account"
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Sarvam Connected</span>
-            <span className="text-slate-400 font-mono text-[10px]">({sarvamStatus.defaultAppId?.slice(0, 10)}...)</span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setSarvamModalOpen(true)}
-            className="hidden sm:flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-500/20 transition-colors"
-            title="Connect Sarvam AI Voice Account"
-          >
-            <Zap className="h-3 w-3 text-amber-600" />
-            <span>Connect Sarvam</span>
-          </button>
-        )}
+        {/* Telephony Network Status Pill */}
+        <div className="hidden sm:flex items-center gap-2 rounded-full bg-slate-100/90 border border-slate-200/80 px-3 py-1 text-[11px] font-semibold text-slate-700 shadow-subtle">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Telephony Carrier: Active</span>
+        </div>
 
         {/* Business context switcher */}
         <div className="relative">
@@ -192,11 +169,6 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      <SarvamConnectModal
-        isOpen={sarvamModalOpen}
-        onClose={() => setSarvamModalOpen(false)}
-        onConnected={setSarvamStatus}
-      />
     </header>
   );
 };

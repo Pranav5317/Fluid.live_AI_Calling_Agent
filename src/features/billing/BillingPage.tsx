@@ -19,6 +19,7 @@ import {
   AlertCircle,
   BarChart3,
   Coins,
+  RotateCw,
 } from 'lucide-react';
 
 export const BillingPage: React.FC = () => {
@@ -49,7 +50,7 @@ export const BillingPage: React.FC = () => {
   const handleDownloadUsageAudit = () => {
     if (!usageEvents.length) return;
     const rows = [
-      'Call / Event ID,Call Status,Duration (Seconds),Duration (Minutes),Sarvam Telecom Rate,Calculated Cost,Timestamp',
+      'Call / Event ID,Call Status,Duration (Seconds),Duration (Minutes),Carrier Telecom Rate,Calculated Cost,Timestamp',
       ...usageEvents.map(u => {
         const isConnected = u.durationMinutes > 0;
         const durSecs = Math.round(u.durationMinutes * 60);
@@ -84,7 +85,7 @@ export const BillingPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageHeader
           title="Telephony Usage & Cost Analytics"
-          description="Real-time metered telecom consumption, conversation duration, and Sarvam AI voice model infrastructure costs."
+          description="Real-time metered telecom consumption, conversation duration, and voice model infrastructure costs."
         />
         <div className="flex items-center gap-2">
           <Button
@@ -96,13 +97,12 @@ export const BillingPage: React.FC = () => {
             Export Usage Audit (CSV)
           </Button>
           <Button
-            variant="primary"
+            variant="outline"
             size="sm"
-            className="bg-amber-600 hover:bg-amber-700 text-white"
-            leftIcon={<ExternalLink className="h-4 w-4" />}
-            onClick={() => window.open('https://dashboard.sarvam.ai/settings/billing', '_blank')}
+            leftIcon={<RotateCw className="h-4 w-4" />}
+            onClick={fetchData}
           >
-            Sarvam AI Wallet
+            Refresh Metrics
           </Button>
         </div>
       </div>
@@ -122,7 +122,7 @@ export const BillingPage: React.FC = () => {
           icon={<PhoneCall className="h-4 w-4 text-blue-600" />}
         />
         <MetricCard
-          title="Sarvam Telephony Cost"
+          title="Telephony Carrier Cost"
           value={formatCurrency(currentPeriod.providerCostTotal)}
           description="Carrier SIP & speech models (₹1.00/min)"
           icon={<Coins className="h-4 w-4 text-amber-600" />}
@@ -140,7 +140,7 @@ export const BillingPage: React.FC = () => {
         <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-amber-50/50 via-slate-50/30 to-white flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center space-x-2">
-              <h3 className="text-base font-bold text-slate-900">Sarvam AI Telephony Infrastructure Rates</h3>
+              <h3 className="text-base font-bold text-slate-900">Voice AI & Telephony Infrastructure Rates</h3>
               <Badge variant="success" size="sm">Active Pipeline</Badge>
             </div>
             <p className="text-xs text-slate-600 mt-1">

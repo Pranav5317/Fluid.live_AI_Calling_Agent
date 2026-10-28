@@ -111,7 +111,7 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({ leadId, onCl
         userName: lead.name,
       });
 
-      setCallMessage('AI Voice Call successfully initiated through Sarvam telephony!');
+      setCallMessage('AI Voice Call successfully initiated through Fluid Voice Carrier!');
       if (onCallInitiated) onCallInitiated();
 
       // Refresh timeline after 2 seconds
@@ -231,7 +231,7 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({ leadId, onCl
                     disabled={isCalling}
                     className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
                   >
-                    {isCalling ? 'Dialing via Sarvam...' : 'Trigger AI Voice Call'}
+                    {isCalling ? 'Dialing Call...' : 'Trigger AI Voice Call'}
                   </Button>
 
                   <a

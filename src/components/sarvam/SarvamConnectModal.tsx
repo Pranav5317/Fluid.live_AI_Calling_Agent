@@ -64,7 +64,7 @@ export const SarvamConnectModal: React.FC<SarvamConnectModalProps> = ({
     } catch (err: any) {
       setTestResult({
         success: false,
-        message: err?.message || 'Failed to communicate with Sarvam API.',
+        message: err?.message || 'Failed to communicate with carrier gateway.',
       });
     } finally {
       setTesting(false);
@@ -101,7 +101,7 @@ export const SarvamConnectModal: React.FC<SarvamConnectModalProps> = ({
     } catch (err: any) {
       setTestResult({
         success: false,
-        message: err?.message || 'Failed to update Sarvam account credentials.',
+        message: err?.message || 'Failed to update carrier account credentials.',
       });
     } finally {
       setLoading(false);
@@ -112,8 +112,8 @@ export const SarvamConnectModal: React.FC<SarvamConnectModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Connect Sarvam AI Voice Account"
-      description="Link your Sarvam Samvaad workspace credentials to orchestrate voice agents and real-time telephony directly."
+      title="Configure Voice Telephony Trunk"
+      description="Link your voice carrier workspace credentials to orchestrate voice agents and real-time telephony directly."
       size="lg"
       footer={
         <div className="flex items-center justify-between w-full">
@@ -146,7 +146,7 @@ export const SarvamConnectModal: React.FC<SarvamConnectModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-xs tracking-wide">Sarvam AI Samvaad Cloud Bridge</span>
+                <span className="font-bold text-xs tracking-wide">Voice Carrier Cloud Bridge</span>
                 {currentStatus?.connected ? (
                   <Badge variant="success" size="sm" dot>
                     Connected
@@ -188,7 +188,7 @@ export const SarvamConnectModal: React.FC<SarvamConnectModalProps> = ({
             )}
             <div className="flex-1">
               <span className="font-bold block">
-                {testResult.success ? 'Sarvam Cloud Ping Successful' : 'Connection Test Failed'}
+                {testResult.success ? 'Carrier Cloud Ping Successful' : 'Connection Test Failed'}
               </span>
               <p className="mt-0.5 text-[11px]">{testResult.message}</p>
               {testResult.latencyMs && (
@@ -205,7 +205,7 @@ export const SarvamConnectModal: React.FC<SarvamConnectModalProps> = ({
           {/* API Key */}
           <div className="relative">
             <Input
-              label="Sarvam Production API Key *"
+              label="Carrier Production API Key *"
               type={showApiKey ? 'text' : 'password'}
               placeholder={currentStatus?.maskedApiKey ? `Leave blank to keep active (${currentStatus.maskedApiKey})` : 'sk_samvaad_...'}
               value={apiKey}
@@ -243,7 +243,7 @@ export const SarvamConnectModal: React.FC<SarvamConnectModalProps> = ({
               onChange={e => setDefaultAppId(e.target.value)}
             />
             <Input
-              label="Sarvam Telephony Connection ID *"
+              label="Carrier Telephony Connection ID *"
               placeholder="7efd8897-87-220da5aa-1d5e"
               value={connectionId}
               onChange={e => setConnectionId(e.target.value)}

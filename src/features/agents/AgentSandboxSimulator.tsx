@@ -49,7 +49,7 @@ export const AgentSandboxSimulator: React.FC<AgentSandboxSimulatorProps> = ({
     ? 'meera'
     : 'arvind';
 
-  // Speak text aloud using browser synthesis or Sarvam audio
+  // Speak text aloud using neural voice synthesis
   const speakAloud = (text: string) => {
     if (isAudioMuted) return;
 

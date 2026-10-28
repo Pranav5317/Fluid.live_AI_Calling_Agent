@@ -95,7 +95,7 @@ export const CampaignExecutionModal: React.FC<CampaignExecutionModalProps> = ({
   const handleDialBatch = async () => {
     if (!campaignId || dialingBatch) return;
     setDialingBatch(true);
-    addLog(`Initiating outbound batch dialer (up to 5 leads) via Sarvam API...`, 'info');
+    addLog(`Initiating outbound batch dialer (up to 5 leads) via Voice Telephony Gateway...`, 'info');
 
     try {
       const res = await campaignService.dialBatch(campaignId, { maxBatch: 5 });
@@ -178,7 +178,7 @@ export const CampaignExecutionModal: React.FC<CampaignExecutionModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-mono mt-0.5">
-                Sarvam AI Outbound Bridge • Locked Version: {campaign?.agentVersionId || 'default'}
+                Fluid Voice Cloud Bridge • Locked Version: {campaign?.agentVersionId || 'default'}
               </p>
             </div>
           </div>
@@ -270,7 +270,7 @@ export const CampaignExecutionModal: React.FC<CampaignExecutionModalProps> = ({
             <div className="p-3 rounded-lg border border-slate-200 bg-white flex items-center gap-2.5">
               <div className="h-6 w-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[11px]">1</div>
               <div>
-                <p className="font-bold text-slate-900 leading-tight">Sarvam Trunk</p>
+                <p className="font-bold text-slate-900 leading-tight">Carrier Trunk</p>
                 <p className="text-[10px] text-slate-400">REST Handshake</p>
               </div>
             </div>
@@ -304,7 +304,7 @@ export const CampaignExecutionModal: React.FC<CampaignExecutionModalProps> = ({
                 <Terminal className="h-4 w-4 text-emerald-600" />
                 <span>Live Telephony Execution Stream</span>
               </div>
-              <span className="text-[10px] font-mono text-slate-400 font-normal">Real-time Sarvam events</span>
+              <span className="text-[10px] font-mono text-slate-400 font-normal">Real-time carrier events</span>
             </div>
 
             <div className="h-36 overflow-y-auto bg-slate-950 rounded-xl p-3 font-mono text-xs text-slate-200 space-y-1 border border-slate-800 shadow-inner">

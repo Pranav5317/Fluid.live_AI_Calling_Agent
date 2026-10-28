@@ -56,7 +56,7 @@ export const AgentTestCallModal: React.FC<AgentTestCallModalProps> = ({
     } catch (err: any) {
       setCallResult({
         success: false,
-        message: err?.message || 'Failed to dispatch test call via Sarvam AI.',
+        message: err?.message || 'Failed to dispatch test call via carrier gateway.',
       });
     } finally {
       setCalling(false);
@@ -80,7 +80,7 @@ export const AgentTestCallModal: React.FC<AgentTestCallModalProps> = ({
             onClick={handleTriggerCall}
             isLoading={calling}
           >
-            {calling ? 'Connecting via Sarvam...' : 'Call My Phone Now'}
+            {calling ? 'Connecting Call...' : 'Call My Phone Now'}
           </Button>
         </div>
       }
@@ -98,7 +98,7 @@ export const AgentTestCallModal: React.FC<AgentTestCallModalProps> = ({
             </div>
           </div>
           <Badge variant="success" size="sm">
-            Sarvam Live
+            Carrier Live
           </Badge>
         </div>
 
@@ -132,7 +132,7 @@ export const AgentTestCallModal: React.FC<AgentTestCallModalProps> = ({
         <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1.5 text-xs text-slate-600">
           <div className="flex justify-between items-center">
             <span className="text-slate-500">Caller ID Trunk:</span>
-            <span className="font-mono font-semibold text-slate-800">+917965480599 (Sarvam SIP)</span>
+            <span className="font-mono font-semibold text-slate-800">+917965480599 (Direct SIP)</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-slate-500">Dialogue Protocol:</span>

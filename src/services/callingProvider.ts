@@ -18,7 +18,7 @@ export interface ICallingProvider {
  * Real calls and provisioning are handled by the server bridge through Sarvam Samvaad.
  */
 export class SarvamProvider implements ICallingProvider {
-  public providerName = 'Sarvam AI Voice Infrastructure';
+  public providerName = 'Fluid Voice Telephony Cloud';
 
   async syncAgentConfig(agentId: string, versionId: string, _config: AgentConfig) {
     return {

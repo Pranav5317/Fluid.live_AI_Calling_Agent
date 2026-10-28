@@ -17,6 +17,7 @@ import { callService } from '../../services/callService';
 import { exportCallsToCSV } from '../../lib/exportUtils';
 import { Campaign, CampaignStatus, Agent, AgentVersion, PhoneNumber, Lead } from '../../types';
 import { formatDate } from '../../lib/formatters';
+import { cn } from '../../lib/utils';
 import {
   Megaphone,
   Plus,
@@ -33,6 +34,8 @@ import {
   Activity,
   Layers,
   PhoneForwarded,
+  CalendarClock,
+  RotateCw,
 } from 'lucide-react';
 import { CampaignExecutionModal } from './CampaignExecutionModal';
 import { CampaignRetryQueueCard } from './CampaignRetryQueueCard';
@@ -46,6 +49,7 @@ export const CampaignsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Filters
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'scheduler' | 'cadence'>('campaigns');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<CampaignStatus | 'all'>('all');
 
@@ -278,7 +282,81 @@ export const CampaignsPage: React.FC = () => {
         }
       />
 
-      {/* Search & Status Filter Strip */}
+      {/* Executive Segmented Navigation */}
+      <div className="flex items-center gap-1 border-b border-slate-200">
+        <button
+          type="button"
+          onClick={() => setActiveTab('campaigns')}
+          className={cn(
+            'flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all duration-150',
+            activeTab === 'campaigns'
+              ? 'border-slate-900 text-slate-900 bg-white shadow-subtle rounded-t-md'
+              : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
+          )}
+        >
+          <Megaphone className="h-4 w-4" />
+          <span>All Campaigns</span>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600 font-mono">
+            {campaigns.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('scheduler')}
+          className={cn(
+            'flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all duration-150',
+            activeTab === 'scheduler'
+              ? 'border-slate-900 text-slate-900 bg-white shadow-subtle rounded-t-md'
+              : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
+          )}
+        >
+          <CalendarClock className="h-4 w-4 text-indigo-600" />
+          <span>Autonomous Telephony Scheduler</span>
+          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('cadence')}
+          className={cn(
+            'flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition-all duration-150',
+            activeTab === 'cadence'
+              ? 'border-slate-900 text-slate-900 bg-white shadow-subtle rounded-t-md'
+              : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
+          )}
+        >
+          <RotateCw className="h-4 w-4 text-amber-600" />
+          <span>Smart Retry & Cadence Queue</span>
+        </button>
+      </div>
+
+      {activeTab === 'campaigns' && (
+        <div className="space-y-6">
+          {/* Quick Engine Telemetry Banner */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 text-white text-xs shadow-card gap-3">
+            <div className="flex items-center gap-3">
+              <span className="p-2 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                <CalendarClock className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="font-semibold text-white">Autonomous Dynamic Dispatch Engine: Active</p>
+                <p className="text-[11px] text-slate-300">
+                  TRAI Safe Hours (10:00 AM – 7:30 PM IST) • Anti-Fatigue 24h Guard • Dynamic Concurrency Pacing
+                </p>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setActiveTab('scheduler')}
+              className="border-indigo-400/30 bg-indigo-900/40 text-indigo-200 hover:bg-indigo-800/60 hover:text-white text-xs shrink-0"
+            >
+              Configure Scheduler →
+            </Button>
+          </div>
+
+          {/* Search & Status Filter Strip */}
       <Card noPadding>
         <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="w-full sm:w-80">
@@ -450,15 +528,22 @@ export const CampaignsPage: React.FC = () => {
         )}
       </Card>
 
-      {/* Feature 4: Autonomous Telephony Scheduler & Dispatch Engine */}
+        </div>
+      )}
+
+      {activeTab === 'scheduler' && (
       <div className="mt-8">
         <AutonomousSchedulerCard onDispatched={fetchCampaigns} />
       </div>
 
-      {/* Feature 3: Automated Retry Waterfall & Cadence Engine */}
+      )}
+
+      {activeTab === 'cadence' && (
       <div className="mt-8">
         <CampaignRetryQueueCard onRetryExecuted={fetchCampaigns} />
       </div>
+
+      )}
 
       {/* Step-by-Step Create Campaign Wizard Modal */}
       <Modal
@@ -539,7 +624,7 @@ export const CampaignsPage: React.FC = () => {
                 2. Phone Number & Lead Audience Assignment
               </h4>
               <Select
-                label="Sarvam Outbound Phone Number *"
+                label="Outbound Caller ID Phone Number *"
                 value={formData.phoneNumberId}
                 options={phoneNumbers.map(p => ({
                   value: p.id,
@@ -596,7 +681,7 @@ export const CampaignsPage: React.FC = () => {
         onConfirm={handleExecuteAction}
         isLoading={actionLoading}
         title={`${actionType === 'start' ? 'Start' : actionType === 'pause' ? 'Pause' : 'Stop'} Campaign`}
-        message={`Are you sure you want to ${actionType} "${targetCampaign?.name}" using locked agent version ${targetCampaign?.agentVersionId}? This will trigger calls through Sarvam's voice provider bridge.`}
+        message={`Are you sure you want to ${actionType} "${targetCampaign?.name}" using locked agent version ${targetCampaign?.agentVersionId}? This will trigger outbound calls through the active voice carrier bridge.`}
         isDanger={actionType === 'stop'}
       />
 

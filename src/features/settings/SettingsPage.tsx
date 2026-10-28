@@ -75,7 +75,7 @@ export const SettingsPage: React.FC = () => {
     setSyncingPhone(true);
     try {
       await phoneService.syncAccountPhone();
-      alert(`Synchronized Sarvam Caller ID: ${sarvamStatus?.agentPhoneNumber || '+917965480599'}`);
+      alert(`Synchronized Carrier Caller ID: ${sarvamStatus?.agentPhoneNumber || '+917965480599'}`);
     } catch (err: any) {
       alert(`Failed to sync phone line: ${err?.message}`);
     } finally {
@@ -87,10 +87,10 @@ export const SettingsPage: React.FC = () => {
     <div className="space-y-6">
       <PageHeader
         title="Organization Settings & Integrations"
-        description="Configuration boundary for Sarvam AI Voice Cloud, Phone Line Syncing, Team Roles, and Webhook Audit Trails."
+        description="Configuration boundary for Voice Cloud Infrastructure, Phone Line Syncing, Team Roles, and Webhook Audit Trails."
       />
 
-      {/* Primary: Sarvam AI Voice Account Integration Hub */}
+      {/* Primary: Voice Carrier Account Integration Hub */}
       <Card noPadding>
         <div className="p-5 border-b border-slate-200 bg-slate-900 text-white rounded-t-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -99,13 +99,13 @@ export const SettingsPage: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-white">Sarvam AI Samvaad Integration</h3>
+                <h3 className="text-base font-bold text-white">Voice Cloud & Telephony Trunk Integration</h3>
                 <Badge variant={sarvamStatus?.connected ? 'success' : 'warning'} size="sm" dot>
                   {sarvamStatus?.connected ? 'Active & Connected' : 'Unconfigured'}
                 </Badge>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                Direct integration with your Sarvam account for low-latency Indian voice models and SIP telephony.
+                Direct carrier connection for low-latency voice models and SIP telephony routing.
               </p>
             </div>
           </div>
@@ -236,7 +236,7 @@ export const SettingsPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <Zap className="h-4 w-4 text-amber-500" />
-              <h3 className="text-sm font-bold text-slate-900">Sarvam Webhook & Event Audit Stream</h3>
+              <h3 className="text-sm font-bold text-slate-900">Carrier Webhook & Event Audit Stream</h3>
             </div>
             <p className="text-xs text-slate-500">
               Raw provider payloads received at backend endpoint. Idempotency keys & reprocessing log.

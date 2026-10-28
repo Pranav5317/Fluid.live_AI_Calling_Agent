@@ -86,7 +86,7 @@ export const LeadsPage: React.FC = () => {
         toPhoneNumber: phone,
         leadId,
       });
-      alert(`Outbound AI Call successfully initiated to ${phone} via Sarvam API!`);
+      alert(`Outbound AI Call successfully initiated to ${phone} via Voice Gateway!`);
       fetchLeads();
     } catch (err: any) {
       alert(`Call Initiation Failed: ${err?.message}`);

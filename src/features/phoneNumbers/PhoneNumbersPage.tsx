@@ -24,7 +24,7 @@ export const PhoneNumbersPage: React.FC = () => {
   const [isLinkOpen, setIsLinkOpen] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [connectionId, setConnectionId] = useState('');
-  const [providerName, setProviderName] = useState('Sarvam AI Telephony (SIP Trunk)');
+  const [providerName, setProviderName] = useState('Fluid Voice Carrier (SIP Trunk)');
   const [selectedAgentId, setSelectedAgentId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -117,8 +117,8 @@ export const PhoneNumbersPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Sarvam AI Telephony Lines"
-        description="Manage caller ID numbers and SIP trunks connected to your Sarvam Samvaad workspace. Bind outbound lines to voice calling agents."
+        title="Telephony Lines & SIP Trunks"
+        description="Manage caller ID numbers and SIP trunks connected to your voice infrastructure. Bind outbound lines to voice calling agents."
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -155,10 +155,10 @@ export const PhoneNumbersPage: React.FC = () => {
             <Zap className="h-5 w-5" />
           </div>
           <div>
-            <span className="font-bold block text-sm">Sarvam SIP Trunk & Telephony DID Architecture</span>
+            <span className="font-bold block text-sm">Carrier SIP Trunk & Telephony DID Architecture</span>
             <span className="text-slate-300">
               Outbound calls route through registered Indian DID lines (e.g.{' '}
-              <code className="text-amber-300 font-mono">+917965480599</code>) and Sarvam connection ID{' '}
+              <code className="text-amber-300 font-mono">+917965480599</code>) and Carrier connection ID{' '}
               <code className="text-amber-300 font-mono">{sarvamStatus?.connectionId?.slice(0, 16) || '7efd8897...'}...</code>.
             </span>
           </div>
@@ -270,12 +270,12 @@ export const PhoneNumbersPage: React.FC = () => {
         </Card>
       )}
 
-      {/* Link Sarvam Phone Number Modal */}
+      {/* Link Telephony Phone Number Modal */}
       <Modal
         isOpen={isLinkOpen}
         onClose={() => setIsLinkOpen(false)}
-        title="Link Sarvam Telephony Number"
-        description="Register an active Sarvam outbound DID line or SIP trunk for voice calling campaigns."
+        title="Link Telephony Carrier Line"
+        description="Register an active outbound DID line or SIP trunk for voice calling campaigns."
         footer={
           <>
             <Button variant="outline" size="sm" onClick={() => setIsLinkOpen(false)} disabled={submitting}>
@@ -302,7 +302,7 @@ export const PhoneNumbersPage: React.FC = () => {
           />
 
           <Input
-            label="Sarvam Telephony Connection ID"
+            label="Carrier Telephony Connection ID"
             placeholder="7efd8897-87-220da5aa-1d5e"
             value={connectionId}
             onChange={e => setConnectionId(e.target.value)}
@@ -310,7 +310,7 @@ export const PhoneNumbersPage: React.FC = () => {
 
           <Input
             label="Provider Description"
-            placeholder="Sarvam AI Telephony (SIP Trunk)"
+            placeholder="Fluid Voice Carrier (SIP Trunk)"
             value={providerName}
             onChange={e => setProviderName(e.target.value)}
           />
@@ -328,7 +328,7 @@ export const PhoneNumbersPage: React.FC = () => {
           <div className="flex items-center gap-2 p-2.5 rounded bg-slate-50 border border-slate-200 text-slate-600 text-[11px]">
             <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
             <span>
-              This number will be sent as the <code>agent_phone_number</code> in Sarvam outbound voice requests.
+              This number will be sent as the <code>agent_phone_number</code> in outbound carrier requests.
             </span>
           </div>
         </div>
