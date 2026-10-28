@@ -231,7 +231,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-xs font-bold font-mono text-slate-800 flex items-center gap-1">
               <ShieldCheck className="h-4 w-4 text-emerald-600" />
-              TRAI + 2 Dials/Day Cap
+              TRAI + {schedulerData?.cadencePolicy?.maxCallsPer24Hours || 2} Dials/Day Cap
             </span>
           </div>
         </div>

@@ -433,3 +433,22 @@ export interface SarvamAccountConfig {
   agentPhoneNumber?: string;
 }
 
+export type CadencePresetName = 'standard' | 'aggressive' | 'gentle' | 'custom';
+
+export interface RetryPolicyConfig {
+  presetName: CadencePresetName;
+  maxAttempts: number;
+  tier2DelayHours: number;
+  tier3DelayHours: number;
+  busyOffsetMinutes: number;
+  carrierErrorOffsetMinutes: number;
+  maxCallsPer24Hours: number;
+  postponeHoursOnFatigue: number;
+  enableJitter: boolean;
+  maxJitterMinutes: number;
+  windowStartHour: number;
+  windowEndHour: number;
+  blockSundays: boolean;
+}
+
+

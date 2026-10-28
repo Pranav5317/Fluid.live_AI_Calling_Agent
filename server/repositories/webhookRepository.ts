@@ -181,7 +181,7 @@ export class WebhookRepository {
               nextStatus = 'callback';
               nextAttemptAt = callSchedulerService.snapToCallingWindow(new Date(requestedCallback));
             } else if (!isCompleted) {
-              if (newAttemptCount >= 3) {
+              if (newAttemptCount >= callSchedulerService.getPolicy().maxAttempts) {
                 nextStatus = 'exhausted';
                 nextAttemptAt = null;
               } else {

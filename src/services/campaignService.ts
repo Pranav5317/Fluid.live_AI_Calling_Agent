@@ -1,4 +1,4 @@
-import { Campaign, CampaignStatus } from '../types';
+import { Campaign, CampaignStatus, RetryPolicyConfig } from '../types';
 import { apiClient } from './apiClient';
 
 export interface CampaignFilterOptions {
@@ -92,6 +92,18 @@ class CampaignService implements ICampaignService {
 
   async triggerSchedulerTick(options?: any): Promise<any> {
     return await apiClient.post<any>(`/campaigns/scheduler/tick`, options || {});
+  }
+
+  async getCadencePolicy(): Promise<{ policy: RetryPolicyConfig; presets: Record<string, RetryPolicyConfig> }> {
+    return await apiClient.get<{ policy: RetryPolicyConfig; presets: Record<string, RetryPolicyConfig> }>(`/campaigns/cadence/policy`);
+  }
+
+  async updateCadencePolicy(policy: Partial<RetryPolicyConfig>): Promise<{ policy: RetryPolicyConfig }> {
+    return await apiClient.post<{ policy: RetryPolicyConfig }>(`/campaigns/cadence/policy`, policy);
+  }
+
+  async rescheduleLead(campaignLeadId: string, targetTime: string): Promise<any> {
+    return await apiClient.post<any>(`/campaigns/retries/${campaignLeadId}/reschedule`, { targetTime });
   }
 }
 

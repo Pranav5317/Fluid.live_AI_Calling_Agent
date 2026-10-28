@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { serverCampaignService } from '../services/campaignService';
-import { callSchedulerService } from '../services/callSchedulerService';
+import { callSchedulerService, CADENCE_PRESETS } from '../services/callSchedulerService';
 
 export const campaignRoutes = Router();
 
@@ -29,6 +29,42 @@ campaignRoutes.post('/scheduler/tick', handleSchedulerTick);
 campaignRoutes.get('/scheduler/tick', handleSchedulerTick);
 
 // --- FEATURE 3: CADENCE & RETRY ENGINE ROUTES (Placed before /:id) ---
+// GET /api/campaigns/cadence/policy
+campaignRoutes.get('/cadence/policy', async (req, res) => {
+  try {
+    const policy = callSchedulerService.getPolicy();
+    res.json({ success: true, data: { policy, presets: CADENCE_PRESETS }, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
+// POST /api/campaigns/cadence/policy
+campaignRoutes.post('/cadence/policy', async (req, res) => {
+  try {
+    const updated = callSchedulerService.updatePolicy(req.body);
+    res.json({ success: true, data: { policy: updated }, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
+// PATCH & POST /api/campaigns/retries/:id/reschedule
+const handleRescheduleLead = async (req: any, res: any) => {
+  try {
+    const { targetTime } = req.body;
+    if (!targetTime) {
+      return res.status(400).json({ success: false, error: 'targetTime is required', timestamp: new Date().toISOString() });
+    }
+    const result = await callSchedulerService.rescheduleLead(req.params.id, targetTime);
+    res.json({ success: true, data: result, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+};
+campaignRoutes.patch('/retries/:id/reschedule', handleRescheduleLead);
+campaignRoutes.post('/retries/:id/reschedule', handleRescheduleLead);
+
 // GET /api/campaigns/retries/queue
 campaignRoutes.get('/retries/queue', async (req, res) => {
   try {

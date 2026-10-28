@@ -3,6 +3,7 @@ import { Campaign } from '../../src/types';
 import { campaignRepository, ServerCreateCampaignDTO } from '../repositories/campaignRepository';
 import { callRepository } from '../repositories/callRepository';
 import { backendSarvamProvider } from './sarvamProvider';
+import { callSchedulerService } from './callSchedulerService';
 
 export class ServerCampaignService {
   async getCampaigns(search = '', status = 'all'): Promise<Campaign[]> {
@@ -325,10 +326,11 @@ export class ServerCampaignService {
 
   // --- FEATURE 3: IN-HOUSE AUTOMATED RETRY WATERFALL & CADENCE ENGINE ---
   async getRetryQueue(campaignId?: string) {
+    const policy = callSchedulerService.getPolicy();
     const where: any = {
       OR: [
-        { status: { in: ['retry_scheduled', 'callback', 'failed', 'busy', 'unanswered'] }, attemptCount: { lt: 3 } },
-        { nextAttemptAt: { not: null }, attemptCount: { lt: 3 } },
+        { status: { in: ['retry_scheduled', 'callback', 'failed', 'busy', 'unanswered'] }, attemptCount: { lt: policy.maxAttempts } },
+        { nextAttemptAt: { not: null }, attemptCount: { lt: policy.maxAttempts } },
         { status: 'untouched', attemptCount: 0 },
       ],
     };
@@ -365,10 +367,10 @@ export class ServerCampaignService {
       const isDue = cl.nextAttemptAt ? new Date(cl.nextAttemptAt) <= now : true;
       let cadenceTier = 'Tier 1: Initial Outreach';
       if (cl.attemptCount === 1) {
-        cadenceTier = 'Tier 2: 4-Hour Spaced Interval';
+        cadenceTier = `Tier 2: ${policy.tier2DelayHours}-Hour Spaced Interval`;
       } else if (cl.attemptCount === 2) {
-        cadenceTier = 'Tier 3: 24-Hour Final Window';
-      } else if (cl.attemptCount >= 3) {
+        cadenceTier = `Tier 3: ${policy.tier3DelayHours}-Hour Final Window`;
+      } else if (cl.attemptCount >= policy.maxAttempts) {
         cadenceTier = 'Cadence Exhausted';
       }
 
@@ -381,14 +383,14 @@ export class ServerCampaignService {
         phone: cl.lead.phone,
         email: cl.lead.email || undefined,
         attemptCount: cl.attemptCount,
-        maxAttempts: 3,
+        maxAttempts: policy.maxAttempts,
         status: cl.status,
         cadenceTier,
         lastAttemptAt: cl.lastAttemptAt?.toISOString() || null,
         nextAttemptAt: cl.nextAttemptAt?.toISOString() || null,
         isDue,
         lastOutcome: cl.calls[0]?.outcome || cl.calls[0]?.status || (cl.attemptCount === 0 ? 'not_yet_called' : 'unreachable'),
-        agentName: cl.campaign?.agent?.name || 'Sarvam AI Voice Agent',
+        agentName: cl.campaign?.agent?.name || 'Autonomous Voice Agent',
       };
     });
   }
@@ -436,17 +438,8 @@ export class ServerCampaignService {
 
     const newAttemptCount = campaignLead.attemptCount + 1;
     // Waterfall calculation for next attempt
-    let nextAttemptAt: Date | null = null;
-    let newStatus = 'calling';
-
-    if (newAttemptCount === 1) {
-      nextAttemptAt = new Date(Date.now() + 4 * 3600000); // 4-hour backoff
-    } else if (newAttemptCount === 2) {
-      nextAttemptAt = new Date(Date.now() + 24 * 3600000); // 24-hour backoff
-    } else {
-      newStatus = 'exhausted';
-      nextAttemptAt = null;
-    }
+    const nextAttemptAt = callSchedulerService.calculateNextAttempt(newAttemptCount, 'dialed');
+    const newStatus = 'calling';
 
     // Create call record
     const call = await callRepository.createCall({
