@@ -58,29 +58,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const sidebarContent = (
-    <div className="flex h-full flex-col bg-slate-900 text-slate-300">
+    <div className="flex h-full flex-col bg-[#0A0D14] text-slate-300 border-r border-slate-800/80">
       {/* Brand logo & header */}
-      <div className="flex h-16 items-center justify-between border-b border-slate-800 px-4">
-        <div className="flex items-center gap-2.5 overflow-hidden">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-white text-slate-900 font-bold text-sm tracking-tight shadow-sm shrink-0">
+      <div className="flex h-16 items-center justify-between border-b border-slate-800/80 px-4">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-sky-400 text-white font-extrabold text-sm tracking-tight shadow-md shadow-indigo-500/20 shrink-0">
             F.L
           </div>
           {!isCollapsed && (
             <div className="flex flex-col overflow-hidden">
               <span className="font-bold text-white tracking-tight text-sm leading-tight flex items-center gap-1.5">
                 Fluid.Live
-                <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold text-slate-300">
+                <span className="rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 text-[9px] font-mono font-bold uppercase">
                   Voice AI
                 </span>
               </span>
-              <span className="text-[11px] text-slate-400 truncate">Calling Platform</span>
+              <span className="text-[11px] text-slate-400 font-medium truncate">Calling Platform</span>
             </div>
           )}
         </div>
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="hidden md:flex h-7 w-7 items-center justify-center rounded-md text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+          className="hidden md:flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
           title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
         >
           {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
@@ -89,7 +89,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Main Navigation Links */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        <div className="px-2 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+        <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">
           {!isCollapsed && 'Platform Core'}
         </div>
         {navItems.map(item => {
@@ -99,14 +99,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={item.route}
               onClick={() => handleNavClick(item.route)}
               className={cn(
-                'flex w-full items-center gap-3 rounded-md px-3 py-2 text-xs font-semibold transition-all select-none',
+                'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all select-none',
                 isActive
-                  ? 'bg-white/10 text-white shadow-subtle border-l-2 border-white'
-                  : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-100'
+                  ? 'bg-gradient-to-r from-indigo-500/20 via-indigo-500/10 to-transparent text-white shadow-sm border border-indigo-500/30 font-bold'
+                  : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'
               )}
               title={isCollapsed ? item.label : undefined}
             >
-              <span className={isActive ? 'text-white' : 'text-slate-400'}>{item.icon}</span>
+              <span className={isActive ? 'text-indigo-400' : 'text-slate-400'}>{item.icon}</span>
               {!isCollapsed && <span className="truncate">{item.label}</span>}
             </button>
           );
@@ -114,20 +114,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Settings Reserved Boundary (Architectural Principle #19) */}
         <div className="pt-6">
-          <div className="px-2 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">
             {!isCollapsed && 'System'}
           </div>
           <button
             onClick={() => handleNavClick('settings')}
             className={cn(
-              'flex w-full items-center gap-3 rounded-md px-3 py-2 text-xs font-semibold transition-all select-none',
+              'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all select-none',
               activeRoute === 'settings'
-                ? 'bg-white/10 text-white shadow-subtle border-l-2 border-white'
-                : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-100'
+                ? 'bg-gradient-to-r from-indigo-500/20 via-indigo-500/10 to-transparent text-white shadow-sm border border-indigo-500/30 font-bold'
+                : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-100'
             )}
             title={isCollapsed ? 'Settings' : undefined}
           >
-            <Settings className="h-4 w-4 text-slate-400" />
+            <Settings className={activeRoute === 'settings' ? 'h-4 w-4 text-indigo-400' : 'h-4 w-4 text-slate-400'} />
             {!isCollapsed && (
               <span className="truncate">Settings</span>
             )}
@@ -137,13 +137,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Infrastructure Status Footprint */}
       {!isCollapsed && (
-        <div className="border-t border-slate-800 p-3 m-3 rounded-md bg-slate-950/60 text-xs">
-          <div className="flex items-center gap-2 text-slate-300 font-semibold mb-1">
+        <div className="border-t border-slate-800/80 p-3.5 m-3 rounded-xl bg-slate-950/70 border border-slate-800/50 text-xs">
+          <div className="flex items-center gap-2 text-slate-200 font-semibold mb-1">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
             <span>Voice Telephony Cloud</span>
           </div>
           <p className="text-[11px] text-slate-400 leading-tight">
-            Carrier gateway active. Real-time SIP pipeline ready.
+            SIP carrier bridge active. Real-time audio stream ready.
           </p>
         </div>
       )}

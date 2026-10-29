@@ -26,23 +26,23 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   return (
     <div
       className={cn(
-        'rounded-lg border border-slate-200 bg-white p-5 shadow-subtle flex flex-col justify-between transition-all hover:border-slate-300',
+        'rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.03),0_6px_18px_rgba(15,23,42,0.02)] flex flex-col justify-between transition-all duration-200 hover:border-indigo-300/60 hover:shadow-md',
         className
       )}
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono">
           {title}
         </span>
         {icon && (
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-slate-100 text-slate-700">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50/80 border border-indigo-100 text-indigo-600 shadow-sm">
             {icon}
           </div>
         )}
       </div>
 
       <div className="mt-3">
-        <div className="text-2xl font-bold text-slate-900 tracking-tight">
+        <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-sans">
           {value}
         </div>
 
@@ -51,10 +51,10 @@ export const MetricCard: React.FC<MetricCardProps> = ({
             {trendPercentage !== undefined && (
               <span
                 className={cn(
-                  'inline-flex items-center font-semibold rounded px-1.5 py-0.5',
+                  'inline-flex items-center font-bold rounded-full px-2 py-0.5 text-[11px] font-mono shadow-[0_1px_2px_rgba(0,0,0,0.02)]',
                   isPositive
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : 'bg-rose-50 text-rose-700'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
+                    : 'bg-rose-50 text-rose-700 border border-rose-200/80'
                 )}
               >
                 {isPositive ? (

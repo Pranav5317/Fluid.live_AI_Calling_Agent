@@ -34,24 +34,24 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/95 px-4 sm:px-6 backdrop-blur shadow-subtle">
+    <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/80 px-4 sm:px-6 backdrop-blur-md shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
       {/* Left items: Mobile menu trigger & Search */}
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={onMobileSidebarToggle}
-          className="md:hidden rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+          className="md:hidden rounded-xl p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
         >
           <Menu className="h-5 w-5" />
         </button>
 
         {/* Global Search Bar */}
-        <div className="relative hidden sm:block w-64 md:w-80">
-          <Search className="pointer-events-none absolute inset-y-0 left-0 my-auto ml-3 h-4 w-4 text-slate-400" />
+        <div className="relative hidden sm:block w-72 md:w-96">
+          <Search className="pointer-events-none absolute inset-y-0 left-0 my-auto ml-3.5 h-4 w-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search campaigns, agents, leads..."
-            className="w-full rounded-md border border-slate-200 bg-slate-50/70 py-1.5 pl-9 pr-4 text-xs text-slate-900 placeholder:text-slate-400 focus:border-slate-800 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-800 transition-all"
+            placeholder="Search campaigns, agents, leads... (Press ⌘K)"
+            className="w-full rounded-xl border border-slate-200/90 bg-slate-50/80 py-2 pl-10 pr-4 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all"
           />
         </div>
       </div>
@@ -59,8 +59,11 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Right items: Business Switcher, Notifications & Profile */}
       <div className="flex items-center gap-3">
         {/* Telephony Network Status Pill */}
-        <div className="hidden sm:flex items-center gap-2 rounded-full bg-slate-100/90 border border-slate-200/80 px-3 py-1 text-[11px] font-semibold text-slate-700 shadow-subtle">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="hidden sm:flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1 text-xs font-semibold text-emerald-800 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
           <span>Telephony Carrier: Active</span>
         </div>
 
@@ -69,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={() => setBizMenuOpen(!bizMenuOpen)}
-            className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-100 transition-colors"
+            className="flex items-center gap-2 rounded-xl border border-slate-200/90 bg-slate-50/80 hover:bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 hover:border-slate-300 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all"
           >
             <Building2 className="h-4 w-4 text-slate-500" />
             <span className="hidden sm:inline max-w-[130px] truncate">
@@ -79,8 +82,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {bizMenuOpen && (
-            <div className="absolute right-0 mt-2 w-56 rounded-md border border-slate-200 bg-white p-2 shadow-dropdown z-30 text-xs">
-              <div className="px-2 py-1.5 border-b border-slate-100 mb-1">
+            <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-200/80 bg-white p-2 shadow-xl z-30 text-xs animate-in fade-in-50 zoom-in-95 duration-100">
+              <div className="px-3 py-2 border-b border-slate-100 mb-1">
                 <span className="block font-bold text-slate-900">{business?.name || 'Fluid.live Technologies'}</span>
                 <span className="text-[11px] text-slate-500 capitalize">{business?.plan || 'Enterprise Tier'}</span>
               </div>

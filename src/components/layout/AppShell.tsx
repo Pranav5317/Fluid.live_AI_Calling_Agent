@@ -20,7 +20,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   const [notificationOpen, setNotificationOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div className="min-h-screen flex flex-col font-sans">
       {/* Sidebar Navigation */}
       <Sidebar
         activeRoute={activeRoute}

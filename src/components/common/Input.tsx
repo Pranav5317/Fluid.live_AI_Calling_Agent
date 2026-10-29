@@ -33,9 +33,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'block w-full rounded-md border border-slate-300 bg-white py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-800 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 transition-colors',
-              leftIcon ? 'pl-9' : 'pl-3',
-              rightIcon ? 'pr-9' : 'pr-3',
+              'block w-full rounded-xl border border-slate-200/90 bg-white py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 transition-all shadow-sm',
+              leftIcon ? 'pl-9' : 'pl-3.5',
+              rightIcon ? 'pr-9' : 'pr-3.5',
               error && 'border-rose-500 focus:border-rose-600 focus:ring-rose-600',
               className
             )}

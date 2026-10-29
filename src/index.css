@@ -8,21 +8,27 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased selection:bg-indigo-100 selection:text-indigo-900;
+    @apply text-slate-900 font-sans antialiased selection:bg-indigo-500 selection:text-white;
+    background-color: #F8FAFC;
+    background-image: 
+      radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.04) 0px, transparent 50%),
+      radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.03) 0px, transparent 50%);
+    background-attachment: fixed;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply tracking-tight font-sans;
+    @apply tracking-tight font-sans font-bold text-slate-900;
   }
 }
 
-/* Custom scrollbars for data tables and side panels */
+/* Custom premium scrollbars for data tables and drawers */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -37,4 +43,3 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
-
