@@ -35,6 +35,7 @@ export default {
       },
       fontFamily: {
         sans: [
+          '"DM Sans"',
           '"Plus Jakarta Sans"',
           'Inter',
           '-apple-system',

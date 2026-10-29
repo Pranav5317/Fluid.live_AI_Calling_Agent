@@ -21,11 +21,11 @@ export const Pagination: React.FC<PaginationProps> = ({
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
   return (
-    <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 bg-white">
-      <div className="text-xs text-slate-600">
-        Showing <span className="font-semibold text-slate-900">{startItem}</span> to{' '}
-        <span className="font-semibold text-slate-900">{endItem}</span> of{' '}
-        <span className="font-semibold text-slate-900">{totalItems}</span> results
+    <div className="flex items-center justify-between border-t border-white/[0.08] px-5 py-3.5 bg-white/[0.02]">
+      <div className="text-xs text-slate-400 font-mono">
+        Showing <span className="font-semibold text-white">{startItem}</span> to{' '}
+        <span className="font-semibold text-white">{endItem}</span> of{' '}
+        <span className="font-semibold text-white">{totalItems}</span> results
       </div>
       <div className="flex items-center space-x-2">
         <Button
@@ -34,10 +34,11 @@ export const Pagination: React.FC<PaginationProps> = ({
           disabled={currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
           leftIcon={<ChevronLeft className="h-4 w-4" />}
+          className="rounded-full"
         >
           Previous
         </Button>
-        <span className="text-xs text-slate-600 font-medium px-1">
+        <span className="text-xs text-slate-400 font-mono px-2">
           Page {currentPage} of {totalPages || 1}
         </span>
         <Button
@@ -46,6 +47,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           disabled={currentPage >= totalPages}
           onClick={() => onPageChange(currentPage + 1)}
           rightIcon={<ChevronRight className="h-4 w-4" />}
+          className="rounded-full"
         >
           Next
         </Button>

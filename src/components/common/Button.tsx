@@ -27,25 +27,25 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-medium transition-all duration-150 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-1 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 select-none cursor-pointer';
+      'inline-flex items-center justify-center font-medium transition-all duration-200 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#060814] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 select-none cursor-pointer';
 
     const variants = {
       primary:
-        'bg-slate-900 text-white hover:bg-slate-800 active:bg-slate-950 focus:ring-slate-900 shadow-[0_1px_2px_rgba(0,0,0,0.1),0_2px_4px_rgba(0,0,0,0.05)] border border-slate-800/80',
+        'bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-500 text-white hover:brightness-110 shadow-[0_10px_25px_-8px_rgba(79,70,229,0.7)] border border-indigo-400/30 font-semibold',
       secondary:
-        'bg-slate-100 text-slate-800 hover:bg-slate-200 active:bg-slate-300 focus:ring-slate-400 border border-slate-200/80',
+        'bg-white/[0.08] text-slate-100 hover:bg-white/[0.14] active:bg-white/[0.18] border border-white/[0.14] shadow-sm font-semibold',
       outline:
-        'bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100 focus:ring-slate-400 border border-slate-200/90 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-slate-300',
+        'bg-white/[0.04] text-slate-200 hover:bg-white/[0.08] hover:text-white border border-white/[0.14] shadow-sm font-medium',
       danger:
-        'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 focus:ring-rose-500 shadow-sm border border-transparent',
+        'bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/40 shadow-sm font-semibold',
       ghost:
-        'bg-transparent text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 focus:ring-slate-400',
+        'bg-transparent text-slate-400 hover:bg-white/[0.06] hover:text-white',
     };
 
     const sizes = {
-      sm: 'px-3 py-1.5 text-xs font-medium gap-1.5',
-      md: 'px-4 py-2 text-sm font-semibold gap-2',
-      lg: 'px-5 py-2.5 text-base font-semibold gap-2.5',
+      sm: 'px-4 py-1.5 text-xs font-semibold gap-1.5',
+      md: 'px-5 py-2 text-sm font-semibold gap-2',
+      lg: 'px-6 py-2.5 text-base font-semibold gap-2.5',
     };
 
     return (
@@ -59,14 +59,15 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin text-current" />
         ) : (
-          leftIcon
+          <>
+            {leftIcon && <span className="shrink-0">{leftIcon}</span>}
+            {children}
+            {rightIcon && <span className="shrink-0">{rightIcon}</span>}
+          </>
         )}
-        <span>{children}</span>
-        {!isLoading && rightIcon}
       </button>
     );
   }
 );
 
 Button.displayName = 'Button';
-

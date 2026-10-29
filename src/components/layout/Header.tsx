@@ -34,13 +34,13 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/80 px-4 sm:px-6 backdrop-blur-md shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+    <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b border-white/[0.08] bg-[#060814]/80 px-4 sm:px-6 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
       {/* Left items: Mobile menu trigger & Search */}
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={onMobileSidebarToggle}
-          className="md:hidden rounded-xl p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+          className="md:hidden rounded-full p-2 text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -50,8 +50,8 @@ export const Header: React.FC<HeaderProps> = ({
           <Search className="pointer-events-none absolute inset-y-0 left-0 my-auto ml-3.5 h-4 w-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search campaigns, agents, leads... (Press ⌘K)"
-            className="w-full rounded-xl border border-slate-200/90 bg-slate-50/80 py-2 pl-10 pr-4 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all"
+            placeholder="Search campaigns, agents, leads... (⌘K)"
+            className="w-full rounded-full border border-white/[0.12] bg-white/[0.04] py-2 pl-10 pr-4 text-xs text-white placeholder:text-slate-500 focus:border-indigo-400 focus:bg-white/[0.08] focus:outline-none focus:ring-2 focus:ring-indigo-500/25 shadow-inner transition-all"
           />
         </div>
       </div>
@@ -59,12 +59,12 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Right items: Business Switcher, Notifications & Profile */}
       <div className="flex items-center gap-3">
         {/* Telephony Network Status Pill */}
-        <div className="hidden sm:flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1 text-xs font-semibold text-emerald-800 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+        <div className="hidden sm:flex items-center gap-2 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3.5 py-1 text-xs font-semibold text-emerald-300 shadow-sm">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span>Telephony Carrier: Active</span>
+          <span>Carrier Bridge: Active</span>
         </div>
 
         {/* Business context switcher */}
@@ -72,9 +72,9 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={() => setBizMenuOpen(!bizMenuOpen)}
-            className="flex items-center gap-2 rounded-xl border border-slate-200/90 bg-slate-50/80 hover:bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 hover:border-slate-300 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all"
+            className="flex items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.05] hover:bg-white/[0.1] px-3.5 py-1.5 text-xs font-semibold text-slate-200 transition-all shadow-sm"
           >
-            <Building2 className="h-4 w-4 text-slate-500" />
+            <Building2 className="h-4 w-4 text-indigo-400" />
             <span className="hidden sm:inline max-w-[130px] truncate">
               {business?.name || 'Fluid.live Technologies'}
             </span>
@@ -82,96 +82,90 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {bizMenuOpen && (
-            <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-200/80 bg-white p-2 shadow-xl z-30 text-xs animate-in fade-in-50 zoom-in-95 duration-100">
-              <div className="px-3 py-2 border-b border-slate-100 mb-1">
-                <span className="block font-bold text-slate-900">{business?.name || 'Fluid.live Technologies'}</span>
-                <span className="text-[11px] text-slate-500 capitalize">{business?.plan || 'Enterprise Tier'}</span>
+            <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-white/[0.12] bg-[#0A0E24] p-2 shadow-2xl z-30 text-xs animate-in fade-in-50 zoom-in-95 duration-100 text-slate-200">
+              <div className="px-3 py-2 border-b border-white/[0.08] mb-1">
+                <span className="block font-bold text-white">{business?.name || 'Fluid.live Technologies'}</span>
+                <span className="text-[11px] text-slate-400 capitalize">{business?.plan || 'Enterprise Tier'}</span>
               </div>
               <div className="py-1">
                 <button
                   type="button"
                   onClick={() => setBizMenuOpen(false)}
-                  className="w-full rounded px-2 py-1.5 text-left font-medium text-slate-700 hover:bg-slate-100 flex items-center justify-between"
+                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
                 >
-                  <span>{business?.name || 'Fluid.live Technologies'}</span>
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <Shield className="h-3.5 w-3.5 text-slate-400" />
+                  <span>Workspace Security</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBizMenuOpen(false)}
+                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+                >
+                  <HelpCircle className="h-3.5 w-3.5 text-slate-400" />
+                  <span>Documentation</span>
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Notifications button */}
+        {/* Notifications Icon Button */}
         <button
           type="button"
           onClick={onNotificationToggle}
-          className="relative rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-          title="System Activity Notifications"
+          className="relative rounded-full p-2 text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+          title="Notifications"
         >
-          <Bell className="h-5 w-5" />
+          <Bell className="h-4.5 w-4.5" />
           {unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 flex h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
+            <span className="absolute top-1 right-1 flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+            </span>
           )}
         </button>
 
-        <div className="h-5 w-px bg-slate-200" />
-
-        {/* User profile menu */}
+        {/* Profile Avatar Pill */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="flex items-center gap-2 rounded-full p-1 hover:ring-2 hover:ring-slate-200 transition-all"
+            className="flex items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.05] p-1 pr-2 hover:bg-white/[0.1] transition-all"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-white font-bold text-xs tracking-wider">
-              FL
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-600 to-sky-400 text-white font-bold text-xs shadow-sm">
+              PL
             </div>
+            <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
           </button>
 
           {userMenuOpen && (
-            <div className="absolute right-0 mt-2 w-52 rounded-md border border-slate-200 bg-white p-1.5 shadow-dropdown z-30 text-xs">
-              <div className="px-3 py-2 border-b border-slate-100 mb-1">
-                <p className="font-semibold text-slate-900">Fluid.live Administrator</p>
-                <p className="text-slate-500 truncate text-[11px]">{business?.email || 'admin@fluid.live'}</p>
+            <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-white/[0.12] bg-[#0A0E24] p-2 shadow-2xl z-30 text-xs animate-in fade-in-50 zoom-in-95 duration-100 text-slate-200">
+              <div className="px-3 py-2 border-b border-white/[0.08] mb-1">
+                <span className="block font-bold text-white">Pranav L</span>
+                <span className="text-[11px] text-slate-400">pranav@fluid.live</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setUserMenuOpen(false)}
-                className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-slate-700 hover:bg-slate-100 font-medium"
-              >
-                <User className="h-3.5 w-3.5 text-slate-400" />
-                <span>My Profile</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setUserMenuOpen(false)}
-                className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-slate-700 hover:bg-slate-100 font-medium"
-              >
-                <Shield className="h-3.5 w-3.5 text-slate-400" />
-                <span>Security & Roles</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setUserMenuOpen(false)}
-                className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-slate-700 hover:bg-slate-100 font-medium"
-              >
-                <HelpCircle className="h-3.5 w-3.5 text-slate-400" />
-                <span>Documentation</span>
-              </button>
-              <div className="my-1 border-t border-slate-100" />
-              <button
-                type="button"
-                onClick={() => setUserMenuOpen(false)}
-                className="flex w-full items-center gap-2 rounded px-2.5 py-1.5 text-rose-600 hover:bg-rose-50 font-medium"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                <span>Log out</span>
-              </button>
+              <div className="py-1">
+                <button
+                  type="button"
+                  onClick={() => setUserMenuOpen(false)}
+                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
+                >
+                  <User className="h-3.5 w-3.5 text-slate-400" />
+                  <span>Profile Settings</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUserMenuOpen(false)}
+                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-rose-400 hover:bg-rose-500/10 transition-colors"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span>Sign out</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
-
     </header>
   );
 };

@@ -26,35 +26,35 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.03),0_6px_18px_rgba(15,23,42,0.02)] flex flex-col justify-between transition-all duration-200 hover:border-indigo-300/60 hover:shadow-md',
+        'rounded-[22px] border border-white/[0.08] bg-[#0A0E24]/85 backdrop-blur-xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex flex-col justify-between transition-all duration-300 hover:border-indigo-500/40 hover:shadow-[0_20px_50px_rgba(79,70,229,0.15)] group',
         className
       )}
     >
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono">
           {title}
         </span>
         {icon && (
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50/80 border border-indigo-100 text-indigo-600 shadow-sm">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-500/15 border border-indigo-400/25 text-indigo-400 shadow-inner transition-transform group-hover:scale-105">
             {icon}
           </div>
         )}
       </div>
 
-      <div className="mt-3">
-        <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight font-sans">
+      <div className="mt-4">
+        <div className="text-3xl font-extrabold text-white tracking-tight font-sans">
           {value}
         </div>
 
         {(trendPercentage !== undefined || description) && (
-          <div className="mt-2 flex items-center gap-1.5 text-xs">
+          <div className="mt-2.5 flex items-center gap-2 text-xs">
             {trendPercentage !== undefined && (
               <span
                 className={cn(
-                  'inline-flex items-center font-bold rounded-full px-2 py-0.5 text-[11px] font-mono shadow-[0_1px_2px_rgba(0,0,0,0.02)]',
+                  'inline-flex items-center font-bold rounded-full px-2.5 py-0.5 text-[11px] font-mono border shadow-sm',
                   isPositive
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
-                    : 'bg-rose-50 text-rose-700 border border-rose-200/80'
+                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                    : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
                 )}
               >
                 {isPositive ? (
@@ -62,11 +62,10 @@ export const MetricCard: React.FC<MetricCardProps> = ({
                 ) : (
                   <TrendingDown className="mr-1 h-3 w-3" />
                 )}
-                {isPositive ? '+' : ''}
-                {trendPercentage}%
+                {isPositive ? `+${trendPercentage}%` : `${trendPercentage}%`}
               </span>
             )}
-            <span className="text-slate-500">
+            <span className="text-[11px] text-slate-400">
               {description || trendLabel}
             </span>
           </div>
@@ -75,4 +74,3 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     </div>
   );
 };
-

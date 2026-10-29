@@ -15,38 +15,37 @@ export const Badge: React.FC<BadgeProps> = ({
   children,
   ...props
 }) => {
-  const base = 'inline-flex items-center font-medium rounded-full border transition-all duration-150 select-none shadow-[0_1px_2px_rgba(0,0,0,0.02)]';
+  const base = 'inline-flex items-center font-medium rounded-full border transition-all duration-150 select-none shadow-[0_1px_2px_rgba(0,0,0,0.2)]';
 
   const variants = {
-    neutral: 'bg-slate-50 text-slate-700 border-slate-200/90',
-    success: 'bg-emerald-50/80 text-emerald-800 border-emerald-200/90',
-    warning: 'bg-amber-50/80 text-amber-800 border-amber-200/90',
-    danger: 'bg-rose-50/80 text-rose-800 border-rose-200/90',
-    info: 'bg-sky-50/80 text-sky-800 border-sky-200/90',
-    purple: 'bg-indigo-50/80 text-indigo-800 border-indigo-200/90',
-    brand: 'bg-slate-900 text-white border-slate-900 shadow-sm',
+    neutral: 'bg-white/[0.06] text-slate-300 border-white/[0.12]',
+    success: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+    warning: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+    danger: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+    info: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
+    purple: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30',
+    brand: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-indigo-400/30 shadow-sm',
   };
 
   const dotColors = {
     neutral: 'bg-slate-400',
-    success: 'bg-emerald-500',
-    warning: 'bg-amber-500',
-    danger: 'bg-rose-500',
-    info: 'bg-sky-500',
-    purple: 'bg-indigo-500',
-    brand: 'bg-brand-300',
+    success: 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]',
+    warning: 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]',
+    danger: 'bg-rose-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]',
+    info: 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]',
+    purple: 'bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.8)]',
+    brand: 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]',
   };
 
   const sizes = {
-    sm: 'px-2 py-0.5 text-[10px] leading-3 gap-1 font-semibold',
-    md: 'px-2.5 py-1 text-xs leading-4 gap-1.5 font-medium',
+    sm: 'px-2.5 py-0.5 text-[10px] leading-3 gap-1.5 font-bold font-mono uppercase tracking-wider',
+    md: 'px-3 py-1 text-xs leading-4 gap-2 font-medium',
   };
 
   return (
     <span className={cn(base, variants[variant], sizes[size], className)} {...props}>
-      {dot && <span className={cn('h-1.5 w-1.5 rounded-full', dotColors[variant])} />}
+      {dot && <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', dotColors[variant])} />}
       {children}
     </span>
   );
 };
-

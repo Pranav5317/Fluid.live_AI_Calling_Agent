@@ -193,44 +193,44 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
       )}
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 border-b border-slate-200/80 bg-slate-50/50 text-xs">
+      <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-white/[0.08] border-b border-white/[0.08] bg-white/[0.02] text-xs">
         <div className="p-5">
-          <span className="text-slate-500 block text-[11px] uppercase font-bold tracking-wider font-mono">
+          <span className="text-slate-400 block text-[11px] uppercase font-bold tracking-wider font-mono">
             Due for Redial Right Now
           </span>
           <div className="flex items-baseline gap-2 mt-1.5">
-            <span className="text-2xl font-extrabold font-mono text-emerald-600">{dueCount}</span>
-            <span className="text-xs text-slate-500 font-medium">leads ready</span>
+            <span className="text-2xl font-extrabold font-mono text-emerald-400">{dueCount}</span>
+            <span className="text-xs text-slate-400 font-medium">leads ready</span>
           </div>
         </div>
 
         <div className="p-5">
-          <span className="text-slate-500 block text-[11px] uppercase font-bold tracking-wider font-mono">
+          <span className="text-slate-400 block text-[11px] uppercase font-bold tracking-wider font-mono">
             Total Enrolled in Cadence
           </span>
           <div className="flex items-baseline gap-2 mt-1.5">
-            <span className="text-2xl font-extrabold font-mono text-indigo-700">{totalInCadence}</span>
-            <span className="text-xs text-slate-500 font-medium">in queue</span>
+            <span className="text-2xl font-extrabold font-mono text-indigo-400">{totalInCadence}</span>
+            <span className="text-xs text-slate-400 font-medium">in queue</span>
           </div>
         </div>
 
         <div className="p-5">
-          <span className="text-slate-500 block text-[11px] uppercase font-bold tracking-wider font-mono">
+          <span className="text-slate-400 block text-[11px] uppercase font-bold tracking-wider font-mono">
             Active Campaigns Covered
           </span>
           <div className="flex items-baseline gap-2 mt-1.5">
-            <span className="text-2xl font-extrabold font-mono text-slate-900">{runningCampaigns}</span>
-            <span className="text-xs text-slate-500 font-medium">running</span>
+            <span className="text-2xl font-extrabold font-mono text-white">{runningCampaigns}</span>
+            <span className="text-xs text-slate-400 font-medium">running</span>
           </div>
         </div>
 
         <div className="p-5">
-          <span className="text-slate-500 block text-[11px] uppercase font-bold tracking-wider font-mono">
+          <span className="text-slate-400 block text-[11px] uppercase font-bold tracking-wider font-mono">
             Dispatch Protection
           </span>
           <div className="flex items-baseline gap-2 mt-1.5">
-            <span className="text-xs font-bold font-mono text-slate-800 flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-slate-200/80 shadow-sm">
-              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+            <span className="text-xs font-bold font-mono text-slate-200 flex items-center gap-1.5 bg-white/[0.05] px-3 py-1 rounded-full border border-white/[0.12] shadow-sm">
+              <ShieldCheck className="h-4 w-4 text-emerald-400" />
               TRAI + {schedulerData?.cadencePolicy?.maxCallsPer24Hours || 2} Dials/Day Cap
             </span>
           </div>
@@ -239,8 +239,8 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
 
       {/* Autonomous Schedule Table */}
       <div className="overflow-x-auto">
-        <div className="px-6 py-3.5 bg-white border-b border-slate-200/80 flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-800 font-mono">
+        <div className="px-6 py-4 bg-white/[0.02] border-b border-white/[0.08] flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-white font-mono">
             Upcoming Dynamic Dispatches ({upcomingSchedule.length})
           </span>
           <span className="text-[11px] font-mono text-slate-400">
@@ -249,19 +249,19 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
         </div>
 
         {loading && upcomingSchedule.length === 0 ? (
-          <div className="py-12 text-center text-xs text-slate-500 space-y-2">
-            <RotateCw className="h-5 w-5 animate-spin mx-auto text-indigo-600" />
+          <div className="py-12 text-center text-xs text-slate-400 space-y-2">
+            <RotateCw className="h-5 w-5 animate-spin mx-auto text-indigo-400" />
             <p>Evaluating upcoming dynamic telephony schedule...</p>
           </div>
         ) : upcomingSchedule.length === 0 ? (
           <div className="py-12 text-center text-xs text-slate-400">
-            <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2 opacity-80" />
-            <p className="font-bold text-slate-800 text-sm">No pending dispatches</p>
-            <p className="mt-1 text-slate-500">All campaign leads are currently touched or waiting for upcoming cadence intervals.</p>
+            <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto mb-2 opacity-80" />
+            <p className="font-bold text-white text-sm">No pending dispatches</p>
+            <p className="mt-1 text-slate-400">All campaign leads are currently touched or waiting for upcoming cadence intervals.</p>
           </div>
         ) : (
-          <table className="w-full text-left text-xs text-slate-600">
-            <thead className="bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200/80 font-mono">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-white/[0.03] text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-white/[0.08] font-mono">
               <tr>
                 <th className="px-6 py-3.5">Consumer Contact</th>
                 <th className="px-6 py-3.5">Campaign</th>
@@ -270,31 +270,31 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
                 <th className="px-6 py-3.5 text-right">Autonomous Engine Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
+            <tbody className="divide-y divide-white/[0.04]">
               {upcomingSchedule.map(item => (
-                <tr key={item.campaignLeadId} className="hover:bg-indigo-50/20 transition-colors">
+                <tr key={item.campaignLeadId} className="hover:bg-white/[0.04] transition-colors">
                   <td className="px-6 py-4">
-                    <span className="font-bold text-slate-900 block text-sm">{item.leadName}</span>
-                    <span className="font-mono text-slate-500 text-[11px]">{formatPhoneNumber(item.phone)}</span>
+                    <span className="font-bold text-white block text-sm">{item.leadName}</span>
+                    <span className="font-mono text-slate-400 text-[11px]">{formatPhoneNumber(item.phone)}</span>
                   </td>
 
-                  <td className="px-6 py-4 font-semibold text-slate-700">
+                  <td className="px-6 py-4 font-semibold text-slate-300">
                     {item.campaignName}
                   </td>
 
                   <td className="px-6 py-4">
-                    <span className="font-semibold text-slate-800 block">{item.cadenceTier}</span>
+                    <span className="font-semibold text-slate-200 block">{item.cadenceTier}</span>
                     <span className="text-[10px] text-slate-400 font-mono">Attempt {item.attemptCount} of {item.maxAttempts}</span>
                   </td>
 
                   <td className="px-6 py-4 font-mono text-[11px]">
                     {item.isDue ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
                         <Clock className="h-3 w-3" />
                         <span>DUE NOW</span>
                       </span>
                     ) : item.nextAttemptAt ? (
-                      <span className="text-slate-800 font-medium">
+                      <span className="text-slate-200 font-medium">
                         {formatDate(item.nextAttemptAt)}
                       </span>
                     ) : (

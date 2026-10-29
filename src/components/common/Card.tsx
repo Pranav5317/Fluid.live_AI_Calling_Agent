@@ -11,7 +11,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          'rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.03),0_8px_24px_rgba(15,23,42,0.03)] overflow-hidden transition-all duration-200',
+          'rounded-[22px] border border-white/[0.08] bg-[#0A0E24]/85 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.4)] overflow-hidden transition-all duration-200 text-slate-100',
           !noPadding && 'p-6',
           className
         )}
@@ -31,7 +31,7 @@ export const CardHeader = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('flex items-center justify-between border-b border-slate-100 pb-4 mb-4', className)}
+    className={cn('flex items-center justify-between border-b border-white/[0.08] pb-4 mb-4 text-white', className)}
     {...props}
   >
     {children}
@@ -45,7 +45,7 @@ export const CardTitle = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn('text-base font-semibold text-slate-900 tracking-tight', className)}
+    className={cn('text-base font-bold text-white tracking-tight', className)}
     {...props}
   >
     {children}
@@ -57,9 +57,8 @@ export const CardDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, children, ...props }, ref) => (
-  <p ref={ref} className={cn('text-xs text-slate-500 mt-0.5', className)} {...props}>
+  <p ref={ref} className={cn('text-xs text-slate-400 mt-0.5', className)} {...props}>
     {children}
   </p>
 ));
 CardDescription.displayName = 'CardDescription';
-

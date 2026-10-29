@@ -282,22 +282,25 @@ export const CampaignsPage: React.FC = () => {
         }
       />
 
-      {/* Executive Floating Segmented Navigation */}
+      {/* Executive Floating Pill Segmented Navigation */}
       <div className="flex items-center">
-        <div className="inline-flex p-1.5 rounded-2xl bg-slate-200/60 border border-slate-300/40 backdrop-blur-sm shadow-inner gap-1.5">
+        <div className="inline-flex p-1.5 rounded-full bg-white/[0.05] border border-white/[0.1] backdrop-blur-xl shadow-inner gap-1.5">
           <button
             type="button"
             onClick={() => setActiveTab('campaigns')}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all duration-150 select-none',
+              'flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-full transition-all duration-200 select-none cursor-pointer',
               activeTab === 'campaigns'
-                ? 'bg-white text-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-200/60'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
+                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/30'
+                : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
             )}
           >
-            <Megaphone className={activeTab === 'campaigns' ? 'h-4 w-4 text-indigo-600' : 'h-4 w-4 text-slate-500'} />
+            <Megaphone className={activeTab === 'campaigns' ? 'h-4 w-4 text-white' : 'h-4 w-4 text-slate-400'} />
             <span>All Campaigns</span>
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-700 font-mono font-bold">
+            <span className={cn(
+              'rounded-full px-2 py-0.5 text-[10px] font-mono font-bold',
+              activeTab === 'campaigns' ? 'bg-white/20 text-white' : 'bg-white/[0.08] text-slate-300'
+            )}>
               {campaigns.length}
             </span>
           </button>
@@ -306,29 +309,29 @@ export const CampaignsPage: React.FC = () => {
             type="button"
             onClick={() => setActiveTab('scheduler')}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all duration-150 select-none',
+              'flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-full transition-all duration-200 select-none cursor-pointer',
               activeTab === 'scheduler'
-                ? 'bg-white text-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-200/60'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
+                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/30'
+                : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
             )}
           >
-            <CalendarClock className={activeTab === 'scheduler' ? 'h-4 w-4 text-indigo-600' : 'h-4 w-4 text-slate-500'} />
-            <span>Autonomous Telephony Scheduler</span>
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <CalendarClock className={activeTab === 'scheduler' ? 'h-4 w-4 text-white' : 'h-4 w-4 text-slate-400'} />
+            <span>Autonomous Scheduler</span>
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
           </button>
 
           <button
             type="button"
             onClick={() => setActiveTab('cadence')}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all duration-150 select-none',
+              'flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-full transition-all duration-200 select-none cursor-pointer',
               activeTab === 'cadence'
-                ? 'bg-white text-slate-900 shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-200/60'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/40'
+                ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/30'
+                : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
             )}
           >
-            <RotateCw className={activeTab === 'cadence' ? 'h-4 w-4 text-amber-600' : 'h-4 w-4 text-slate-500'} />
-            <span>Smart Retry & Cadence Queue</span>
+            <RotateCw className={activeTab === 'cadence' ? 'h-4 w-4 text-white' : 'h-4 w-4 text-slate-400'} />
+            <span>Retry & Cadence Queue</span>
           </button>
         </div>
       </div>
@@ -336,20 +339,20 @@ export const CampaignsPage: React.FC = () => {
       {activeTab === 'campaigns' && (
         <div className="space-y-6">
           {/* Quick Engine Telemetry Banner */}
-          <div className="relative overflow-hidden p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-[0_4px_24px_rgba(15,23,42,0.08)] border border-indigo-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <span className="p-2.5 rounded-xl bg-white/10 text-indigo-300 border border-white/10 shadow-inner">
-                <CalendarClock className="h-5 w-5 text-indigo-400" />
+          <div className="relative overflow-hidden p-6 rounded-[22px] bg-gradient-to-r from-indigo-950/80 via-[#0A0E24] to-indigo-950/80 border border-indigo-500/25 text-white shadow-[0_20px_50px_rgba(0,0,0,0.4)] backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+            <div className="flex items-center gap-4">
+              <span className="p-3 rounded-2xl bg-indigo-500/15 text-indigo-300 border border-indigo-400/30 shadow-inner">
+                <CalendarClock className="h-6 w-6 text-indigo-400" />
               </span>
               <div>
-                <div className="flex items-center gap-2">
-                  <p className="font-bold text-white text-sm">Autonomous Dynamic Dispatch Engine</p>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                <div className="flex items-center gap-2.5">
+                  <p className="font-bold text-white text-base font-sans">Autonomous Dynamic Dispatch Engine</p>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
                     Live & Guarded
                   </span>
                 </div>
-                <p className="text-xs text-indigo-200/80 mt-0.5">
+                <p className="text-xs text-indigo-200/80 mt-1">
                   TRAI Legal Window (10:00 AM – 7:30 PM IST) • Anti-Fatigue 24h Guard • Dynamic Concurrency Pacing
                 </p>
               </div>
@@ -358,7 +361,7 @@ export const CampaignsPage: React.FC = () => {
               size="sm"
               variant="outline"
               onClick={() => setActiveTab('scheduler')}
-              className="border-indigo-400/30 bg-white/10 text-white hover:bg-white/20 text-xs shrink-0 font-semibold"
+              className="border-indigo-400/40 bg-white/10 text-white hover:bg-white/20 text-xs shrink-0 font-semibold"
             >
               Configure Scheduler →
             </Button>
@@ -366,7 +369,7 @@ export const CampaignsPage: React.FC = () => {
 
           {/* Search & Status Filter Strip */}
           <Card noPadding>
-            <div className="p-4 border-b border-slate-200/80 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="p-5 border-b border-white/[0.08] bg-white/[0.02] flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="w-full sm:w-80">
                 <Input
                   placeholder="Search campaigns..."
@@ -375,7 +378,7 @@ export const CampaignsPage: React.FC = () => {
                   leftIcon={<Search className="h-4 w-4 text-slate-400" />}
                 />
               </div>
-              <div className="w-full sm:w-60">
+              <div className="w-full sm:w-64">
                 <Select
                   value={statusFilter}
                   onChange={e => setStatusFilter(e.target.value as any)}
@@ -404,65 +407,65 @@ export const CampaignsPage: React.FC = () => {
               />
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-600">
-                  <thead className="bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200/80 font-mono">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-white/[0.03] text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-white/[0.08] font-mono">
                     <tr>
-                      <th className="px-6 py-3.5">Campaign Name</th>
-                      <th className="px-6 py-3.5">Agent & Locked Version</th>
-                      <th className="px-6 py-3.5">Phone Number</th>
-                      <th className="px-6 py-3.5">Progress</th>
-                      <th className="px-6 py-3.5">Minutes Used</th>
-                      <th className="px-6 py-3.5">Lifecycle State</th>
-                      <th className="px-6 py-3.5 text-right">Execution Controls</th>
+                      <th className="px-6 py-4">Campaign Name</th>
+                      <th className="px-6 py-4">Agent & Locked Version</th>
+                      <th className="px-6 py-4">Phone Number</th>
+                      <th className="px-6 py-4">Progress</th>
+                      <th className="px-6 py-4">Minutes Used</th>
+                      <th className="px-6 py-4">Lifecycle State</th>
+                      <th className="px-6 py-4 text-right">Execution Controls</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 bg-white">
+                  <tbody className="divide-y divide-white/[0.04]">
                     {campaigns.map(cmp => {
                       const agentObj = agents.find(a => a.id === cmp.agentId);
                       const phoneObj = phoneNumbers.find(p => p.id === cmp.phoneNumberId);
                       const progressPct = Math.round((cmp.completedCalls / (cmp.totalLeads || 1)) * 100);
 
                       return (
-                        <tr key={cmp.id} className="hover:bg-indigo-50/20 transition-colors">
+                        <tr key={cmp.id} className="hover:bg-white/[0.04] transition-colors">
                           <td className="px-6 py-4.5">
                             <div>
-                              <span className="font-bold text-slate-900 block text-sm">{cmp.name}</span>
+                              <span className="font-bold text-white block text-sm">{cmp.name}</span>
                               <span className="text-[11px] text-slate-400">Created {formatDate(cmp.createdAt)}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4.5">
                             <div className="space-y-1">
-                              <div className="flex items-center gap-1.5 font-semibold text-slate-800">
-                                <Bot className="h-3.5 w-3.5 text-indigo-500" />
+                              <div className="flex items-center gap-1.5 font-semibold text-slate-200">
+                                <Bot className="h-3.5 w-3.5 text-indigo-400" />
                                 <span>{agentObj ? agentObj.name : cmp.agentId}</span>
                               </div>
-                              <div className="flex items-center gap-1 text-[11px] text-slate-500 font-mono">
-                                <History className="h-3 w-3 text-slate-400" />
-                                <span>Locked Version: <strong className="text-slate-700">{cmp.agentVersionId}</strong></span>
+                              <div className="flex items-center gap-1 text-[11px] text-slate-400 font-mono">
+                                <History className="h-3 w-3 text-slate-500" />
+                                <span>Locked Version: <strong className="text-slate-300">{cmp.agentVersionId}</strong></span>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4.5">
-                            <div className="flex items-center gap-1 text-slate-700 font-mono font-medium">
-                              <Hash className="h-3 w-3 text-slate-400" />
+                            <div className="flex items-center gap-1 text-slate-300 font-mono font-medium">
+                              <Hash className="h-3 w-3 text-slate-500" />
                               <span>{phoneObj ? phoneObj.phoneNumber : cmp.phoneNumberId}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4.5 w-48">
                             <div className="space-y-1.5">
-                              <div className="flex justify-between text-[11px] text-slate-600 font-mono">
+                              <div className="flex justify-between text-[11px] text-slate-400 font-mono">
                                 <span>{cmp.completedCalls} / {cmp.totalLeads} leads</span>
-                                <span className="font-bold text-slate-900">{progressPct}%</span>
+                                <span className="font-bold text-white">{progressPct}%</span>
                               </div>
-                              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden shadow-inner">
+                              <div className="w-full bg-white/[0.08] rounded-full h-2 overflow-hidden shadow-inner">
                                 <div
-                                  className="bg-gradient-to-r from-indigo-500 to-indigo-600 h-2 rounded-full shadow-sm transition-all"
+                                  className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full shadow-[0_0_12px_rgba(79,70,229,0.5)] transition-all"
                                   style={{ width: `${Math.min(progressPct, 100)}%` }}
                                 />
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4.5 font-mono font-semibold text-slate-800">{cmp.minutesUsed.toFixed(1)}m</td>
+                          <td className="px-6 py-4.5 font-mono font-semibold text-slate-200">{cmp.minutesUsed.toFixed(1)}m</td>
                           <td className="px-6 py-4.5">
                             <Badge variant={getStatusBadgeVariant(cmp.status)} dot>
                               {cmp.status}
