@@ -58,15 +58,6 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right items: Business Switcher, Notifications & Profile */}
       <div className="flex items-center gap-3">
-        {/* Telephony Network Status Pill */}
-        <div className="hidden sm:flex items-center gap-2 rounded-full bg-emerald-500/15 border border-emerald-600/25 px-3.5 py-1 text-xs font-semibold text-emerald-800 shadow-xs">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
-          </span>
-          <span>Carrier Bridge: Active</span>
-        </div>
-
         {/* Business context switcher */}
         <div className="relative">
           <button

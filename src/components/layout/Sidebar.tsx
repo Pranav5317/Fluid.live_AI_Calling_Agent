@@ -131,19 +131,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
       </div>
-
-      {/* Infrastructure Status Footprint */}
-      {!isCollapsed && (
-        <div className="p-4 m-3 rounded-2xl bg-white/60 border border-[#DACBB5] shadow-xs text-xs">
-          <div className="flex items-center gap-2 text-slate-900 font-bold mb-1">
-            <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
-            <span>Voice Telephony Cloud</span>
-          </div>
-          <p className="text-[11px] text-slate-600 leading-tight">
-            Carrier gateway active. Real-time SIP pipeline ready.
-          </p>
-        </div>
-      )}
     </div>
   );
 
