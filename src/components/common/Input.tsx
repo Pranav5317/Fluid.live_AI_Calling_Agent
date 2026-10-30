@@ -18,12 +18,12 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-xs font-bold uppercase tracking-wider text-slate-300 font-mono"
+            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 font-mono"
           >
             {label}
           </label>
         )}
-        <div className="relative rounded-full shadow-inner">
+        <div className="relative rounded-full shadow-2xs">
           {leftIcon && (
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
               {leftIcon}
@@ -33,7 +33,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'block w-full rounded-full border border-white/[0.12] bg-white/[0.05] py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:border-indigo-400 focus:bg-white/[0.08] focus:outline-none focus:ring-2 focus:ring-indigo-500/25 disabled:cursor-not-allowed disabled:opacity-50 transition-all shadow-inner',
+              'block w-full rounded-full border border-[#D5C4AC] bg-white/80 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#1D4ED8] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/20 disabled:cursor-not-allowed disabled:opacity-50 transition-all shadow-xs',
               leftIcon ? 'pl-10' : 'pl-4',
               rightIcon ? 'pr-10' : 'pr-4',
               error && 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/25',
@@ -48,9 +48,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error ? (
-          <p className="text-xs text-rose-400 font-medium">{error}</p>
+          <p className="text-xs text-rose-600 font-medium">{error}</p>
         ) : helperText ? (
-          <p className="text-xs text-slate-400">{helperText}</p>
+          <p className="text-xs text-slate-500">{helperText}</p>
         ) : null}
       </div>
     );

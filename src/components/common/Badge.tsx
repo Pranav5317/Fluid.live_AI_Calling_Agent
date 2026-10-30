@@ -15,26 +15,26 @@ export const Badge: React.FC<BadgeProps> = ({
   children,
   ...props
 }) => {
-  const base = 'inline-flex items-center font-medium rounded-full border transition-all duration-150 select-none shadow-[0_1px_2px_rgba(0,0,0,0.2)]';
+  const base = 'inline-flex items-center font-medium rounded-full border transition-all duration-150 select-none shadow-xs';
 
   const variants = {
-    neutral: 'bg-white/[0.06] text-slate-300 border-white/[0.12]',
-    success: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-    warning: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-    danger: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
-    info: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
-    purple: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30',
-    brand: 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-indigo-400/30 shadow-sm',
+    neutral: 'bg-black/5 text-slate-700 border-black/10',
+    success: 'bg-emerald-600/10 text-emerald-800 border-emerald-600/20',
+    warning: 'bg-amber-600/10 text-amber-900 border-amber-600/20',
+    danger: 'bg-rose-600/10 text-rose-800 border-rose-600/20',
+    info: 'bg-sky-600/10 text-sky-800 border-sky-600/20',
+    purple: 'bg-indigo-600/10 text-indigo-800 border-indigo-600/20',
+    brand: 'bg-[#1D4ED8]/10 text-[#1D4ED8] border-[#1D4ED8]/25 font-bold',
   };
 
   const dotColors = {
-    neutral: 'bg-slate-400',
-    success: 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]',
-    warning: 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]',
-    danger: 'bg-rose-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]',
-    info: 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]',
-    purple: 'bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.8)]',
-    brand: 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]',
+    neutral: 'bg-slate-500',
+    success: 'bg-emerald-600',
+    warning: 'bg-amber-600',
+    danger: 'bg-rose-600',
+    info: 'bg-sky-600',
+    purple: 'bg-indigo-600',
+    brand: 'bg-[#1D4ED8]',
   };
 
   const sizes = {

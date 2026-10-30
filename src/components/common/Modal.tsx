@@ -59,28 +59,28 @@ export const Modal: React.FC<ModalProps> = ({
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
+        className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
         onClick={onClose}
       />
 
       {/* Dialog container */}
       <div
         className={cn(
-          'relative w-full rounded-[24px] bg-[#0A0E24]/95 backdrop-blur-2xl shadow-[0_25px_60px_rgba(0,0,0,0.6)] border border-white/[0.12] text-slate-100 z-10 flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200',
+          'relative w-full rounded-[24px] bg-[#FAF4EB] shadow-[0_25px_60px_rgba(40,25,10,0.15)] border border-[#DFCDB6] text-slate-900 z-10 flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200',
           sizes[size]
         )}
       >
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-white/[0.08] px-6 py-4 bg-white/[0.02]">
+        <div className="flex items-start justify-between border-b border-[#EADCBD] px-6 py-4 bg-white/40">
           <div>
-            <h2 id={titleId} className="text-lg font-bold text-white tracking-tight leading-6">{title}</h2>
-            {description && <p className="mt-1 text-xs text-slate-400">{description}</p>}
+            <h2 id={titleId} className="text-lg font-bold text-slate-950 tracking-tight leading-6 font-sans">{title}</h2>
+            {description && <p className="mt-1 text-xs text-slate-600">{description}</p>}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="rounded-full p-2 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+            className="rounded-full p-2 text-slate-400 hover:bg-black/5 hover:text-slate-900 transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -91,7 +91,7 @@ export const Modal: React.FC<ModalProps> = ({
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-3 border-t border-white/[0.08] bg-[#070B1E]/70 px-6 py-4">
+          <div className="flex items-center justify-end gap-3 border-t border-[#EADCBD] bg-[#F2E7D7]/70 px-6 py-4">
             {footer}
           </div>
         )}

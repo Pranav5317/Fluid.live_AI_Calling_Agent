@@ -21,11 +21,11 @@ export const Pagination: React.FC<PaginationProps> = ({
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
   return (
-    <div className="flex items-center justify-between border-t border-white/[0.08] px-5 py-3.5 bg-white/[0.02]">
-      <div className="text-xs text-slate-400 font-mono">
-        Showing <span className="font-semibold text-white">{startItem}</span> to{' '}
-        <span className="font-semibold text-white">{endItem}</span> of{' '}
-        <span className="font-semibold text-white">{totalItems}</span> results
+    <div className="flex items-center justify-between border-t border-[#EADCBD] px-5 py-3.5 bg-[#FAF4EB]/60">
+      <div className="text-xs text-slate-600 font-mono">
+        Showing <span className="font-semibold text-slate-950">{startItem}</span> to{' '}
+        <span className="font-semibold text-slate-950">{endItem}</span> of{' '}
+        <span className="font-semibold text-slate-950">{totalItems}</span> results
       </div>
       <div className="flex items-center space-x-2">
         <Button
@@ -38,7 +38,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         >
           Previous
         </Button>
-        <span className="text-xs text-slate-400 font-mono px-2">
+        <span className="text-xs text-slate-600 font-mono px-2">
           Page {currentPage} of {totalPages || 1}
         </span>
         <Button

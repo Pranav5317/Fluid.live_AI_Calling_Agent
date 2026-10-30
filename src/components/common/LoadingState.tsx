@@ -11,9 +11,9 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   className,
 }) => {
   return (
-    <div className={`flex flex-col items-center justify-center p-12 text-slate-400 ${className || ''}`}>
-      <Loader2 className="h-6 w-6 animate-spin text-indigo-400 mb-3" />
-      <span className="text-xs font-medium font-mono text-slate-300">{label}</span>
+    <div className={`flex flex-col items-center justify-center p-12 text-slate-500 ${className || ''}`}>
+      <Loader2 className="h-6 w-6 animate-spin text-[#1D4ED8] mb-3" />
+      <span className="text-xs font-semibold font-mono text-slate-700">{label}</span>
     </div>
   );
 };

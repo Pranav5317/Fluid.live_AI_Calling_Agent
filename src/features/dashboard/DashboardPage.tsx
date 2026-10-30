@@ -140,66 +140,64 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         />
       </div>
 
-      {/* Enterprise Conversational Intelligence & Script Audit Summary */}
+      {/* Enterprise Conversational Intelligence & Script Audit Summary (Talkaor Deep Royal Navy Contrast Section) */}
       {metrics.intelligenceSummary && (
-        <Card className="border-indigo-500/20 bg-gradient-to-br from-indigo-950/40 via-[#0A0E24]/90 to-purple-950/30">
-          <CardHeader>
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-2.5">
-                <div className="h-9 w-9 rounded-2xl bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.25)]">
-                  <Sparkles className="h-5 w-5" />
-                </div>
-                <div>
-                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-white">
-                    Enterprise Conversational Intelligence & Quality Assurance
-                  </CardTitle>
-                  <CardDescription className="text-slate-400">
-                    Real-time conversational dynamics, script compliance audits, and intent signal analytics
-                  </CardDescription>
-                </div>
+        <div className="rounded-[24px] border border-blue-950/40 bg-[#0C1D4A] p-6 shadow-xl text-white">
+          <div className="flex items-center justify-between w-full border-b border-white/10 pb-4 mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="h-9 w-9 rounded-2xl bg-white/10 text-blue-200 border border-white/15 flex items-center justify-center shadow-xs">
+                <Sparkles className="h-5 w-5 text-blue-300" />
               </div>
-              <Badge variant="neutral" size="sm" className="bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 rounded-full font-mono">
-                Autonomous Engine
-              </Badge>
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-white font-sans">
+                  Enterprise Conversational Intelligence & Quality Assurance
+                </h3>
+                <p className="text-xs text-blue-200/70">
+                  Real-time conversational dynamics, script compliance audits, and intent signal analytics
+                </p>
+              </div>
             </div>
-          </CardHeader>
+            <Badge variant="neutral" size="sm" className="bg-white/10 text-blue-200 border-white/20 rounded-full font-mono">
+              Autonomous Engine
+            </Badge>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
             {/* Metric 1: Avg Talk-to-Listen Ratio */}
-            <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.03] space-y-2">
+            <div className="p-4 rounded-2xl border border-white/10 bg-white/[0.05] space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-200/80 font-mono">
                   Talk-to-Listen Ratio
                 </span>
-                <BarChart2 className="h-4 w-4 text-indigo-400" />
+                <BarChart2 className="h-4 w-4 text-blue-300" />
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-xl font-bold font-mono text-white">
                   {metrics.intelligenceSummary.avgTalkListenRatio.agentPct}% / {metrics.intelligenceSummary.avgTalkListenRatio.leadPct}%
                 </span>
               </div>
-              <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden flex shadow-inner">
+              <div className="h-2 w-full bg-white/15 rounded-full overflow-hidden flex shadow-inner">
                 <div
                   style={{ width: `${metrics.intelligenceSummary.avgTalkListenRatio.agentPct}%` }}
-                  className="bg-indigo-500 h-full"
+                  className="bg-[#2563EB] h-full"
                   title={`Agent: ${metrics.intelligenceSummary.avgTalkListenRatio.agentPct}%`}
                 />
                 <div
                   style={{ width: `${metrics.intelligenceSummary.avgTalkListenRatio.leadPct}%` }}
-                  className="bg-emerald-500 h-full"
+                  className="bg-emerald-400 h-full"
                   title={`Lead: ${metrics.intelligenceSummary.avgTalkListenRatio.leadPct}%`}
                 />
               </div>
-              <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+              <div className="flex justify-between text-[10px] text-blue-200/70 font-medium">
                 <span>Agent Airtime</span>
                 <span>Customer Response</span>
               </div>
             </div>
 
             {/* Metric 2: Script Compliance Score */}
-            <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.03] space-y-2">
+            <div className="p-4 rounded-2xl border border-white/10 bg-white/[0.05] space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-200/80 font-mono">
                   QA Script Audit Score
                 </span>
                 <ShieldCheck className="h-4 w-4 text-emerald-400" />
@@ -208,37 +206,37 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 <span className="text-xl font-bold font-mono text-white">
                   {metrics.intelligenceSummary.avgQaScore}/100
                 </span>
-                <Badge variant={metrics.intelligenceSummary.avgQaScore >= 80 ? 'success' : 'warning'} size="sm">
+                <Badge variant={metrics.intelligenceSummary.avgQaScore >= 80 ? 'success' : 'warning'} size="sm" className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30">
                   {metrics.intelligenceSummary.avgQaScore >= 90 ? 'Grade A+' : metrics.intelligenceSummary.avgQaScore >= 80 ? 'Grade A' : 'Grade B'}
                 </Badge>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-blue-200/70">
                 5-point automated script audit: intro, verification, pitch, consent, sign-off
               </p>
             </div>
 
             {/* Metric 3: High-Intent Lead Conversion */}
-            <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.03] space-y-2">
+            <div className="p-4 rounded-2xl border border-white/10 bg-white/[0.05] space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-200/80 font-mono">
                   High-Intent Lead Rate
                 </span>
-                <Zap className="h-4 w-4 text-amber-400" />
+                <Zap className="h-4 w-4 text-amber-300" />
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-xl font-bold font-mono text-white">
                   {metrics.intelligenceSummary.highIntentLeadRate}%
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-blue-200/70">
                 Calls exhibiting high-converting intent (WhatsApp/Demo request)
               </p>
             </div>
 
             {/* Metric 4: Positive Dialogue Sentiment */}
-            <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.03] space-y-2">
+            <div className="p-4 rounded-2xl border border-white/10 bg-white/[0.05] space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-200/80 font-mono">
                   Positive Sentiment Rate
                 </span>
                 <ThumbsUp className="h-4 w-4 text-emerald-400" />
@@ -248,7 +246,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                   {metrics.intelligenceSummary.positiveSentimentRate}%
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-blue-200/70">
                 Multi-phase sentiment trajectory (opening → pitch → close)
               </p>
             </div>
@@ -256,35 +254,35 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
           {/* Top Buying Signals & Objections Breakdown */}
           {metrics.intelligenceSummary.topBuyingSignals.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-white/[0.08] grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
-                <span className="font-bold text-slate-200 block mb-2 text-[11px] uppercase tracking-wider font-mono">
+            <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-4 rounded-2xl bg-white/[0.05] border border-white/10">
+                <span className="font-bold text-white block mb-2 text-[11px] uppercase tracking-wider font-mono">
                   Top Detected Intent Signals
                 </span>
                 <div className="space-y-1.5">
                   {metrics.intelligenceSummary.topBuyingSignals.map((sig, i) => (
-                    <div key={i} className="flex items-center justify-between text-slate-300">
+                    <div key={i} className="flex items-center justify-between text-blue-100">
                       <span className="truncate pr-2 font-medium">• {sig.label}</span>
-                      <span className="font-mono font-bold text-indigo-400 shrink-0">{sig.count} calls ({sig.percentage}%)</span>
+                      <span className="font-mono font-bold text-blue-300 shrink-0">{sig.count} calls ({sig.percentage}%)</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
-                <span className="font-bold text-slate-200 block mb-2 text-[11px] uppercase tracking-wider font-mono">
+              <div className="p-4 rounded-2xl bg-white/[0.05] border border-white/10">
+                <span className="font-bold text-white block mb-2 text-[11px] uppercase tracking-wider font-mono">
                   Customer Objections & Hesitation
                 </span>
                 {metrics.intelligenceSummary.topObjections.length === 0 ? (
-                  <p className="text-slate-400 italic text-[11px]">
+                  <p className="text-blue-200/60 italic text-[11px]">
                     Zero friction or objections recorded across completed campaigns.
                   </p>
                 ) : (
                   <div className="space-y-1.5">
                     {metrics.intelligenceSummary.topObjections.map((obj, i) => (
-                      <div key={i} className="flex items-center justify-between text-slate-300">
+                      <div key={i} className="flex items-center justify-between text-blue-100">
                         <span className="truncate pr-2 font-medium">• {obj.label}</span>
-                        <span className="font-mono font-bold text-amber-400 shrink-0">{obj.count} calls ({obj.percentage}%)</span>
+                        <span className="font-mono font-bold text-amber-300 shrink-0">{obj.count} calls ({obj.percentage}%)</span>
                       </div>
                     ))}
                   </div>
@@ -295,18 +293,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
           {/* Conversational Script Drop-Off Funnel & Waterfall */}
           {metrics.intelligenceSummary.dropOffFunnel && (
-            <div className="mt-4 pt-4 border-t border-white/[0.08] space-y-3">
+            <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-1.5 font-mono">
                     <TrendingDown className="h-4 w-4 text-rose-400" />
                     <span>Script Drop-Off Waterfall & Dialogue Retention</span>
                   </h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
+                  <p className="text-[11px] text-blue-200/70 mt-0.5">
                     Stage-by-stage conversational retention analysis across {metrics.intelligenceSummary.dropOffFunnel.totalConnectedCalls} active call sessions
                   </p>
                 </div>
-                <Badge variant="warning" size="sm">
+                <Badge variant="warning" size="sm" className="bg-amber-400/20 text-amber-200 border-amber-300/30">
                   Top Drop: {metrics.intelligenceSummary.dropOffFunnel.biggestDropOffStage}
                 </Badge>
               </div>
@@ -320,14 +318,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                       key={stage.stageId}
                       className={`p-3 rounded-2xl border transition-all ${
                         isBiggest
-                          ? 'bg-rose-500/10 border-rose-500/30 ring-1 ring-rose-400/30'
-                          : 'bg-white/[0.03] border-white/[0.08]'
+                          ? 'bg-rose-500/20 border-rose-400/40 ring-1 ring-rose-400/30'
+                          : 'bg-white/[0.05] border-white/10'
                       }`}
                     >
-                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase font-mono">
+                      <div className="flex items-center justify-between text-[10px] text-blue-200/70 font-bold uppercase font-mono">
                         <span>Step {idx + 1}</span>
                         {stage.dropOffCount > 0 && (
-                          <span className="text-rose-400 font-mono font-bold">-{stage.dropOffCount} left</span>
+                          <span className="text-rose-300 font-mono font-bold">-{stage.dropOffCount} left</span>
                         )}
                       </div>
 
@@ -340,21 +338,21 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                           <span className="text-base font-bold font-mono text-white">
                             {stage.retentionRate}%
                           </span>
-                          <span className="text-[10px] text-slate-400 font-mono">
+                          <span className="text-[10px] text-blue-200/70 font-mono">
                             {stage.callsReached} calls
                           </span>
                         </div>
-                        <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
                           <div
                             style={{ width: `${stage.retentionRate}%` }}
                             className={`h-full rounded-full transition-all ${
-                              isBiggest ? 'bg-rose-500' : 'bg-indigo-500'
+                              isBiggest ? 'bg-rose-400' : 'bg-blue-400'
                             }`}
                           />
                         </div>
                       </div>
 
-                      <p className="text-[10px] text-slate-400 mt-2 line-clamp-2 leading-tight">
+                      <p className="text-[10px] text-blue-200/70 mt-2 line-clamp-2 leading-tight">
                         {stage.description}
                       </p>
                     </div>
@@ -363,20 +361,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               </div>
 
               {/* AI Script Recommendation Banner */}
-              <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 flex items-start gap-2.5 text-xs text-indigo-200">
-                <Lightbulb className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="p-3.5 rounded-2xl bg-white/10 border border-white/15 flex items-start gap-2.5 text-xs text-blue-100">
+                <Lightbulb className="h-4 w-4 text-amber-300 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-bold uppercase tracking-wider text-[10px] text-indigo-300 block font-mono">
+                  <span className="font-bold uppercase tracking-wider text-[10px] text-amber-200 block font-mono">
                     Autonomous Script Optimization Recommendation
                   </span>
-                  <p className="mt-0.5 text-slate-300 leading-relaxed">
+                  <p className="mt-0.5 text-blue-100 leading-relaxed">
                     {metrics.intelligenceSummary.dropOffFunnel.scriptRecommendation}
                   </p>
                 </div>
               </div>
             </div>
           )}
-        </Card>
+        </div>
       )}
 
       {/* Main Overview Grid: Call Activity Chart & Recent System Activity */}
@@ -385,20 +383,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         <Card className="lg:col-span-2">
           <CardHeader>
             <div>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <Activity className="h-4 w-4 text-indigo-400" />
+              <CardTitle className="flex items-center gap-2 text-slate-950 font-bold">
+                <Activity className="h-4 w-4 text-[#1D4ED8]" />
                 Call Activity & Completion
               </CardTitle>
-              <CardDescription className="text-slate-400">Daily call attempts vs successful completed connections over time</CardDescription>
+              <CardDescription>Daily call attempts vs successful completed connections over time</CardDescription>
             </div>
             <div className="flex items-center gap-4 text-xs font-semibold">
               <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
-                <span className="text-slate-300">Attempts</span>
+                <span className="h-2.5 w-2.5 rounded-full bg-[#1D4ED8]" />
+                <span className="text-slate-700">Attempts</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-                <span className="text-slate-300">Completed</span>
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-600" />
+                <span className="text-slate-700">Completed</span>
               </div>
             </div>
           </CardHeader>
@@ -415,17 +413,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                       {/* Bar 1: Attempts */}
                       <div
                         style={{ height: `${attemptHeight}%` }}
-                        className="w-1/2 max-w-[16px] bg-gradient-to-t from-indigo-700 to-indigo-500 rounded-t-full transition-all group-hover:brightness-125"
+                        className="w-1/2 max-w-[16px] bg-[#1D4ED8] rounded-t-full transition-all group-hover:brightness-110 shadow-xs"
                         title={`Attempts: ${pt.attempts}`}
                       />
                       {/* Bar 2: Completed */}
                       <div
                         style={{ height: `${completedHeight}%` }}
-                        className="w-1/2 max-w-[16px] bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-full transition-all group-hover:brightness-125 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+                        className="w-1/2 max-w-[16px] bg-emerald-500 rounded-t-full transition-all group-hover:brightness-110 shadow-xs"
                         title={`Completed: ${pt.completed}`}
                       />
                     </div>
-                    <span className="text-[10px] font-mono font-medium text-slate-400">{pt.date}</span>
+                    <span className="text-[10px] font-mono font-medium text-slate-500">{pt.date}</span>
                   </div>
                 );
               })}
@@ -436,18 +434,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         {/* Recent Activity Timeline */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-white">Recent Activity</CardTitle>
-            <CardDescription className="text-slate-400">Latest campaign & system events</CardDescription>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Latest campaign & system events</CardDescription>
           </CardHeader>
           <div className="space-y-3 mt-2">
             {recentActivities.map(act => (
-              <div key={act.id} className="flex items-start gap-3 text-xs border-b border-white/[0.06] pb-3 last:border-0 last:pb-0">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/[0.06] border border-white/[0.08] text-indigo-400 mt-0.5 shadow-sm">
+              <div key={act.id} className="flex items-start gap-3 text-xs border-b border-[#EADCBD] pb-3 last:border-0 last:pb-0">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#1D4ED8]/10 border border-[#1D4ED8]/20 text-[#1D4ED8] mt-0.5 shadow-2xs">
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </div>
                 <div>
-                  <p className="font-semibold text-white leading-snug">{act.title}</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2">{act.description}</p>
+                  <p className="font-semibold text-slate-900 leading-snug">{act.title}</p>
+                  <p className="text-[11px] text-slate-600 mt-0.5 line-clamp-2">{act.description}</p>
                   <span className="text-[10px] font-mono text-slate-500 mt-1 block">
                     {formatDate(act.timestamp)}
                   </span>
@@ -460,10 +458,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
       {/* Campaign Overview Data Table */}
       <Card noPadding className="overflow-hidden">
-        <div className="p-5 border-b border-white/[0.08] flex items-center justify-between">
+        <div className="p-5 border-b border-[#EADCBD] flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-white tracking-tight">Active Campaign Performance</h3>
-            <p className="text-xs text-slate-400">Live progress tracking across assigned AI calling agents</p>
+            <h3 className="text-base font-bold text-slate-950 tracking-tight">Active Campaign Performance</h3>
+            <p className="text-xs text-slate-600">Live progress tracking across assigned AI calling agents</p>
           </div>
           <Button
             variant="outline"
@@ -477,8 +475,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-white/[0.02] text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-white/[0.08] font-mono">
+          <table className="w-full text-left text-xs text-slate-700">
+            <thead className="bg-[#F2E7D7]/70 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-[#EADCBD] font-mono">
               <tr>
                 <th className="px-5 py-3.5">Campaign Name</th>
                 <th className="px-5 py-3.5">Agent</th>
@@ -490,32 +488,32 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.04] bg-transparent">
+            <tbody className="divide-y divide-[#EADCBD]/60 bg-transparent">
               {campaigns.map(cmp => {
                 const progressPct = Math.round((cmp.completedCalls / (cmp.totalLeads || 1)) * 100);
                 return (
-                  <tr key={cmp.id} className="hover:bg-white/[0.03] transition-colors">
-                    <td className="px-5 py-3.5 font-bold text-white">{cmp.name}</td>
+                  <tr key={cmp.id} className="hover:bg-white/50 transition-colors">
+                    <td className="px-5 py-3.5 font-bold text-slate-950">{cmp.name}</td>
                     <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-1.5 font-medium text-slate-300">
-                        <Bot className="h-3.5 w-3.5 text-indigo-400" />
+                      <div className="flex items-center gap-1.5 font-medium text-slate-700">
+                        <Bot className="h-3.5 w-3.5 text-[#1D4ED8]" />
                         <span>{cmp.agentId}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 font-mono text-slate-200">{cmp.totalLeads}</td>
-                    <td className="px-5 py-3.5 font-mono text-slate-200">{cmp.callsAttempted}</td>
+                    <td className="px-5 py-3.5 font-mono text-slate-800">{cmp.totalLeads}</td>
+                    <td className="px-5 py-3.5 font-mono text-slate-800">{cmp.callsAttempted}</td>
                     <td className="px-5 py-3.5 w-40">
                       <div className="flex items-center gap-2">
-                        <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                        <div className="w-full bg-[#E5D7C3] rounded-full h-2 overflow-hidden">
                           <div
-                            className="bg-gradient-to-r from-blue-600 to-indigo-500 h-2 rounded-full transition-all shadow-[0_0_10px_rgba(79,70,229,0.5)]"
+                            className="bg-[#1D4ED8] h-2 rounded-full transition-all shadow-xs"
                             style={{ width: `${Math.min(progressPct, 100)}%` }}
                           />
                         </div>
-                        <span className="text-[11px] font-mono font-bold text-slate-300">{progressPct}%</span>
+                        <span className="text-[11px] font-mono font-bold text-slate-800">{progressPct}%</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 font-mono text-slate-200">{cmp.minutesUsed.toFixed(1)}m</td>
+                    <td className="px-5 py-3.5 font-mono text-slate-800">{cmp.minutesUsed.toFixed(1)}m</td>
                     <td className="px-5 py-3.5">
                       <Badge
                         variant={

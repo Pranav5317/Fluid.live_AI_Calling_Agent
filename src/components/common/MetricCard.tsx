@@ -26,23 +26,23 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   return (
     <div
       className={cn(
-        'rounded-[22px] border border-white/[0.08] bg-[#0A0E24]/85 backdrop-blur-xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex flex-col justify-between transition-all duration-300 hover:border-indigo-500/40 hover:shadow-[0_20px_50px_rgba(79,70,229,0.15)] group',
+        'rounded-[22px] border border-[#E5D7C3] bg-[#FAF4EB]/90 backdrop-blur-md p-6 shadow-[0_10px_30px_rgba(40,25,10,0.04)] flex flex-col justify-between transition-all duration-300 hover:border-[#1D4ED8]/40 hover:shadow-[0_12px_35px_rgba(29,78,216,0.08)] group',
         className
       )}
     >
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono">
           {title}
         </span>
         {icon && (
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-500/15 border border-indigo-400/25 text-indigo-400 shadow-inner transition-transform group-hover:scale-105">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#1D4ED8]/10 border border-[#1D4ED8]/20 text-[#1D4ED8] shadow-xs transition-transform group-hover:scale-105">
             {icon}
           </div>
         )}
       </div>
 
       <div className="mt-4">
-        <div className="text-3xl font-extrabold text-white tracking-tight font-sans">
+        <div className="text-3xl font-extrabold text-slate-950 tracking-tight font-sans">
           {value}
         </div>
 
@@ -51,10 +51,10 @@ export const MetricCard: React.FC<MetricCardProps> = ({
             {trendPercentage !== undefined && (
               <span
                 className={cn(
-                  'inline-flex items-center font-bold rounded-full px-2.5 py-0.5 text-[11px] font-mono border shadow-sm',
+                  'inline-flex items-center font-bold rounded-full px-2.5 py-0.5 text-[11px] font-mono border shadow-2xs',
                   isPositive
-                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                    : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                    ? 'bg-emerald-600/10 text-emerald-800 border-emerald-600/20'
+                    : 'bg-rose-600/10 text-rose-800 border-rose-600/20'
                 )}
               >
                 {isPositive ? (
@@ -65,7 +65,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
                 {isPositive ? `+${trendPercentage}%` : `${trendPercentage}%`}
               </span>
             )}
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[11px] text-slate-500">
               {description || trendLabel}
             </span>
           </div>

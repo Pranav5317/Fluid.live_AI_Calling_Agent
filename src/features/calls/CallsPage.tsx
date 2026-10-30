@@ -82,7 +82,7 @@ export const CallsPage: React.FC = () => {
 
       {/* Filter Bar */}
       <Card noPadding className="overflow-hidden">
-        <div className="p-4 border-b border-white/[0.08] bg-white/[0.02] flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="p-4 border-b border-[#EADCBD] bg-[#FAF4EB]/50 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="w-full sm:w-80">
             <Input
               placeholder="Search call ID, lead, variables..."
@@ -128,8 +128,8 @@ export const CallsPage: React.FC = () => {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-white/[0.02] text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-white/[0.08] font-mono">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-[#F2E7D7]/70 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-[#EADCBD] font-mono">
                 <tr>
                   <th className="px-5 py-3.5">Call ID / External Ref</th>
                   <th className="px-5 py-3.5">Campaign / Agent</th>
@@ -140,22 +140,22 @@ export const CallsPage: React.FC = () => {
                   <th className="px-5 py-3.5 text-right">Details</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.04] bg-transparent">
+              <tbody className="divide-y divide-[#EADCBD]/60 bg-transparent">
                 {calls.map(call => (
-                  <tr key={call.id} className="hover:bg-white/[0.03] transition-colors">
+                  <tr key={call.id} className="hover:bg-white/50 transition-colors">
                     <td className="px-5 py-3.5">
                       <div>
-                        <span className="font-mono font-bold text-white block">{call.id}</span>
-                        <span className="font-mono text-[10px] text-slate-400">{call.externalCallId}</span>
+                        <span className="font-mono font-bold text-slate-950 block">{call.id}</span>
+                        <span className="font-mono text-[10px] text-slate-500">{call.externalCallId}</span>
                       </div>
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="space-y-0.5">
-                        <span className="font-semibold text-slate-200 block">{call.campaignId || 'Direct Outreach'}</span>
-                        <span className="text-[11px] text-slate-400">Agent: Shubh (Fluid Voice)</span>
+                        <span className="font-semibold text-slate-800 block">{call.campaignId || 'Direct Outreach'}</span>
+                        <span className="text-[11px] text-slate-500">Agent: Shubh (Fluid Voice)</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 font-mono font-medium text-slate-200">
+                    <td className="px-5 py-3.5 font-mono font-medium text-slate-800">
                       {formatDuration(call.durationSeconds)}
                     </td>
                     <td className="px-5 py-3.5">
@@ -167,28 +167,28 @@ export const CallsPage: React.FC = () => {
                           const vars = (call.extractedVariables || {}) as Record<string, any>;
                           if (vars.interest_level === 'interested') {
                             return (
-                              <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
+                              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
                                 Interested
                               </span>
                             );
                           }
                           if (vars.interest_level === 'not_interested') {
                             return (
-                              <span className="text-[10px] font-bold text-red-300 bg-red-500/15 border border-red-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
+                              <span className="text-[10px] font-bold text-red-800 bg-red-500/15 border border-red-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
                                 Not Interested
                               </span>
                             );
                           }
                           if (vars.verification_status === 'completed') {
                             return (
-                              <span className="text-[10px] font-bold text-blue-300 bg-blue-500/15 border border-blue-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
+                              <span className="text-[10px] font-bold text-blue-800 bg-blue-500/15 border border-blue-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
                                 Verified
                               </span>
                             );
                           }
                           if (call.durationSeconds > 0) {
                             return (
-                              <span className="text-[10px] font-medium text-slate-300 bg-white/[0.06] border border-white/[0.08] px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
+                              <span className="text-[10px] font-medium text-slate-700 bg-white/80 border border-[#DACBB5] px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
                                 Connected
                               </span>
                             );
@@ -205,26 +205,26 @@ export const CallsPage: React.FC = () => {
                             .map(([k, v]) => (
                               <span
                                 key={k}
-                                className="rounded-full bg-white/[0.06] border border-white/[0.08] px-2 py-0.5 text-[10px] text-slate-300 font-mono"
+                                className="rounded-full bg-white/80 border border-[#DACBB5] px-2 py-0.5 text-[10px] text-slate-700 font-mono"
                               >
                                 {k}: {String(v)}
                               </span>
                             ))
                         ) : (
-                          <span className="text-[11px] text-slate-500 italic">None</span>
+                          <span className="text-[11px] text-slate-400 italic">None</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 font-mono text-[11px] text-slate-400">
+                    <td className="px-5 py-3.5 font-mono text-[11px] text-slate-500">
                       {formatDate(call.startedAt)}
                     </td>
                     <td className="px-5 py-3.5 text-right">
                       <Button
                         variant="outline"
                         size="sm"
-                        leftIcon={<FileText className="h-3.5 w-3.5 text-indigo-400" />}
+                        leftIcon={<FileText className="h-3.5 w-3.5 text-[#1D4ED8]" />}
                         onClick={() => setSelectedCall(call)}
-                        className="rounded-full text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/10 text-xs font-semibold"
+                        className="rounded-full text-[#1D4ED8] border-[#1D4ED8]/30 hover:bg-[#1D4ED8]/10 text-xs font-semibold"
                       >
                         Analyze Call
                       </Button>

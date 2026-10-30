@@ -171,28 +171,28 @@ export const LeadsPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-5 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono">Total Leads</span>
-            <div className="text-2xl font-extrabold text-white mt-1 tracking-tight">{data?.total ?? 0}</div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono">Total Leads</span>
+            <div className="text-2xl font-extrabold text-slate-950 mt-1 tracking-tight">{data?.total ?? 0}</div>
           </div>
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] border border-white/[0.08] text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1D4ED8]/10 border border-[#1D4ED8]/20 text-[#1D4ED8] shadow-xs">
             <Users className="h-5 w-5" />
           </div>
         </Card>
         <Card className="p-5 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono">Untouched Leads</span>
-            <div className="text-2xl font-extrabold text-white mt-1 tracking-tight">{data?.untouchedTotal ?? 0}</div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono">Untouched Leads</span>
+            <div className="text-2xl font-extrabold text-slate-950 mt-1 tracking-tight">{data?.untouchedTotal ?? 0}</div>
           </div>
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 shadow-xs">
             <Calendar className="h-5 w-5" />
           </div>
         </Card>
         <Card className="p-5 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono">Campaign Associations</span>
-            <div className="text-2xl font-extrabold text-white mt-1 tracking-tight">{campaigns.length} Active</div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono">Campaign Associations</span>
+            <div className="text-2xl font-extrabold text-slate-950 mt-1 tracking-tight">{campaigns.length} Active</div>
           </div>
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-500/10 border border-blue-500/20 text-[#1D4ED8] shadow-xs">
             <Filter className="h-5 w-5" />
           </div>
         </Card>
@@ -200,7 +200,7 @@ export const LeadsPage: React.FC = () => {
 
       {/* Search & Filter Bar */}
       <Card noPadding className="overflow-hidden">
-        <div className="p-4 border-b border-white/[0.08] bg-white/[0.02] flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="p-4 border-b border-[#EADCBD] bg-[#FAF4EB]/50 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="w-full sm:w-80">
             <Input
               placeholder="Search by name, phone, email, or metadata..."
@@ -257,8 +257,8 @@ export const LeadsPage: React.FC = () => {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-white/[0.02] text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-white/[0.08] font-mono">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-[#F2E7D7]/70 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-[#EADCBD] font-mono">
                 <tr>
                   <th className="px-5 py-3.5">Lead Name</th>
                   <th className="px-5 py-3.5">Contact Info</th>
@@ -270,7 +270,7 @@ export const LeadsPage: React.FC = () => {
                   <th className="px-5 py-3.5 text-right">Instant Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.04] bg-transparent">
+              <tbody className="divide-y divide-[#EADCBD]/60 bg-transparent">
                 {data.items.map(({ lead, campaignLead }) => {
                   const status = campaignLead?.status || 'untouched';
                   const attempts = campaignLead?.attemptCount || 0;
@@ -279,32 +279,32 @@ export const LeadsPage: React.FC = () => {
                     <tr
                       key={lead.id}
                       onClick={() => setSelectedLeadId(lead.id)}
-                      className="hover:bg-white/[0.03] cursor-pointer transition-colors group"
+                      className="hover:bg-white/50 cursor-pointer transition-colors group"
                     >
-                      <td className="px-5 py-3.5 font-bold text-white group-hover:text-indigo-400">
+                      <td className="px-5 py-3.5 font-bold text-slate-950 group-hover:text-[#1D4ED8]">
                         <div className="flex items-center gap-1.5">
                           <span>{lead.name}</span>
-                          <span className="opacity-0 group-hover:opacity-100 text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 font-bold px-2 py-0.5 rounded-full transition-opacity font-mono">
+                          <span className="opacity-0 group-hover:opacity-100 text-[10px] bg-[#1D4ED8]/10 text-[#1D4ED8] border border-[#1D4ED8]/25 font-bold px-2 py-0.5 rounded-full transition-opacity font-mono">
                             View 360°
                           </span>
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="space-y-0.5">
-                          <div className="flex items-center gap-1 text-slate-200 font-mono">
-                            <Phone className="h-3 w-3 text-slate-400" />
+                          <div className="flex items-center gap-1 text-slate-900 font-mono">
+                            <Phone className="h-3 w-3 text-slate-500" />
                             <span>{formatPhoneNumber(lead.phone)}</span>
                           </div>
                           {lead.email && (
-                            <div className="flex items-center gap-1 text-slate-400 text-[11px]">
-                              <Mail className="h-3 w-3 text-slate-500" />
+                            <div className="flex items-center gap-1 text-slate-500 text-[11px]">
+                              <Mail className="h-3 w-3 text-slate-400" />
                               <span>{lead.email}</span>
                             </div>
                           )}
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className="font-medium text-slate-300">
+                        <span className="font-medium text-slate-800">
                           {campaignLead
                             ? campaigns.find(c => c.id === campaignLead.campaignId)?.name || campaignLead.campaignId
                             : 'Unassigned'}
@@ -315,8 +315,8 @@ export const LeadsPage: React.FC = () => {
                           {status}
                         </Badge>
                       </td>
-                      <td className="px-5 py-3.5 font-mono text-slate-200">{attempts}</td>
-                      <td className="px-5 py-3.5 font-mono text-[11px] text-slate-400">
+                      <td className="px-5 py-3.5 font-mono text-slate-800">{attempts}</td>
+                      <td className="px-5 py-3.5 font-mono text-[11px] text-slate-500">
                         {lastAttempt ? formatDate(lastAttempt) : 'Never'}
                       </td>
                       <td className="px-5 py-3.5">
@@ -324,7 +324,7 @@ export const LeadsPage: React.FC = () => {
                           {Object.entries(lead.metadata || {}).map(([k, v]) => (
                             <span
                               key={k}
-                              className="rounded-full bg-white/[0.06] border border-white/[0.08] px-2 py-0.5 text-[10px] text-slate-300 font-mono"
+                              className="rounded-full bg-white/80 border border-[#DACBB5] px-2 py-0.5 text-[10px] text-slate-700 font-mono"
                             >
                               {k}: {String(v)}
                             </span>
@@ -337,9 +337,9 @@ export const LeadsPage: React.FC = () => {
                             size="sm"
                             variant="ghost"
                             onClick={() => setSelectedLeadId(lead.id)}
-                            leftIcon={<Eye className="h-3.5 w-3.5 text-indigo-400" />}
+                            leftIcon={<Eye className="h-3.5 w-3.5 text-[#1D4ED8]" />}
                             title="Open Lead 360 Timeline"
-                            className="rounded-full text-slate-300 hover:text-white"
+                            className="rounded-full text-slate-700 hover:text-slate-950"
                           >
                             360°
                           </Button>
@@ -347,9 +347,9 @@ export const LeadsPage: React.FC = () => {
                             size="sm"
                             variant="outline"
                             isLoading={callingLeadId === lead.id}
-                            leftIcon={<Phone className="h-3.5 w-3.5 text-emerald-400" />}
+                            leftIcon={<Phone className="h-3.5 w-3.5 text-emerald-600" />}
                             onClick={() => handleCallLead(lead.id, lead.phone)}
-                            className="rounded-full text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/10"
+                            className="rounded-full text-emerald-800 border-emerald-600/30 hover:bg-emerald-50"
                           >
                             Call Now
                           </Button>
