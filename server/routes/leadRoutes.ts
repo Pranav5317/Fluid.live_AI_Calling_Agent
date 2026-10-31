@@ -68,3 +68,28 @@ leadRoutes.post('/import', async (req, res) => {
   }
 });
 
+// POST /api/leads/cleanup-placeholders (Removes all placeholder leads & associated calls, retaining only original number 9922935920)
+leadRoutes.post('/cleanup-placeholders', async (req, res) => {
+  try {
+    const result = await serverLeadService.cleanupPlaceholderLeads('9922935920');
+    res.json({
+      success: true,
+      data: result,
+      message: 'All placeholder leads and accidental test calls successfully removed. Only 9922935920 remains.',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
+// DELETE /api/leads/:id
+leadRoutes.delete('/:id', async (req, res) => {
+  try {
+    await serverLeadService.deleteLead(req.params.id);
+    res.json({ success: true, message: 'Lead successfully deleted', timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+

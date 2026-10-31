@@ -56,6 +56,14 @@ export class ServerLeadService {
   async enrollLeadsInCampaign(leadIds: string[], campaignId: string): Promise<{ enrolledCount: number }> {
     return leadRepository.enrollLeadsInCampaign(leadIds, campaignId);
   }
+
+  async deleteLead(id: string): Promise<boolean> {
+    return leadRepository.deleteLead(id);
+  }
+
+  async cleanupPlaceholderLeads(keepPhoneDigits: string = '9922935920') {
+    return leadRepository.cleanupPlaceholderLeads(keepPhoneDigits);
+  }
 }
 
 export const serverLeadService = new ServerLeadService();

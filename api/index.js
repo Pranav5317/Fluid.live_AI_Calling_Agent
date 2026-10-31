@@ -1090,6 +1090,36 @@ var LeadRepository = class {
       }
     };
   }
+  async deleteLead(id) {
+    await prisma_default.call.deleteMany({ where: { leadId: id } });
+    await prisma_default.campaignLead.deleteMany({ where: { leadId: id } });
+    await prisma_default.lead.delete({ where: { id } });
+    return true;
+  }
+  async cleanupPlaceholderLeads(keepPhoneDigits = "9922935920") {
+    const leadsToDelete = await prisma_default.lead.findMany({
+      where: {
+        NOT: {
+          phone: { contains: keepPhoneDigits }
+        }
+      }
+    });
+    const deleteIds = leadsToDelete.map((l) => l.id);
+    const deletedCalls = await prisma_default.call.deleteMany({
+      where: { leadId: { in: deleteIds } }
+    });
+    const deletedCampaignLeads = await prisma_default.campaignLead.deleteMany({
+      where: { leadId: { in: deleteIds } }
+    });
+    const deletedLeads = await prisma_default.lead.deleteMany({
+      where: { id: { in: deleteIds } }
+    });
+    return {
+      deletedLeadsCount: deletedLeads.count,
+      deletedCallsCount: deletedCalls.count,
+      deletedCampaignLeadsCount: deletedCampaignLeads.count
+    };
+  }
 };
 var leadRepository = new LeadRepository();
 
@@ -1121,6 +1151,12 @@ var ServerLeadService = class {
   }
   async enrollLeadsInCampaign(leadIds, campaignId) {
     return leadRepository.enrollLeadsInCampaign(leadIds, campaignId);
+  }
+  async deleteLead(id) {
+    return leadRepository.deleteLead(id);
+  }
+  async cleanupPlaceholderLeads(keepPhoneDigits = "9922935920") {
+    return leadRepository.cleanupPlaceholderLeads(keepPhoneDigits);
   }
 };
 var serverLeadService = new ServerLeadService();
@@ -1178,6 +1214,27 @@ leadRoutes.post("/import", async (req, res) => {
     const { leads, campaignId } = req.body;
     const result = await serverLeadService.importLeads(leads || [], campaignId);
     res.json({ success: true, data: result, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+leadRoutes.post("/cleanup-placeholders", async (req, res) => {
+  try {
+    const result = await serverLeadService.cleanupPlaceholderLeads("9922935920");
+    res.json({
+      success: true,
+      data: result,
+      message: "All placeholder leads and accidental test calls successfully removed. Only 9922935920 remains.",
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+leadRoutes.delete("/:id", async (req, res) => {
+  try {
+    await serverLeadService.deleteLead(req.params.id);
+    res.json({ success: true, message: "Lead successfully deleted", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   } catch (err) {
     res.status(400).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   }

@@ -275,6 +275,43 @@ export class LeadRepository {
       },
     };
   }
+
+  async deleteLead(id: string): Promise<boolean> {
+    await prisma.call.deleteMany({ where: { leadId: id } });
+    await prisma.campaignLead.deleteMany({ where: { leadId: id } });
+    await prisma.lead.delete({ where: { id } });
+    return true;
+  }
+
+  async cleanupPlaceholderLeads(keepPhoneDigits: string = '9922935920') {
+    const leadsToDelete = await prisma.lead.findMany({
+      where: {
+        NOT: {
+          phone: { contains: keepPhoneDigits },
+        },
+      },
+    });
+
+    const deleteIds = leadsToDelete.map(l => l.id);
+
+    const deletedCalls = await prisma.call.deleteMany({
+      where: { leadId: { in: deleteIds } },
+    });
+
+    const deletedCampaignLeads = await prisma.campaignLead.deleteMany({
+      where: { leadId: { in: deleteIds } },
+    });
+
+    const deletedLeads = await prisma.lead.deleteMany({
+      where: { id: { in: deleteIds } },
+    });
+
+    return {
+      deletedLeadsCount: deletedLeads.count,
+      deletedCallsCount: deletedCalls.count,
+      deletedCampaignLeadsCount: deletedCampaignLeads.count,
+    };
+  }
 }
 
 export const leadRepository = new LeadRepository();

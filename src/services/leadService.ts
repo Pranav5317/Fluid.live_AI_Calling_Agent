@@ -93,6 +93,14 @@ class LeadService implements ILeadService {
   async getLeadTimeline(leadId: string): Promise<any> {
     return await apiClient.get<any>(`/leads/${leadId}/timeline`);
   }
+
+  async deleteLead(leadId: string): Promise<void> {
+    return await apiClient.delete<void>(`/leads/${leadId}`);
+  }
+
+  async cleanupPlaceholderLeads(): Promise<any> {
+    return await apiClient.post<any>('/leads/cleanup-placeholders', {});
+  }
 }
 
 export const leadService = new LeadService();
