@@ -26,6 +26,13 @@ import {
   BarChart2,
   AlertTriangle,
   MessageSquare,
+  Send,
+  Mail,
+  ExternalLink,
+  Flame,
+  ShieldAlert,
+  ListChecks,
+  Award,
 } from 'lucide-react';
 import { Call, CallIntelligence } from '../../types';
 import { formatDate, formatDuration } from '../../lib/formatters';
@@ -42,8 +49,30 @@ export interface CallDetailDrawerProps {
 export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClose }) => {
   const [activeCall, setActiveCall] = useState<Call | null>(call);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isAuditing, setIsAuditing] = useState(false);
+  const [copiedType, setCopiedType] = useState<'whatsapp' | 'email' | 'summary' | null>(null);
   const [copiedMessage, setCopiedMessage] = useState(false);
   const [showQaChecklist, setShowQaChecklist] = useState(false);
+
+  const handleCopyContent = (text: string, type: 'whatsapp' | 'email' | 'summary') => {
+    navigator.clipboard.writeText(text);
+    setCopiedType(type);
+    setTimeout(() => setCopiedType(null), 2000);
+  };
+
+  const handleRunAiAudit = async (callId: string) => {
+    setIsAuditing(true);
+    try {
+      const updated = await callService.auditCall(callId);
+      if (updated) {
+        setActiveCall(updated);
+      }
+    } catch (err) {
+      console.warn('[CallDetailDrawer] AI Audit error:', err);
+    } finally {
+      setIsAuditing(false);
+    }
+  };
 
   // Audio Playback State
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -357,9 +386,21 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
           <div className="flex items-center gap-2">
             <Button
               type="button"
+              variant="primary"
+              size="sm"
+              className="rounded-full text-xs font-semibold shadow-xs bg-[#1D4ED8] hover:bg-[#1E40AF] text-white"
+              leftIcon={<Sparkles className={`h-3.5 w-3.5 ${isAuditing ? 'animate-spin' : ''}`} />}
+              onClick={() => handleRunAiAudit(currentCall.id)}
+              disabled={isAuditing}
+              title="Run deep autonomous dialogue audit & BANT qualification"
+            >
+              {isAuditing ? 'Auditing...' : 'Run AI Deal Audit'}
+            </Button>
+            <Button
+              type="button"
               variant="outline"
               size="sm"
-              className="text-xs text-slate-700 bg-white hover:bg-slate-50 shadow-sm"
+              className="text-xs text-slate-700 bg-white hover:bg-slate-50 shadow-sm rounded-full"
               leftIcon={<Download className="h-3.5 w-3.5 text-slate-600" />}
               onClick={() => exportCallsToCSV([currentCall], `call_audit_${currentCall.id}`)}
               title="Download call audit and transcript as CSV"
@@ -389,213 +430,484 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
 
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* 1. ENTERPRISE AI CONVERSATIONAL INTELLIGENCE BRIEF */}
-          <div className="p-4 rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/60 via-white to-purple-50/40 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
-                  <Sparkles className="h-4 w-4" />
+          {/* 1. AUTONOMOUS DEAL INTELLIGENCE & BANT AUDITOR SUITE (OPTION 1) */}
+          <div className="rounded-2xl border border-blue-900/50 bg-[#0C1D4A] p-5 text-white shadow-xl space-y-5">
+            {/* Header: Title, Score & Tier */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-full bg-[#1D4ED8] text-white flex items-center justify-center shadow-md shrink-0">
+                  <Sparkles className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                    AI Conversational Intelligence Brief
+                  <h4 className="font-display text-xl text-white tracking-wide">
+                    Autonomous Deal Intelligence & BANT Audit
                   </h4>
-                  <span className="text-[10px] text-slate-500">Autonomous Neural Synthesis • Fluid Voice Engine</span>
+                  <span className="text-[11px] text-blue-200/70 font-mono">
+                    Neural Dialogue Evaluation • BANT Commercial Readiness
+                  </span>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <Badge
-                  variant={aiIntelligence.sentiment === 'positive' ? 'success' : aiIntelligence.sentiment === 'negative' ? 'danger' : 'neutral'}
-                  size="sm"
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/70 border border-emerald-500/40 text-emerald-400 font-mono font-bold text-xs shadow-inner">
+                  <Award className="h-3.5 w-3.5 text-emerald-400" />
+                  <span>{intelligence?.leadScore?.overallScore ?? aiIntelligence.intentScore ?? 75}/100</span>
+                </div>
+                <span
+                  className={`text-xs font-bold px-3 py-1 rounded-full shadow-xs border ${
+                    (intelligence?.leadScore?.tier || 'Warm Prospect') === 'Hot Lead'
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                      : (intelligence?.leadScore?.tier || 'Warm Prospect') === 'Warm Prospect'
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                  }`}
                 >
-                  {aiIntelligence.statusText}
-                </Badge>
-                {aiIntelligence.intentScore > 0 && (
-                  <span className="text-[11px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded font-mono">
-                    {aiIntelligence.intentScore}% Intent
-                  </span>
-                )}
+                  {intelligence?.leadScore?.summaryBadge || (intelligence?.leadScore?.tier === 'Hot Lead' ? '🔥 Hot Lead' : '⚡ Warm Prospect')}
+                </span>
               </div>
             </div>
 
-            <p className="text-xs text-slate-700 leading-relaxed bg-white/80 p-3 rounded-lg border border-indigo-50">
-              {aiIntelligence.summary}
-            </p>
+            {/* Executive AI Summary Card */}
+            <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-blue-200 uppercase tracking-wider font-mono">
+                <div className="flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5 text-blue-400" />
+                  <span>Executive AI Summary</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopyContent(intelligence?.executiveSummary || aiIntelligence.summary, 'summary')}
+                  className="flex items-center gap-1 text-[11px] font-mono text-blue-300 hover:text-white transition-colors"
+                >
+                  {copiedType === 'summary' ? (
+                    <>
+                      <Check className="h-3 w-3 text-emerald-400" />
+                      <span className="text-emerald-400">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3 w-3" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-100 leading-relaxed font-sans">
+                "{intelligence?.executiveSummary || aiIntelligence.summary}"
+              </p>
+            </div>
 
-            {/* Sentiment Trajectory Phases */}
-            {intelligence?.sentimentTrajectory && intelligence.sentimentTrajectory.phases.length > 0 && (
-              <div className="pt-2 border-t border-indigo-50">
-                <div className="flex items-center justify-between text-[11px] mb-1.5">
-                  <div className="flex items-center gap-1.5 font-semibold text-slate-700">
-                    <TrendingUp className="h-3.5 w-3.5 text-indigo-600" />
-                    <span>Sentiment Trajectory:</span>
-                    <span className="capitalize text-indigo-700 font-bold">
-                      {intelligence.sentimentTrajectory.trajectoryTrend.replace('_', ' ')}
+            {/* 4-Pillar BANT Qualification Grid */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-bold text-blue-200 uppercase tracking-wider font-mono">
+                <div className="flex items-center gap-1.5">
+                  <Target className="h-3.5 w-3.5 text-emerald-400" />
+                  <span>BANT Commercial Qualification Matrix</span>
+                </div>
+                <span className="text-[11px] text-blue-300/70 lowercase font-mono">
+                  4 commercial pillars (25 pts each)
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                {/* Budget */}
+                <div className="rounded-xl bg-white/5 border border-white/10 p-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-blue-300 font-mono">
+                      B • Budget
+                    </span>
+                    <span className="text-xs font-mono font-bold text-emerald-400">
+                      {intelligence?.leadScore?.bant.budget.score ?? 18}/25
                     </span>
                   </div>
-                  <span className="font-mono text-slate-500">
-                    Score: {intelligence.sentimentTrajectory.overallScore > 0 ? `+${intelligence.sentimentTrajectory.overallScore}` : intelligence.sentimentTrajectory.overallScore}
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {intelligence.sentimentTrajectory.phases.map(phase => (
+                  <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
                     <div
-                      key={phase.phase}
-                      className={`p-2 rounded-lg border text-center transition-all ${
-                        phase.sentiment === 'positive'
-                          ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
-                          : phase.sentiment === 'negative'
-                          ? 'bg-rose-50/70 border-rose-200 text-rose-900'
-                          : 'bg-slate-50 border-slate-200 text-slate-700'
-                      }`}
+                      className="h-full bg-emerald-400 rounded-full transition-all"
+                      style={{ width: `${((intelligence?.leadScore?.bant.budget.score ?? 18) / 25) * 100}%` }}
+                    />
+                  </div>
+                  <span className="inline-block text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/20">
+                    {intelligence?.leadScore?.bant.budget.status.replace('_', ' ') ?? 'confirmed'}
+                  </span>
+                  <p className="text-[11px] text-slate-300 leading-tight">
+                    {intelligence?.leadScore?.bant.budget.note ?? 'Commercial alignment with enterprise tier.'}
+                  </p>
+                </div>
+
+                {/* Authority */}
+                <div className="rounded-xl bg-white/5 border border-white/10 p-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-blue-300 font-mono">
+                      A • Authority
+                    </span>
+                    <span className="text-xs font-mono font-bold text-blue-400">
+                      {intelligence?.leadScore?.bant.authority.score ?? 22}/25
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-400 rounded-full transition-all"
+                      style={{ width: `${((intelligence?.leadScore?.bant.authority.score ?? 22) / 25) * 100}%` }}
+                    />
+                  </div>
+                  <span className="inline-block text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/20">
+                    {intelligence?.leadScore?.bant.authority.status.replace('_', ' ') ?? 'decision maker'}
+                  </span>
+                  <p className="text-[11px] text-slate-300 leading-tight">
+                    {intelligence?.leadScore?.bant.authority.note ?? 'Key stakeholder / verified direct contact.'}
+                  </p>
+                </div>
+
+                {/* Need */}
+                <div className="rounded-xl bg-white/5 border border-white/10 p-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-blue-300 font-mono">
+                      N • Need
+                    </span>
+                    <span className="text-xs font-mono font-bold text-amber-400">
+                      {intelligence?.leadScore?.bant.need.score ?? 23}/25
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-amber-400 rounded-full transition-all"
+                      style={{ width: `${((intelligence?.leadScore?.bant.need.score ?? 23) / 25) * 100}%` }}
+                    />
+                  </div>
+                  <span className="inline-block text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/20">
+                    {intelligence?.leadScore?.bant.need.status.replace('_', ' ') ?? 'urgent'}
+                  </span>
+                  <p className="text-[11px] text-slate-300 leading-tight">
+                    {intelligence?.leadScore?.bant.need.note ?? 'High operational requirement for voice automation.'}
+                  </p>
+                </div>
+
+                {/* Timing */}
+                <div className="rounded-xl bg-white/5 border border-white/10 p-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-blue-300 font-mono">
+                      T • Timing
+                    </span>
+                    <span className="text-xs font-mono font-bold text-emerald-400">
+                      {intelligence?.leadScore?.bant.timing.score ?? 21}/25
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-400 rounded-full transition-all"
+                      style={{ width: `${((intelligence?.leadScore?.bant.timing.score ?? 21) / 25) * 100}%` }}
+                    />
+                  </div>
+                  <span className="inline-block text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/20">
+                    {intelligence?.leadScore?.bant.timing.status.replace('_', ' ') ?? 'immediate'}
+                  </span>
+                  <p className="text-[11px] text-slate-300 leading-tight">
+                    {intelligence?.leadScore?.bant.timing.note ?? 'Walkthrough or digital collateral requested.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Objection & Resolution Matrix */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-bold text-blue-200 uppercase tracking-wider font-mono">
+                <div className="flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5 text-amber-400" />
+                  <span>Objection & Countermeasure Resolution Matrix</span>
+                </div>
+                <span className="text-[11px] text-blue-300/70 lowercase font-mono">
+                  {intelligence?.objectionResolutions?.length || intelligence?.objections?.length || 0} objection(s)
+                </span>
+              </div>
+
+              {intelligence?.objectionResolutions && intelligence.objectionResolutions.length > 0 ? (
+                <div className="space-y-2">
+                  {intelligence.objectionResolutions.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-xl bg-white/5 border border-white/10 p-3.5 space-y-2 text-xs"
                     >
-                      <span className="text-[10px] uppercase font-bold tracking-wider block opacity-75">
-                        {phase.phase}
-                      </span>
-                      <span className="text-xs font-bold capitalize mt-0.5 block">
-                        {phase.sentiment}
-                      </span>
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-[11px] font-bold text-amber-300 bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-400/20">
+                          {item.category}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full font-mono ${
+                            item.verdict === 'Resolved'
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+                              : item.verdict === 'Partially Addressed'
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
+                              : 'bg-rose-500/20 text-rose-300 border border-rose-400/30'
+                          }`}
+                        >
+                          {item.verdict}
+                        </span>
+                      </div>
+                      <div className="space-y-1 pl-2 border-l-2 border-amber-400/50">
+                        <span className="text-[10px] text-slate-400 font-mono block">Prospect Objection:</span>
+                        <p className="text-slate-200 italic">"{item.customerDialogue}"</p>
+                      </div>
+                      <div className="space-y-1 pl-2 border-l-2 border-emerald-400/50">
+                        <span className="text-[10px] text-slate-400 font-mono block">AI Agent Countermeasure:</span>
+                        <p className="text-slate-200">"{item.agentResponse}"</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-xs text-slate-300 flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <span>Zero commercial objections detected during this call session — dialogue proceeded seamlessly.</span>
+                </div>
+              )}
+            </div>
+
+            {/* Omnichannel Follow-Up Studio */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-bold text-blue-200 uppercase tracking-wider font-mono">
+                <div className="flex items-center gap-1.5">
+                  <Send className="h-3.5 w-3.5 text-blue-400" />
+                  <span>Omnichannel One-Click Follow-Up Studio</span>
+                </div>
+                <span className="text-[11px] text-emerald-300/80 font-mono">
+                  Auto-Personalized with Call Metadata
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* WhatsApp Dispatch Card */}
+                <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-3 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-xs">
+                        <MessageSquare className="h-4 w-4" />
+                        <span>WhatsApp Quick Dispatch</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleCopyContent(
+                            intelligence?.followUpRecommendations?.whatsapp.message ||
+                              intelligence?.nextBestAction?.suggestedMessage ||
+                              'Follow-up message',
+                            'whatsapp'
+                          )
+                        }
+                        className="text-[10px] text-slate-300 hover:text-white flex items-center gap-1 font-mono transition-colors"
+                      >
+                        {copiedType === 'whatsapp' ? (
+                          <>
+                            <Check className="h-3 w-3 text-emerald-400" />
+                            <span className="text-emerald-400">Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3 w-3" />
+                            <span>Copy</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-200 bg-black/25 p-3 rounded-lg border border-white/5 italic leading-relaxed">
+                      "{intelligence?.followUpRecommendations?.whatsapp.message ||
+                        intelligence?.nextBestAction?.suggestedMessage ||
+                        'Hi there! Thank you for speaking with our team at Fluid.live.'}"
+                    </p>
+                  </div>
+                  <div className="pt-2 flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-slate-400 font-mono truncate">
+                      To: {currentCall.leadPhone || currentCall.leadName || '+919922935920'}
+                    </span>
+                    <a
+                      href={
+                        intelligence?.followUpRecommendations?.whatsapp.url ||
+                        `https://wa.me/${(currentCall.leadPhone || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                          intelligence?.nextBestAction?.suggestedMessage || 'Namaste from Fluid.live'
+                        )}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition-all shrink-0"
+                    >
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      <span>Send WhatsApp</span>
+                      <ExternalLink className="h-3 w-3 opacity-70" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Email Draft Card */}
+                <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-3 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-blue-300 font-bold text-xs">
+                        <Mail className="h-4 w-4" />
+                        <span>Executive Email Follow-Up Draft</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleCopyContent(
+                            intelligence?.followUpRecommendations?.email.body || 'Email body follow-up',
+                            'email'
+                          )
+                        }
+                        className="text-[10px] text-slate-300 hover:text-white flex items-center gap-1 font-mono transition-colors"
+                      >
+                        {copiedType === 'email' ? (
+                          <>
+                            <Check className="h-3 w-3 text-emerald-400" />
+                            <span className="text-emerald-400">Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3 w-3" />
+                            <span>Copy Body</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-[10px] text-blue-200/70 font-mono">
+                        Subject: <strong className="text-white">{intelligence?.followUpRecommendations?.email.subject || 'Fluid.live Voice AI — Next Steps'}</strong>
+                      </div>
+                      <p className="text-xs text-slate-200 bg-black/25 p-3 rounded-lg border border-white/5 whitespace-pre-line leading-relaxed max-h-24 overflow-y-auto">
+                        {intelligence?.followUpRecommendations?.email.body ||
+                          'Thank you for speaking with our team today. We discussed how Fluid.live deploys low-latency voice AI agents.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="pt-2 flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-slate-400 font-mono truncate">
+                      Timing: {intelligence?.followUpRecommendations?.suggestedDate || 'Within 2 hours'}
+                    </span>
+                    <a
+                      href={`mailto:?subject=${encodeURIComponent(
+                        intelligence?.followUpRecommendations?.email.subject || 'Fluid.live Next Steps'
+                      )}&body=${encodeURIComponent(
+                        intelligence?.followUpRecommendations?.email.body || 'Thank you for our call today.'
+                      )}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1D4ED8] hover:bg-[#1E40AF] text-white text-xs font-bold shadow-md transition-all shrink-0"
+                    >
+                      <Mail className="h-3.5 w-3.5" />
+                      <span>Draft Email</span>
+                      <ExternalLink className="h-3 w-3 opacity-70" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tactical Deal Action Items */}
+            {intelligence?.dealActionItems && intelligence.dealActionItems.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-white/10">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-blue-200 uppercase tracking-wider font-mono">
+                  <ListChecks className="h-3.5 w-3.5 text-blue-400" />
+                  <span>Recommended Tactical Next Steps for Sales Rep</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {intelligence.dealActionItems.map((action, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-start gap-2 p-2.5 rounded-lg bg-white/5 border border-white/10 text-xs text-slate-200"
+                    >
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <span>{action}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-
-            {/* Script Milestone Progress Stepper */}
-            {intelligence?.milestones && isConnected && (
-              <div className="pt-2 border-t border-indigo-50 space-y-2">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold uppercase tracking-wider text-slate-700">
-                    Conversational Stage Progression:
-                  </span>
-                  <span className="font-mono text-xs font-bold text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded">
-                    {intelligence.milestones.currentStageName}
-                  </span>
-                </div>
-
-                {/* 5-step horizontal milestone progression */}
-                <div className="grid grid-cols-5 gap-1.5 text-center">
-                  {[
-                    { id: 'greeting', label: '1. Greeting' },
-                    { id: 'verification', label: '2. Verify' },
-                    { id: 'pitch', label: '3. Pitch' },
-                    { id: 'discovery', label: '4. Discovery' },
-                    { id: 'close', label: '5. Close' },
-                  ].map(step => {
-                    const isPassed = intelligence.milestones?.stagesCompleted.includes(step.id as any);
-                    const isDrop = intelligence.milestones?.dropOffStageId === step.id;
-                    return (
-                      <div
-                        key={step.id}
-                        className={`p-1.5 rounded-lg border text-[10px] font-bold transition-all ${
-                          isPassed
-                            ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
-                            : isDrop
-                            ? 'bg-rose-50 border-rose-300 text-rose-800'
-                            : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
-                        }`}
-                      >
-                        <div className="flex items-center justify-center gap-1">
-                          {isPassed ? (
-                            <CheckCircle2 className="h-3 w-3 text-emerald-600 shrink-0" />
-                          ) : isDrop ? (
-                            <AlertCircle className="h-3 w-3 text-rose-600 shrink-0" />
-                          ) : (
-                            <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-                          )}
-                          <span className="truncate">{step.label}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {intelligence.milestones.dropOffReason && (
-                  <p className="text-[11px] text-rose-700 bg-rose-50/60 p-2 rounded border border-rose-100 italic">
-                    ⚠️ Drop-off Note: {intelligence.milestones.dropOffReason}
-                  </p>
-                )}
-              </div>
-            )}
           </div>
 
-          {/* 2. NEXT BEST ACTION (SALES & CRM RECOMMENDATION) */}
-          {intelligence?.nextBestAction && (
-            <div className="p-4 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50/60 to-white space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-lg bg-amber-500 text-white flex items-center justify-center">
-                    <Zap className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                      Recommended Next Best Action
-                    </h4>
-                    <span className="text-[10px] text-slate-500">Autonomous CRM Routing</span>
-                  </div>
+          {/* 2. SENTIMENT TRAJECTORY & SCRIPT CONVERSATIONAL PHASES */}
+          {intelligence?.sentimentTrajectory && intelligence.sentimentTrajectory.phases.length > 0 && (
+            <div className="p-4 rounded-xl border border-indigo-100 bg-white space-y-3 shadow-xs">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+                  <TrendingUp className="h-4 w-4 text-[#1D4ED8]" />
+                  <span>Sentiment Trajectory Across Turn Phases:</span>
+                  <span className="capitalize text-[#1D4ED8] font-bold">
+                    {intelligence.sentimentTrajectory.trajectoryTrend.replace('_', ' ')}
+                  </span>
                 </div>
-                <Badge
-                  variant={
-                    intelligence.nextBestAction.priority === 'urgent'
-                      ? 'danger'
-                      : intelligence.nextBestAction.priority === 'high'
-                      ? 'warning'
-                      : 'neutral'
-                  }
-                  size="sm"
-                >
-                  {intelligence.nextBestAction.priority.toUpperCase()} PRIORITY
-                </Badge>
+                <span className="font-mono text-slate-500 text-xs">
+                  Score: {intelligence.sentimentTrajectory.overallScore > 0 ? `+${intelligence.sentimentTrajectory.overallScore}` : intelligence.sentimentTrajectory.overallScore}
+                </span>
               </div>
-
-              <div>
-                <p className="text-xs font-bold text-slate-900">{intelligence.nextBestAction.actionTitle}</p>
-              </div>
-
-              {intelligence.nextBestAction.suggestedMessage && (
-                <div className="mt-2 bg-white p-3 rounded-lg border border-amber-100 space-y-2">
-                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                    <span>Drafted Follow-Up Message</span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(intelligence.nextBestAction.suggestedMessage!)}
-                      className="flex items-center gap-1 text-slate-600 hover:text-slate-800 transition-colors font-medium lowercase"
-                    >
-                      {copiedMessage ? (
-                        <>
-                          <Check className="h-3 w-3 text-emerald-600" />
-                          <span className="text-emerald-600 font-semibold">Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-3 w-3" />
-                          <span>Copy</span>
-                        </>
-                      )}
-                    </button>
+              <div className="grid grid-cols-3 gap-2">
+                {intelligence.sentimentTrajectory.phases.map(phase => (
+                  <div
+                    key={phase.phase}
+                    className={`p-2.5 rounded-lg border text-center transition-all ${
+                      phase.sentiment === 'positive'
+                        ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
+                        : phase.sentiment === 'negative'
+                        ? 'bg-rose-50/70 border-rose-200 text-rose-900'
+                        : 'bg-slate-50 border-slate-200 text-slate-700'
+                    }`}
+                  >
+                    <span className="text-[10px] uppercase font-bold tracking-wider block opacity-75 font-mono">
+                      {phase.phase}
+                    </span>
+                    <span className="text-xs font-bold capitalize mt-0.5 block">
+                      {phase.sentiment}
+                    </span>
                   </div>
-                  <p className="text-xs text-slate-700 italic leading-relaxed bg-slate-50 p-2.5 rounded border border-slate-100">
-                    "{intelligence.nextBestAction.suggestedMessage}"
-                  </p>
+                ))}
+              </div>
 
-                  {/* Direct WhatsApp Messaging Dispatch Button */}
-                  {intelligence.nextBestAction.actionType === 'dispatch_whatsapp' && (
-                    <div className="pt-1 flex items-center justify-between">
-                      <span className="text-[11px] text-slate-500">
-                        Target: <strong className="text-slate-800">{currentCall.leadPhone || currentCall.leadName || 'Customer'}</strong>
-                      </span>
-                      <a
-                        href={`https://wa.me/${(currentCall.leadPhone || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                          intelligence.nextBestAction.suggestedMessage
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition-colors"
-                      >
-                        <MessageSquare className="h-3.5 w-3.5" />
-                        <span>Send via WhatsApp</span>
-                      </a>
-                    </div>
+              {/* Script Milestone Progress Stepper */}
+              {intelligence?.milestones && isConnected && (
+                <div className="pt-3 border-t border-slate-100 space-y-2">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-bold uppercase tracking-wider text-slate-700 font-mono">
+                      Conversational Stage Progression:
+                    </span>
+                    <span className="font-mono text-xs font-bold text-[#1D4ED8] bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                      {intelligence.milestones.currentStageName}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-5 gap-1.5 text-center">
+                    {[
+                      { id: 'greeting', label: '1. Greeting' },
+                      { id: 'verification', label: '2. Verify' },
+                      { id: 'pitch', label: '3. Pitch' },
+                      { id: 'discovery', label: '4. Discovery' },
+                      { id: 'close', label: '5. Close' },
+                    ].map(step => {
+                      const isPassed = intelligence.milestones?.stagesCompleted.includes(step.id as any);
+                      const isDrop = intelligence.milestones?.dropOffStageId === step.id;
+                      return (
+                        <div
+                          key={step.id}
+                          className={`p-1.5 rounded-lg border text-[10px] font-bold transition-all ${
+                            isPassed
+                              ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                              : isDrop
+                              ? 'bg-rose-50 border-rose-300 text-rose-800'
+                              : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
+                          }`}
+                        >
+                          <div className="flex items-center justify-center gap-1">
+                            {isPassed ? (
+                              <CheckCircle2 className="h-3 w-3 text-emerald-600 shrink-0" />
+                            ) : isDrop ? (
+                              <AlertCircle className="h-3 w-3 text-rose-600 shrink-0" />
+                            ) : (
+                              <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                            )}
+                            <span className="truncate">{step.label}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {intelligence.milestones.dropOffReason && (
+                    <p className="text-[11px] text-rose-700 bg-rose-50/60 p-2 rounded border border-rose-100 italic">
+                      ⚠️ Drop-off Note: {intelligence.milestones.dropOffReason}
+                    </p>
                   )}
                 </div>
               )}

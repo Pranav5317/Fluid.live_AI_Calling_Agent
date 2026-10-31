@@ -50,6 +50,16 @@ callRoutes.get('/:id/transcript', async (req, res) => {
   }
 });
 
+// POST /api/calls/:id/analyze (Execute or refresh deep AI Post-Call Intelligence & Deal Audit)
+callRoutes.post('/:id/analyze', async (req, res) => {
+  try {
+    const call = await serverCallService.auditCallIntelligence(req.params.id);
+    res.json({ success: true, data: call, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
 // GET /api/calls/:id/audio (Stream real WAV call recording from Sarvam Analytics)
 callRoutes.get('/:id/audio', async (req, res) => {
   try {

@@ -348,6 +348,11 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({ leadId, onCl
                               >
                                 {call.outcome ? call.outcome.replace(/_/g, ' ') : call.status}
                               </Badge>
+                              {intel?.leadScore && (
+                                <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-500/30">
+                                  BANT: {intel.leadScore.overallScore}/100
+                                </span>
+                              )}
                               {intel?.qaScorecard && (
                                 <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-900 text-white">
                                   QA: {intel.qaScorecard.overallScore}/100
@@ -360,9 +365,9 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({ leadId, onCl
                           </div>
 
                           {/* Executive Summary */}
-                          {call.extractedVariables?.call_summary && (
+                          {(intel?.executiveSummary || call.extractedVariables?.call_summary) && (
                             <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                              "{call.extractedVariables.call_summary}"
+                              "{intel?.executiveSummary || call.extractedVariables.call_summary}"
                             </p>
                           )}
 

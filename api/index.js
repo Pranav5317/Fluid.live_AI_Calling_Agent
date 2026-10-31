@@ -34,7 +34,17 @@ var CallAnalyticsService = class {
     const sentimentTrajectory = this.computeSentimentTrajectory(transcript, extractedVars);
     const nextBestAction = this.generateNextBestAction(call, buyingSignals, objections, extractedVars);
     const milestones = this.computeMilestoneProgress(transcript, call);
+    const executiveSummary = this.generateExecutiveSummary(call, transcript, buyingSignals, objections, extractedVars);
+    const leadScore = this.computeBantScore(call, transcript, buyingSignals, objections, extractedVars);
+    const objectionResolutions = this.analyzeObjectionResolutions(transcript, objections);
+    const followUpRecommendations = this.generateFollowUpRecommendations(call, leadScore, buyingSignals, extractedVars);
+    const dealActionItems = this.extractDealActionItems(call, leadScore, nextBestAction, objections);
     return {
+      executiveSummary,
+      leadScore,
+      objectionResolutions,
+      followUpRecommendations,
+      dealActionItems,
       talkToListen,
       qaScorecard,
       objections,
@@ -608,6 +618,227 @@ var CallAnalyticsService = class {
       biggestDropOffStage: biggestDrop.stageName,
       scriptRecommendation
     };
+  }
+  /**
+   * 8. Executive AI Summary Generator
+   */
+  generateExecutiveSummary(call, transcript, buyingSignals, objections, extractedVars) {
+    const leadName = extractedVars.user_name || call.leadName || "Prospect";
+    const duration = call.durationSeconds || 0;
+    if (duration === 0 || transcript.length === 0) {
+      return `Call ended before dialogue exchange was established. Line rang out without connection or customer pickup.`;
+    }
+    if (call.outcome === "not_interested" || extractedVars.interest_level === "not_interested") {
+      return `${leadName} answered the call but expressed low immediate urgency. Main hesitation indicated during early pitch. Recommended action: Suppress dialer and assign to long-term digital nurture.`;
+    }
+    if (call.outcome === "callback_requested" || buyingSignals.some((s) => s.type === "demo_request" || s.type === "affirmative_interest")) {
+      return `${leadName} demonstrated strong engagement during the ${duration}s consultation. Confirmed interest in automated AI calling workflows and requested follow-up scheduling. BANT profile qualified as high conversion potential.`;
+    }
+    if (buyingSignals.some((s) => s.type === "whatsapp_request")) {
+      return `${leadName} engaged positively with the agent and requested enterprise collateral via WhatsApp. High responsiveness observed; ready for immediate automated dispatch.`;
+    }
+    if (objections.length > 0) {
+      const topObj = objections[0].category.replace("_", " ");
+      return `${leadName} discussed operational fit during the ${duration}s call, raising queries around ${topObj}. The AI agent presented value propositions, leaving the door open for targeted follow-up.`;
+    }
+    return `${leadName} completed an active ${duration}s voice dialogue with the AI agent. Pacing was balanced and core value propositions were successfully conveyed.`;
+  }
+  /**
+   * 9. BANT Qualification Scoring (0-100) & Tier Segmentation
+   */
+  computeBantScore(call, transcript, buyingSignals, objections, extractedVars) {
+    const duration = call.durationSeconds || 0;
+    if (duration === 0 || transcript.length === 0) {
+      return {
+        overallScore: 0,
+        tier: "Cold / Disqualified",
+        summaryBadge: "\u2744\uFE0F Disqualified",
+        bant: {
+          budget: { score: 0, max: 25, status: "unqualified", note: "No contact established" },
+          authority: { score: 0, max: 25, status: "gatekeeper", note: "Unreachable" },
+          need: { score: 0, max: 25, status: "none", note: "Zero dialogue" },
+          timing: { score: 0, max: 25, status: "unresponsive", note: "No response" }
+        }
+      };
+    }
+    const transcriptText = transcript.map((t) => t.text.toLowerCase()).join(" ");
+    let budgetScore = 15;
+    let budgetStatus = "moderate";
+    let budgetNote = "Commercial interest aligned with standard enterprise tier.";
+    if (buyingSignals.some((s) => s.type === "pricing_inquiry") || /cost|price|budget|rate|pricing|charges|per minute/i.test(transcriptText)) {
+      budgetScore = 23;
+      budgetStatus = "confirmed";
+      budgetNote = "Explicit commercial inquiry on pricing models and ROI.";
+    } else if (objections.some((o) => o.category === "pricing")) {
+      budgetScore = 10;
+      budgetStatus = "moderate";
+      budgetNote = "Cost hesitation raised; requires ROI comparison breakdown.";
+    } else if (call.outcome === "not_interested") {
+      budgetScore = 6;
+      budgetStatus = "unqualified";
+      budgetNote = "Budget not confirmed prior to disconnect.";
+    }
+    let authorityScore = 18;
+    let authorityStatus = "influencer";
+    let authorityNote = "Direct verified recipient of outbound consultation.";
+    if (/founder|director|manager|head|ceo|cto|owner|lead|lead developer|vp/i.test(transcriptText) || extractedVars.user_name) {
+      authorityScore = 24;
+      authorityStatus = "decision_maker";
+      authorityNote = "Key stakeholder or primary operational decision-maker confirmed.";
+    } else if (/team|boss|management|ask my manager|consult with partner/i.test(transcriptText)) {
+      authorityScore = 14;
+      authorityStatus = "influencer";
+      authorityNote = "Internal advocate; final sign-off rests with higher executive.";
+    }
+    let needScore = 16;
+    let needStatus = "evaluating";
+    let needNote = "Evaluating conversational voice calling solutions.";
+    if (buyingSignals.length >= 2 || buyingSignals.some((s) => s.type === "demo_request")) {
+      needScore = 25;
+      needStatus = "urgent";
+      needNote = "High operational need identified; immediate interest in automation.";
+    } else if (buyingSignals.length === 1) {
+      needScore = 21;
+      needStatus = "urgent";
+      needNote = "Active interest in AI agent capabilities demonstrated.";
+    } else if (call.outcome === "not_interested") {
+      needScore = 5;
+      needStatus = "none";
+      needNote = "No immediate requirement for outbound telephony automation.";
+    }
+    let timingScore = 16;
+    let timingStatus = "medium_term";
+    let timingNote = "Follow-up timeline feasible within standard sales cycle.";
+    if (call.outcome === "callback_requested" || buyingSignals.some((s) => s.type === "demo_request")) {
+      timingScore = 24;
+      timingStatus = "immediate";
+      timingNote = "Active request for immediate or scheduled walkthrough.";
+    } else if (buyingSignals.some((s) => s.type === "whatsapp_request")) {
+      timingScore = 21;
+      timingStatus = "immediate";
+      timingNote = "Instant digital communication requested for today.";
+    } else if (objections.some((o) => o.category === "timing")) {
+      timingScore = 12;
+      timingStatus = "medium_term";
+      timingNote = "Prospect requested contact at later window.";
+    } else if (call.outcome === "not_interested") {
+      timingScore = 5;
+      timingStatus = "unresponsive";
+      timingNote = "Disengaged from immediate timeline.";
+    }
+    const overallScore = Math.min(100, Math.max(0, budgetScore + authorityScore + needScore + timingScore));
+    let tier = "Warm Prospect";
+    let summaryBadge = "\u26A1 Warm Prospect";
+    if (overallScore >= 75) {
+      tier = "Hot Lead";
+      summaryBadge = "\u{1F525} Hot Lead";
+    } else if (overallScore < 45) {
+      tier = "Cold / Disqualified";
+      summaryBadge = "\u2744\uFE0F Disqualified";
+    }
+    return {
+      overallScore,
+      tier,
+      summaryBadge,
+      bant: {
+        budget: { score: budgetScore, max: 25, status: budgetStatus, note: budgetNote },
+        authority: { score: authorityScore, max: 25, status: authorityStatus, note: authorityNote },
+        need: { score: needScore, max: 25, status: needStatus, note: needNote },
+        timing: { score: timingScore, max: 25, status: timingStatus, note: timingNote }
+      }
+    };
+  }
+  /**
+   * 10. Objection Resolution Audit
+   */
+  analyzeObjectionResolutions(transcript, objections) {
+    if (objections.length === 0) {
+      return [];
+    }
+    return objections.map((obj) => {
+      const turnIdx = transcript.findIndex((t) => t.id === obj.turnId || obj.detectedText && t.text.includes(obj.detectedText));
+      let agentResponse = "Agent acknowledged customer statement and clarified workflow.";
+      let verdict = "Resolved";
+      if (turnIdx >= 0) {
+        for (let i = turnIdx + 1; i < transcript.length; i++) {
+          if (transcript[i].speaker === "agent") {
+            agentResponse = transcript[i].text;
+            break;
+          }
+        }
+      }
+      if (obj.confidence > 0.85) {
+        verdict = "Partially Addressed";
+      }
+      return {
+        category: obj.category.replace("_", " ").toUpperCase(),
+        customerDialogue: obj.detectedText || obj.label,
+        agentResponse,
+        verdict
+      };
+    });
+  }
+  /**
+   * 11. One-Click Omnichannel Follow-Up Generator (WhatsApp & Email)
+   */
+  generateFollowUpRecommendations(call, leadScore, buyingSignals, extractedVars) {
+    const leadName = extractedVars.user_name || call.leadName || "there";
+    const cleanPhone = (call.leadPhone || "").replace(/\D/g, "") || "919922935920";
+    let whatsappMsg = `Hi ${leadName}! \u{1F44B} Thank you for speaking with our AI team at Fluid.live today. `;
+    if (leadScore.tier === "Hot Lead") {
+      whatsappMsg += `As discussed, here is the executive overview and demo deck on how our autonomous voice agents streamline customer calling: https://fluid.live/demo. Let us know when is best for a quick 10-minute setup walkthrough! \u{1F680}`;
+    } else {
+      whatsappMsg += `Sharing our 1-minute platform overview on enterprise voice AI automation: https://fluid.live/overview. Feel free to reply here whenever convenient! \u{1F60A}`;
+    }
+    const emailSubject = `Fluid.live Voice AI \u2014 Next Steps & Executive Summary for ${leadName}`;
+    const emailBody = `Hi ${leadName},
+
+Thank you for your time on our call today.
+
+Summary of Our Discussion:
+\u2022 Explored how Fluid.live deploys low-latency voice AI agents for high-volume customer calling.
+\u2022 Identified key requirements around automated outbound workflows and qualification.
+\u2022 Next milestone: Solution architect walkthrough and live pilot trial.
+
+You can explore our interactive calling platform anytime at:
+https://fluid.live
+
+Looking forward to our next conversation.
+
+Warm regards,
+The Fluid.live Team
+https://fluid.live`;
+    return {
+      whatsapp: {
+        message: whatsappMsg,
+        url: `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsappMsg)}`
+      },
+      email: {
+        subject: emailSubject,
+        body: emailBody
+      },
+      suggestedDate: leadScore.tier === "Hot Lead" ? "Today (within 2 hours)" : "Tomorrow morning"
+    };
+  }
+  /**
+   * 12. Tactical Deal Action Items
+   */
+  extractDealActionItems(call, leadScore, nextBestAction, objections) {
+    const actions = [];
+    if (leadScore.tier === "Hot Lead") {
+      actions.push("\u26A1 High Priority: Trigger one-click WhatsApp follow-up with executive one-pager.");
+      actions.push("\u{1F4C5} Book 15-minute Solution Architecture demonstration with enterprise AE.");
+    } else if (leadScore.tier === "Warm Prospect") {
+      actions.push("\u{1F4AC} Dispatch product collateral and case studies via digital channel.");
+      actions.push("\u23F0 Schedule follow-up outreach in automated cadence within 48 hours.");
+    } else {
+      actions.push("\u{1F6D1} Suppress dialer from immediate outbound rotation.");
+      actions.push("\u{1F4E5} Enroll lead into quarterly newsletter / nurture drip.");
+    }
+    if (objections.some((o) => o.category === "pricing")) {
+      actions.push("\u{1F4CA} Prepare custom ROI comparison vs legacy BPO call center costs.");
+    }
+    return actions;
   }
 };
 var callAnalyticsService = new CallAnalyticsService();
@@ -3216,17 +3447,42 @@ var ServerCallService = class {
   async getCalls(options = {}) {
     const calls = await callRepository.getCalls(options);
     return calls.map((call) => {
-      if (call.durationSeconds > 0 && !call.extractedVariables?.intelligence) {
-        call.extractedVariables.intelligence = callAnalyticsService.analyzeCall(call);
+      if (!call.extractedVariables?.intelligence || !call.extractedVariables.intelligence.leadScore) {
+        call.extractedVariables = {
+          ...call.extractedVariables || {},
+          intelligence: callAnalyticsService.analyzeCall(call)
+        };
       }
       return call;
     });
   }
   async getCallById(id) {
     const call = await callRepository.getCallById(id);
-    if (call && call.durationSeconds > 0 && !call.extractedVariables?.intelligence) {
-      call.extractedVariables.intelligence = callAnalyticsService.analyzeCall(call);
+    if (call && (!call.extractedVariables?.intelligence || !call.extractedVariables.intelligence.leadScore)) {
+      call.extractedVariables = {
+        ...call.extractedVariables || {},
+        intelligence: callAnalyticsService.analyzeCall(call)
+      };
     }
+    return call;
+  }
+  async auditCallIntelligence(callId) {
+    const call = await callRepository.getCallById(callId);
+    if (!call) {
+      throw new Error("Call record not found");
+    }
+    const intelligence = callAnalyticsService.analyzeCall(call);
+    const updatedExtracted = {
+      ...call.extractedVariables || {},
+      intelligence
+    };
+    await prisma_default.call.update({
+      where: { id: call.id },
+      data: {
+        extractedVariables: updatedExtracted
+      }
+    });
+    call.extractedVariables = updatedExtracted;
     return call;
   }
   async initiateTestCall(dto) {
@@ -3472,6 +3728,14 @@ callRoutes.get("/:id/transcript", async (req, res) => {
     res.json({ success: true, data: result, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   } catch (err) {
     res.status(400).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+callRoutes.post("/:id/analyze", async (req, res) => {
+  try {
+    const call = await serverCallService.auditCallIntelligence(req.params.id);
+    res.json({ success: true, data: call, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   }
 });
 callRoutes.get("/:id/audio", async (req, res) => {

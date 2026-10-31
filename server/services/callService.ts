@@ -17,8 +17,11 @@ export class ServerCallService {
   async getCalls(options: CallFilterParams = {}): Promise<Call[]> {
     const calls = await callRepository.getCalls(options);
     return calls.map(call => {
-      if (call.durationSeconds > 0 && !call.extractedVariables?.intelligence) {
-        call.extractedVariables.intelligence = callAnalyticsService.analyzeCall(call);
+      if (!call.extractedVariables?.intelligence || !call.extractedVariables.intelligence.leadScore) {
+        call.extractedVariables = {
+          ...(call.extractedVariables || {}),
+          intelligence: callAnalyticsService.analyzeCall(call),
+        };
       }
       return call;
     });
@@ -26,9 +29,35 @@ export class ServerCallService {
 
   async getCallById(id: string): Promise<Call | null> {
     const call = await callRepository.getCallById(id);
-    if (call && call.durationSeconds > 0 && !call.extractedVariables?.intelligence) {
-      call.extractedVariables.intelligence = callAnalyticsService.analyzeCall(call);
+    if (call && (!call.extractedVariables?.intelligence || !call.extractedVariables.intelligence.leadScore)) {
+      call.extractedVariables = {
+        ...(call.extractedVariables || {}),
+        intelligence: callAnalyticsService.analyzeCall(call),
+      };
     }
+    return call;
+  }
+
+  async auditCallIntelligence(callId: string): Promise<Call> {
+    const call = await callRepository.getCallById(callId);
+    if (!call) {
+      throw new Error('Call record not found');
+    }
+
+    const intelligence = callAnalyticsService.analyzeCall(call);
+    const updatedExtracted = {
+      ...(call.extractedVariables || {}),
+      intelligence,
+    };
+
+    await prisma.call.update({
+      where: { id: call.id },
+      data: {
+        extractedVariables: updatedExtracted as any,
+      },
+    });
+
+    call.extractedVariables = updatedExtracted;
     return call;
   }
 

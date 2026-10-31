@@ -45,6 +45,10 @@ class CallService implements ICallService {
   async getCallTranscript(id: string): Promise<{ call: Call; transcriptData: any }> {
     return await apiClient.get<{ call: Call; transcriptData: any }>(`/calls/${id}/transcript`);
   }
+
+  async auditCall(id: string): Promise<Call> {
+    return await apiClient.post<Call>(`/calls/${id}/analyze`, {});
+  }
 }
 
 export const callService = new CallService();

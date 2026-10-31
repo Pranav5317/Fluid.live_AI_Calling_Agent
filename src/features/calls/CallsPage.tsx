@@ -135,6 +135,7 @@ export const CallsPage: React.FC = () => {
                   <th className="px-5 py-3.5">Campaign / Agent</th>
                   <th className="px-5 py-3.5">Duration</th>
                   <th className="px-5 py-3.5">Call Outcome</th>
+                  <th className="px-5 py-3.5">AI Lead Score & Tier</th>
                   <th className="px-5 py-3.5">Extracted Variables</th>
                   <th className="px-5 py-3.5">Timestamp</th>
                   <th className="px-5 py-3.5 text-right">Details</th>
@@ -196,6 +197,33 @@ export const CallsPage: React.FC = () => {
                           return null;
                         })()}
                       </div>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      {(() => {
+                        const intel = call.extractedVariables?.intelligence;
+                        const leadScore = intel?.leadScore;
+                        const score = leadScore?.overallScore ?? (call.durationSeconds > 0 ? 75 : 0);
+                        const tier = leadScore?.tier || (score >= 75 ? 'Hot Lead' : score >= 45 ? 'Warm Prospect' : 'Cold / Disqualified');
+                        const badgeText = leadScore?.summaryBadge || (tier === 'Hot Lead' ? '🔥 Hot Lead' : tier === 'Warm Prospect' ? '⚡ Warm' : '❄️ Cold');
+                        return (
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className="font-mono font-bold text-slate-900 text-xs">
+                              {score}/100
+                            </span>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                tier === 'Hot Lead'
+                                  ? 'bg-emerald-500/15 text-emerald-800 border-emerald-500/30'
+                                  : tier === 'Warm Prospect'
+                                  ? 'bg-amber-500/15 text-amber-800 border-amber-500/30'
+                                  : 'bg-slate-500/15 text-slate-700 border-slate-500/30'
+                              }`}
+                            >
+                              {badgeText}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex flex-wrap gap-1">

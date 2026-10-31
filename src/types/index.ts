@@ -244,7 +244,52 @@ export interface ScriptDropOffFunnel {
   scriptRecommendation: string;
 }
 
+export interface BantCriterion {
+  score: number;
+  max: number;
+  status: string;
+  note: string;
+}
+
+export interface BantBreakdown {
+  budget: BantCriterion;
+  authority: BantCriterion;
+  need: BantCriterion;
+  timing: BantCriterion;
+}
+
+export interface LeadScoreAudit {
+  overallScore: number;
+  tier: 'Hot Lead' | 'Warm Prospect' | 'Cold / Disqualified';
+  summaryBadge: string;
+  bant: BantBreakdown;
+}
+
+export interface ObjectionResolutionItem {
+  category: string;
+  customerDialogue: string;
+  agentResponse: string;
+  verdict: 'Resolved' | 'Partially Addressed' | 'Unaddressed';
+}
+
+export interface FollowUpRecommendations {
+  whatsapp: {
+    message: string;
+    url: string;
+  };
+  email: {
+    subject: string;
+    body: string;
+  };
+  suggestedDate?: string;
+}
+
 export interface CallIntelligence {
+  executiveSummary?: string;
+  leadScore?: LeadScoreAudit;
+  objectionResolutions?: ObjectionResolutionItem[];
+  followUpRecommendations?: FollowUpRecommendations;
+  dealActionItems?: string[];
   talkToListen: CallPacingDynamics;
   qaScorecard: QAComplianceReport;
   objections: ObjectionDetection[];
