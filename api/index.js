@@ -7,8 +7,32 @@ import { Router } from "express";
 
 // server/lib/prisma.ts
 import { PrismaClient } from "@prisma/client";
+function getDatabaseUrl() {
+  const envUrl = process.env.DATABASE_URL;
+  if (!envUrl) return void 0;
+  if (process.env.VERCEL) {
+    return envUrl;
+  }
+  try {
+    const raw = envUrl.replace(/^["']|["']$/g, "");
+    const u = new URL(raw);
+    if (u.hostname.includes("neon.tech") && !u.searchParams.has("options")) {
+      const endpointId = u.hostname.split(".")[0].replace("-pooler", "");
+      u.hostname = "52.76.246.190";
+      u.searchParams.set("options", `endpoint=${endpointId}`);
+      u.searchParams.set("sslmode", "require");
+      u.searchParams.delete("channel_binding");
+      return u.toString();
+    }
+    return raw;
+  } catch {
+    return envUrl;
+  }
+}
+var dbUrl = getDatabaseUrl();
 var prisma = globalThis.globalPrisma || new PrismaClient({
-  log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"]
+  ...dbUrl ? { datasources: { db: { url: dbUrl } } } : {},
+  log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"]
 });
 if (process.env.NODE_ENV !== "production") {
   globalThis.globalPrisma = prisma;
