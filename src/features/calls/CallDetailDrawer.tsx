@@ -1229,12 +1229,12 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
               <span>Extracted Conversation Variables</span>
             </div>
             {!currentCall.extractedVariables ||
-            Object.entries(currentCall.extractedVariables).filter(([k]) => !k.startsWith('_') && k !== 'intelligence').length === 0 ? (
+            Object.entries(currentCall.extractedVariables).filter(([k, v]) => !k.startsWith('_') && k !== 'intelligence' && k !== 'call_summary' && typeof v !== 'object').length === 0 ? (
               <p className="text-xs text-slate-400 italic">No structured variables extracted from this call session.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {Object.entries(currentCall.extractedVariables)
-                  .filter(([key]) => !key.startsWith('_') && key !== 'intelligence')
+                  .filter(([key, value]) => !key.startsWith('_') && key !== 'intelligence' && key !== 'call_summary' && typeof value !== 'object')
                   .map(([key, value]) => (
                     <div key={key} className="p-3 rounded-lg border border-slate-200 bg-white flex items-center justify-between">
                       <div>

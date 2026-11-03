@@ -225,23 +225,52 @@ export const CallsPage: React.FC = () => {
                         );
                       })()}
                     </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex flex-wrap gap-1">
-                        {Object.entries(call.extractedVariables || {}).filter(([k]) => !k.startsWith('_')).length > 0 ? (
-                          Object.entries(call.extractedVariables || {})
-                            .filter(([k]) => !k.startsWith('_'))
-                            .map(([k, v]) => (
-                              <span
-                                key={k}
-                                className="rounded-full bg-white/80 border border-[#DACBB5] px-2 py-0.5 text-[10px] text-slate-700 font-mono"
+                    <td className="px-5 py-3.5 max-w-xs">
+                      {(() => {
+                        const allVars = (call.extractedVariables || {}) as Record<string, any>;
+                        const summaryText =
+                          typeof allVars.call_summary === 'string' && allVars.call_summary.trim().length > 0
+                            ? allVars.call_summary.trim()
+                            : null;
+
+                        const tagEntries = Object.entries(allVars).filter(
+                          ([k, v]) =>
+                            !k.startsWith('_') &&
+                            k !== 'intelligence' &&
+                            k !== 'call_summary' &&
+                            typeof v !== 'object'
+                        );
+
+                        if (tagEntries.length === 0 && !summaryText) {
+                          return <span className="text-[11px] text-slate-400 italic">None</span>;
+                        }
+
+                        return (
+                          <div className="space-y-1.5 max-w-[280px]">
+                            {tagEntries.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {tagEntries.map(([k, v]) => (
+                                  <span
+                                    key={k}
+                                    title={`${k}: ${String(v)}`}
+                                    className="rounded-md bg-white/90 border border-[#DACBB5] px-2 py-0.5 text-[10px] font-mono text-slate-700 max-w-[160px] truncate inline-block shadow-2xs"
+                                  >
+                                    <span className="text-slate-500 font-semibold">{k}:</span> {String(v)}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {summaryText && (
+                              <p
+                                className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed italic bg-white/70 border border-[#DACBB5]/70 rounded-md p-1.5 shadow-2xs"
+                                title={summaryText}
                               >
-                                {k}: {String(v)}
-                              </span>
-                            ))
-                        ) : (
-                          <span className="text-[11px] text-slate-400 italic">None</span>
-                        )}
-                      </div>
+                                "{summaryText}"
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-5 py-3.5 font-mono text-[11px] text-slate-500">
                       {formatDate(call.startedAt)}
