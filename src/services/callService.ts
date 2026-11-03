@@ -49,6 +49,10 @@ class CallService implements ICallService {
   async auditCall(id: string): Promise<Call> {
     return await apiClient.post<Call>(`/calls/${id}/analyze`, {});
   }
+
+  async syncAllCalls(): Promise<{ syncedCount: number; calls: Call[] }> {
+    return await apiClient.post<{ syncedCount: number; calls: Call[] }>('/calls/sync-all', {});
+  }
 }
 
 export const callService = new CallService();

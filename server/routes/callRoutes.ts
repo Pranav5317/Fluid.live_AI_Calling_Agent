@@ -30,6 +30,16 @@ callRoutes.get('/', async (req, res) => {
   }
 });
 
+// POST /api/calls/sync-all (Batch sync any initiated or un-synced calls from Sarvam API)
+callRoutes.post('/sync-all', async (req, res) => {
+  try {
+    const result = await serverCallService.syncAllPendingCalls();
+    res.json({ success: true, data: result, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
 // POST /api/calls/test (Server-authorized outbound test call)
 callRoutes.post('/test', async (req, res) => {
   try {

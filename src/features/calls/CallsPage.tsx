@@ -11,13 +11,14 @@ import { callService } from '../../services/callService';
 import { Call, CallStatus, CallOutcome } from '../../types';
 import { formatDate, formatDuration } from '../../lib/formatters';
 import { CallDetailDrawer } from './CallDetailDrawer';
-import { Search, PhoneCall, FileText, ChevronRight, Filter, Download } from 'lucide-react';
+import { Search, PhoneCall, FileText, ChevronRight, Filter, Download, RotateCw } from 'lucide-react';
 import { exportCallsToCSV } from '../../lib/exportUtils';
 
 export const CallsPage: React.FC = () => {
   const [calls, setCalls] = useState<Call[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCall, setSelectedCall] = useState<Call | null>(null);
+  const [syncingAll, setSyncingAll] = useState(false);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -38,6 +39,28 @@ export const CallsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSyncAll = async () => {
+    setSyncingAll(true);
+    try {
+      const res = await callService.syncAllCalls();
+      if (res && Array.isArray(res.calls)) {
+        setCalls(res.calls);
+      } else {
+        await fetchCalls();
+      }
+    } catch (err) {
+      console.warn('[CallsPage] Sync all error:', err);
+      await fetchCalls();
+    } finally {
+      setSyncingAll(false);
+    }
+  };
+
+  const handleCallUpdated = (updatedCall: Call) => {
+    setSelectedCall(updatedCall);
+    setCalls(prev => prev.map(c => (c.id === updatedCall.id ? updatedCall : c)));
   };
 
   useEffect(() => {
@@ -68,15 +91,27 @@ export const CallsPage: React.FC = () => {
         title="Call Logs & Transcripts"
         description="Historical execution records, transcript playback, call outcomes and conversational QA audits."
         actions={
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<Download className="h-4 w-4 text-slate-600" />}
-            onClick={() => exportCallsToCSV(calls, 'fluid_live_call_audit')}
-            disabled={calls.length === 0}
-          >
-            Export Audit CSV ({calls.length})
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<RotateCw className={`h-4 w-4 text-brand-600 ${syncingAll ? 'animate-spin' : ''}`} />}
+              onClick={handleSyncAll}
+              disabled={syncingAll || loading}
+              className="border-[#DACBB5] hover:bg-white/80 text-slate-800 font-semibold"
+            >
+              {syncingAll ? 'Syncing Sarvam...' : 'Sync Sarvam Telemetry'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Download className="h-4 w-4 text-slate-600" />}
+              onClick={() => exportCallsToCSV(calls, 'fluid_live_call_audit')}
+              disabled={calls.length === 0}
+            >
+              Export Audit CSV ({calls.length})
+            </Button>
+          </div>
         }
       />
 
@@ -299,6 +334,7 @@ export const CallsPage: React.FC = () => {
       {/* Slide-over Call Detail Drawer */}
       <CallDetailDrawer
         call={selectedCall}
+        onCallUpdated={handleCallUpdated}
         onClose={() => {
           setSelectedCall(null);
           fetchCalls();

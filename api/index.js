@@ -3768,6 +3768,31 @@ var ServerCallService = class {
     }
     return audioData;
   }
+  async syncAllPendingCalls() {
+    const pendingCalls = await prisma_default.call.findMany({
+      where: {
+        OR: [
+          { durationSeconds: 0 },
+          { status: "initiated" }
+        ]
+      },
+      orderBy: { startedAt: "desc" },
+      take: 20
+    });
+    let syncedCount = 0;
+    for (const call of pendingCalls) {
+      try {
+        const res = await this.fetchTranscriptForCall(call.id);
+        if (res?.call && res.call.durationSeconds > 0) {
+          syncedCount++;
+        }
+      } catch (err) {
+        console.warn(`[CallService] Batch sync skipped for call ${call.id}:`, err?.message);
+      }
+    }
+    const calls = await this.getCalls();
+    return { syncedCount, calls };
+  }
 };
 var serverCallService = new ServerCallService();
 
@@ -3791,6 +3816,14 @@ callRoutes.get("/", async (req, res) => {
       agentId
     });
     res.json({ success: true, data: calls, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+callRoutes.post("/sync-all", async (req, res) => {
+  try {
+    const result = await serverCallService.syncAllPendingCalls();
+    res.json({ success: true, data: result, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   } catch (err) {
     res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   }

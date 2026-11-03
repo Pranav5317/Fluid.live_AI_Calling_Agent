@@ -44,9 +44,10 @@ import { exportCallsToCSV } from '../../lib/exportUtils';
 export interface CallDetailDrawerProps {
   call: Call | null;
   onClose: () => void;
+  onCallUpdated?: (updatedCall: Call) => void;
 }
 
-export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClose }) => {
+export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClose, onCallUpdated }) => {
   const [activeCall, setActiveCall] = useState<Call | null>(call);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isAuditing, setIsAuditing] = useState(false);
@@ -66,6 +67,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
       const updated = await callService.auditCall(callId);
       if (updated) {
         setActiveCall(updated);
+        onCallUpdated?.(updated);
       }
     } catch (err) {
       console.warn('[CallDetailDrawer] AI Audit error:', err);
@@ -97,6 +99,10 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
       const res = await callService.getCallTranscript(callId);
       if (res && res.call) {
         setActiveCall(res.call);
+        if (res.call.durationSeconds) {
+          setAudioDuration(res.call.durationSeconds);
+        }
+        onCallUpdated?.(res.call);
       }
     } catch (err) {
       console.warn('[CallDetailDrawer] Transcript sync error:', err);
@@ -107,7 +113,8 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
 
   useEffect(() => {
     setActiveCall(call);
-    if (call && (!call.transcript || call.transcript.length === 0)) {
+    if (call) {
+      // Proactively sync from Sarvam API to get latest dialogue, variables and audio
       handleSyncTranscript(call.id);
     }
   }, [call?.id]);

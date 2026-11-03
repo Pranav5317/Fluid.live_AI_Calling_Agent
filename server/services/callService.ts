@@ -311,6 +311,34 @@ export class ServerCallService {
 
     return audioData;
   }
+
+  async syncAllPendingCalls(): Promise<{ syncedCount: number; calls: Call[] }> {
+    const pendingCalls = await prisma.call.findMany({
+      where: {
+        OR: [
+          { durationSeconds: 0 },
+          { status: 'initiated' },
+        ],
+      },
+      orderBy: { startedAt: 'desc' },
+      take: 20,
+    });
+
+    let syncedCount = 0;
+    for (const call of pendingCalls) {
+      try {
+        const res = await this.fetchTranscriptForCall(call.id);
+        if (res?.call && res.call.durationSeconds > 0) {
+          syncedCount++;
+        }
+      } catch (err: any) {
+        console.warn(`[CallService] Batch sync skipped for call ${call.id}:`, err?.message);
+      }
+    }
+
+    const calls = await this.getCalls();
+    return { syncedCount, calls };
+  }
 }
 
 export const serverCallService = new ServerCallService();
