@@ -139,6 +139,33 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
     };
   }, [currentCall?.id]);
 
+  const turnRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const activeTurnId = React.useMemo(() => {
+    if (!isPlayingAudio || !currentCall?.transcript || currentCall.transcript.length === 0) return null;
+    const turns = currentCall.transcript;
+    for (let i = 0; i < turns.length; i++) {
+      const start = turns[i].timestampSeconds;
+      const end = i < turns.length - 1 ? turns[i + 1].timestampSeconds : (audioDuration || currentCall.durationSeconds || 9999);
+      if (currentTime >= start && currentTime < end) {
+        return turns[i].id;
+      }
+    }
+    if (turns.length > 0 && currentTime >= turns[turns.length - 1].timestampSeconds) {
+      return turns[turns.length - 1].id;
+    }
+    return null;
+  }, [currentTime, isPlayingAudio, currentCall?.transcript, audioDuration, currentCall?.durationSeconds]);
+
+  useEffect(() => {
+    if (activeTurnId && turnRefs.current[activeTurnId]) {
+      turnRefs.current[activeTurnId]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [activeTurnId]);
+
   if (!currentCall) return null;
 
   const isConnected = currentCall.durationSeconds > 0 || (Array.isArray(currentCall.transcript) && currentCall.transcript.length > 0);
@@ -339,33 +366,6 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
       }
     }
   };
-
-  const turnRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
-  const activeTurnId = React.useMemo(() => {
-    if (!isPlayingAudio || !currentCall?.transcript || currentCall.transcript.length === 0) return null;
-    const turns = currentCall.transcript;
-    for (let i = 0; i < turns.length; i++) {
-      const start = turns[i].timestampSeconds;
-      const end = i < turns.length - 1 ? turns[i + 1].timestampSeconds : (audioDuration || currentCall.durationSeconds || 9999);
-      if (currentTime >= start && currentTime < end) {
-        return turns[i].id;
-      }
-    }
-    if (turns.length > 0 && currentTime >= turns[turns.length - 1].timestampSeconds) {
-      return turns[turns.length - 1].id;
-    }
-    return null;
-  }, [currentTime, isPlayingAudio, currentCall?.transcript, audioDuration, currentCall?.durationSeconds]);
-
-  useEffect(() => {
-    if (activeTurnId && turnRefs.current[activeTurnId]) {
-      turnRefs.current[activeTurnId]?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-      });
-    }
-  }, [activeTurnId]);
 
   const effectiveDuration = audioDuration || currentCall.durationSeconds || 0;
 
