@@ -136,7 +136,7 @@ export const CallsPage: React.FC = () => {
                   <th className="px-5 py-3.5">Duration</th>
                   <th className="px-5 py-3.5">Call Outcome</th>
                   <th className="px-5 py-3.5">AI Lead Score & Tier</th>
-                  <th className="px-5 py-3.5">Extracted Variables</th>
+                  <th className="px-5 py-3.5">AI Summary & Variables</th>
                   <th className="px-5 py-3.5">Timestamp</th>
                   <th className="px-5 py-3.5 text-right">Details</th>
                 </tr>
@@ -225,7 +225,7 @@ export const CallsPage: React.FC = () => {
                         );
                       })()}
                     </td>
-                    <td className="px-5 py-3.5 max-w-xs">
+                    <td className="px-5 py-3.5 min-w-[260px] max-w-sm">
                       {(() => {
                         const allVars = (call.extractedVariables || {}) as Record<string, any>;
                         const summaryText =
@@ -246,14 +246,14 @@ export const CallsPage: React.FC = () => {
                         }
 
                         return (
-                          <div className="space-y-1.5 max-w-[280px]">
+                          <div className="space-y-1.5">
                             {tagEntries.length > 0 && (
                               <div className="flex flex-wrap gap-1">
                                 {tagEntries.map(([k, v]) => (
                                   <span
                                     key={k}
                                     title={`${k}: ${String(v)}`}
-                                    className="rounded-md bg-white/90 border border-[#DACBB5] px-2 py-0.5 text-[10px] font-mono text-slate-700 max-w-[160px] truncate inline-block shadow-2xs"
+                                    className="rounded-md bg-white/90 border border-[#DACBB5] px-2 py-0.5 text-[10px] font-mono text-slate-700 max-w-[180px] truncate inline-block shadow-2xs"
                                   >
                                     <span className="text-slate-500 font-semibold">{k}:</span> {String(v)}
                                   </span>
@@ -261,12 +261,14 @@ export const CallsPage: React.FC = () => {
                               </div>
                             )}
                             {summaryText && (
-                              <p
-                                className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed italic bg-white/70 border border-[#DACBB5]/70 rounded-md p-1.5 shadow-2xs"
-                                title={summaryText}
-                              >
-                                "{summaryText}"
-                              </p>
+                              <div className="bg-white/75 border border-[#DACBB5] rounded-lg p-2 shadow-2xs">
+                                <div className="text-[9px] uppercase tracking-wider font-mono font-bold text-slate-400 mb-0.5">
+                                  AI Summary
+                                </div>
+                                <p className="text-[11px] text-slate-700 leading-relaxed italic">
+                                  "{summaryText}"
+                                </p>
+                              </div>
                             )}
                           </div>
                         );
