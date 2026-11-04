@@ -305,9 +305,16 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
             agent_variables: {
               user_name: cleanUserName,
               call_summary: '<call_summary>',
+              screening_status: '<screening_status>',
+              confirmed_experience: '<confirmed_experience>',
+              confirmed_notice_period: '<confirmed_notice_period>',
+              discrepancy_reason: '<discrepancy_reason>',
+              location_willingness: '<location_willingness>',
+              english_proficiency_level: '<english_proficiency_level>',
+              // Legacy support
+              verification_status: '<verification_status>',
               follow_up_preference: '<follow_up_preference>',
               interest_level: '<interest_level>',
-              verification_status: '<verification_status>',
               ...(params.agentVariables || {}),
             },
           },

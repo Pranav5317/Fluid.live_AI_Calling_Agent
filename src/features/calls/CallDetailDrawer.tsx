@@ -248,7 +248,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
         field: 'Notice Period',
         portalValue: (currentCall.extractedVariables as any)?.portal_notice_period || '30 Days',
         statedValue: (currentCall.extractedVariables as any)?.confirmed_notice_period || (currentCall.extractedVariables as any)?.notice_period || '30 Days',
-        status: (currentCall.extractedVariables as any)?.notice_discrepancy ? 'discrepancy' : 'confirmed',
+        status: ((currentCall.extractedVariables as any)?.notice_discrepancy ? 'discrepancy' : 'confirmed') as 'discrepancy' | 'confirmed',
         reasonForChange: (currentCall.extractedVariables as any)?.notice_change_reason || (currentCall.extractedVariables as any)?.reason_for_change,
       },
       {
