@@ -313,6 +313,78 @@ export class ServerCallService {
   }
 
   async syncAllPendingCalls(): Promise<{ syncedCount: number; calls: Call[] }> {
+    let syncedCount = 0;
+
+    // 1. Proactively discover and import calls from Sarvam Analytics API
+    try {
+      const interactions = await backendSarvamProvider.fetchInteractions({ limit: 30 });
+      if (interactions && Array.isArray(interactions.items) && interactions.items.length > 0) {
+        const firstAgent = await prisma.agent.findFirst();
+        const firstLead = await prisma.lead.findFirst();
+        const firstPhone = await prisma.phoneNumber.findFirst();
+
+        for (const item of interactions.items) {
+          const interactionId = item.interaction_id;
+          const jobId = item.job_id;
+
+          const existing = await prisma.call.findFirst({
+            where: {
+              OR: [
+                { externalCallId: interactionId },
+                ...(jobId ? [{ externalCallId: jobId }] : []),
+              ],
+            },
+          });
+
+          if (!existing) {
+            const rawVars = item.agent_variables || {};
+            const durationSecs = Math.round(item.duration_in_seconds || 0);
+            const callDate = item.start_datetime ? new Date(item.start_datetime) : new Date();
+
+            let outcome = 'successful_contact';
+            if (item.goal_overall_status === 'failed' || durationSecs < 5) {
+              outcome = 'unreachable';
+            } else if (rawVars.follow_up_preference === 'callback' || rawVars.screening_status === 'callback_requested') {
+              outcome = 'callback_requested';
+            } else if (rawVars.interest_level === 'not_interested') {
+              outcome = 'not_interested';
+            }
+
+            const newCall = await prisma.call.create({
+              data: {
+                id: `call_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+                externalCallId: interactionId,
+                agentId: firstAgent?.id || 'ag_default',
+                agentVersionId: firstAgent?.currentVersionId || 'agv_default',
+                leadId: firstLead?.id || 'lead_default',
+                phoneNumberId: firstPhone?.id || 'pn_default',
+                status: 'completed',
+                outcome,
+                durationSeconds: durationSecs,
+                startedAt: callDate,
+                endedAt: item.end_datetime ? new Date(item.end_datetime) : new Date(callDate.getTime() + durationSecs * 1000),
+                transcript: [],
+                extractedVariables: {
+                  ...rawVars,
+                  _sarvam_interaction_id: interactionId,
+                },
+              },
+            });
+
+            try {
+              await this.fetchTranscriptForCall(newCall.id);
+              syncedCount++;
+            } catch (err: any) {
+              console.warn('[CallService] Error fetching transcript for newly imported call:', err?.message);
+            }
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn('[CallService] Direct Sarvam interactions discovery skipped:', err?.message);
+    }
+
+    // 2. Refresh pending calls already in DB
     const pendingCalls = await prisma.call.findMany({
       where: {
         OR: [
@@ -324,7 +396,6 @@ export class ServerCallService {
       take: 20,
     });
 
-    let syncedCount = 0;
     for (const call of pendingCalls) {
       try {
         const res = await this.fetchTranscriptForCall(call.id);

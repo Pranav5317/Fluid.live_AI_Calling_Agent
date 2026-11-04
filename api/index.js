@@ -1791,9 +1791,16 @@ var BackendSarvamProvider = class {
             agent_variables: {
               user_name: cleanUserName,
               call_summary: "<call_summary>",
+              screening_status: "<screening_status>",
+              confirmed_experience: "<confirmed_experience>",
+              confirmed_notice_period: "<confirmed_notice_period>",
+              discrepancy_reason: "<discrepancy_reason>",
+              location_willingness: "<location_willingness>",
+              english_proficiency_level: "<english_proficiency_level>",
+              // Legacy support
+              verification_status: "<verification_status>",
               follow_up_preference: "<follow_up_preference>",
               interest_level: "<interest_level>",
-              verification_status: "<verification_status>",
               ...params.agentVariables || {}
             }
           },
@@ -3894,6 +3901,68 @@ var ServerCallService = class {
     return audioData;
   }
   async syncAllPendingCalls() {
+    let syncedCount = 0;
+    try {
+      const interactions = await backendSarvamProvider.fetchInteractions({ limit: 30 });
+      if (interactions && Array.isArray(interactions.items) && interactions.items.length > 0) {
+        const firstAgent = await prisma_default.agent.findFirst();
+        const firstLead = await prisma_default.lead.findFirst();
+        const firstPhone = await prisma_default.phoneNumber.findFirst();
+        for (const item of interactions.items) {
+          const interactionId = item.interaction_id;
+          const jobId = item.job_id;
+          const existing = await prisma_default.call.findFirst({
+            where: {
+              OR: [
+                { externalCallId: interactionId },
+                ...jobId ? [{ externalCallId: jobId }] : []
+              ]
+            }
+          });
+          if (!existing) {
+            const rawVars = item.agent_variables || {};
+            const durationSecs = Math.round(item.duration_in_seconds || 0);
+            const callDate = item.start_datetime ? new Date(item.start_datetime) : /* @__PURE__ */ new Date();
+            let outcome = "successful_contact";
+            if (item.goal_overall_status === "failed" || durationSecs < 5) {
+              outcome = "unreachable";
+            } else if (rawVars.follow_up_preference === "callback" || rawVars.screening_status === "callback_requested") {
+              outcome = "callback_requested";
+            } else if (rawVars.interest_level === "not_interested") {
+              outcome = "not_interested";
+            }
+            const newCall = await prisma_default.call.create({
+              data: {
+                id: `call_${Date.now()}_${Math.floor(Math.random() * 1e3)}`,
+                externalCallId: interactionId,
+                agentId: firstAgent?.id || "ag_default",
+                agentVersionId: firstAgent?.currentVersionId || "agv_default",
+                leadId: firstLead?.id || "lead_default",
+                phoneNumberId: firstPhone?.id || "pn_default",
+                status: "completed",
+                outcome,
+                durationSeconds: durationSecs,
+                startedAt: callDate,
+                endedAt: item.end_datetime ? new Date(item.end_datetime) : new Date(callDate.getTime() + durationSecs * 1e3),
+                transcript: [],
+                extractedVariables: {
+                  ...rawVars,
+                  _sarvam_interaction_id: interactionId
+                }
+              }
+            });
+            try {
+              await this.fetchTranscriptForCall(newCall.id);
+              syncedCount++;
+            } catch (err) {
+              console.warn("[CallService] Error fetching transcript for newly imported call:", err?.message);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[CallService] Direct Sarvam interactions discovery skipped:", err?.message);
+    }
     const pendingCalls = await prisma_default.call.findMany({
       where: {
         OR: [
@@ -3904,7 +3973,6 @@ var ServerCallService = class {
       orderBy: { startedAt: "desc" },
       take: 20
     });
-    let syncedCount = 0;
     for (const call of pendingCalls) {
       try {
         const res = await this.fetchTranscriptForCall(call.id);
