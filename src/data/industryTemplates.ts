@@ -2,7 +2,7 @@ import { AgentConfig, CallFlowNode, ExtractedVariableConfig } from '../types';
 
 export interface IndustryTemplate {
   id: string;
-  category: 'BFSI' | 'E-Commerce' | 'Healthcare' | 'B2B SaaS' | 'Automotive';
+  category: 'HR & Recruiting' | 'BFSI' | 'E-Commerce' | 'Healthcare' | 'B2B SaaS' | 'Automotive';
   title: string;
   badge: string;
   description: string;
@@ -12,6 +12,58 @@ export interface IndustryTemplate {
 }
 
 export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
+  {
+    id: 'fluid-hr-applicant-screening',
+    category: 'HR & Recruiting',
+    title: 'Candidate Application Verification & English Assessment',
+    badge: 'HR & Talent Acquisition',
+    description: 'Autonomous English voice agent to confirm candidate application details, probe for notice/salary discrepancies, and evaluate spoken English readiness.',
+    agentName: 'Fluid.live HR Application Screening Agent',
+    useCase: 'Fact-checking portal application details and qualitative English communication evaluation',
+    config: {
+      voiceModel: 'Fluid Voice English (Clear Corporate)',
+      language: 'en-IN',
+      openingLine: 'Hello <user_name>, I am calling from Fluid.live regarding your job application. Do you have two minutes to quickly confirm your application details?',
+      closingBehavior: 'Thank you for confirming your details, <user_name>. Our recruiting team at Fluid.live will review your application and reach out via email with next steps. Have a great day!',
+      systemPrompt: `Role & Identity:
+You are calling from the Human Resources team at Fluid.live regarding the candidate's recent job application.
+You do NOT have a personal name; always identify yourself strictly as "calling from Fluid.live".
+
+Language & Tone:
+- Professional, clear, courteous English.
+- Do NOT speak Hindi or any other language; converse strictly in English.
+- Natural, encouraging, and respectful tone.
+
+Conversational Objectives:
+1. Confirm Candidate Identity: Confirm you are speaking with <user_name>.
+2. Confirm Application Details:
+   - Verify the job role applied for and total years of relevant experience.
+   - Confirm current notice period or earliest joining availability.
+   - If the candidate mentions details different from their application, politely ask: "On your application you had noted [detail], but you mentioned [new detail] today. Could you share what changed?"
+   - Confirm work location and comfort with hybrid/in-office collaboration.
+3. Natural English Gauging Prompt:
+   - Ask: "Could you briefly share your key responsibilities in your most recent project?" Listen attentively to their explanation.
+4. Professional Wrap-up:
+   - Thank the candidate courteously and inform them that the Fluid.live HR team will follow up via email with the next steps.`,
+      sarvamAppId: 'Conversatio-b063cf10-e735',
+      flowNodes: [
+        { id: 'fn_1', type: 'start', title: 'Call Connected', content: 'Establish line connection' },
+        { id: 'fn_2', type: 'opening', title: 'Greeting & Purpose', content: 'Identify as calling from Fluid.live and request 2 minutes' },
+        { id: 'fn_3', type: 'question', title: 'Experience & Notice Period', content: 'Confirm years of experience and availability' },
+        { id: 'fn_4', type: 'conditional', title: 'Discrepancy Probing', content: 'Politely inquire about reason if stated details differ from portal' },
+        { id: 'fn_5', type: 'data_collection', title: 'English & Role Responsibilities', content: 'Prompt candidate to walk through recent project responsibilities' },
+        { id: 'fn_6', type: 'closing', title: 'Courteous Sign-off', content: 'Conclude and confirm next steps via email' },
+      ],
+      extractedVariables: [
+        { key: 'role_applied', label: 'Role Applied', type: 'string', required: true, description: 'Position candidate applied for' },
+        { key: 'confirmed_experience', label: 'Confirmed Experience', type: 'string', required: true, description: 'Years of relevant work experience' },
+        { key: 'confirmed_notice_period', label: 'Confirmed Notice Period', type: 'string', required: true, description: 'Availability in days or earliest start date' },
+        { key: 'discrepancy_detected', label: 'Discrepancy Detected', type: 'boolean', required: true, description: 'True if details differed from portal submission' },
+        { key: 'reason_for_change', label: 'Reason for Change', type: 'string', required: false, description: 'Candidate explanation for discrepancies' },
+        { key: 'english_proficiency_notes', label: 'English Communication Notes', type: 'string', required: false, description: 'Qualitative observation of spoken English' },
+      ],
+    },
+  },
   {
     id: 'bfsi-emi-reminder',
     category: 'BFSI',

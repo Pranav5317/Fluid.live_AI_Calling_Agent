@@ -284,8 +284,49 @@ export interface FollowUpRecommendations {
   suggestedDate?: string;
 }
 
+export interface ApplicantVerificationItem {
+  field: string;
+  portalValue: string;
+  statedValue: string;
+  status: 'confirmed' | 'discrepancy' | 'unconfirmed';
+  reasonForChange?: string;
+}
+
+export interface EnglishProficiencyAssessment {
+  overallBand: 'Proficient (C1/C2)' | 'Upper Intermediate (B2)' | 'Intermediate (B1)' | 'Basic / Developing (A2)';
+  fluency: {
+    rating: 'Fluent & Natural' | 'Moderate / Occasional Pauses' | 'Hesitant / Fragmented';
+    notes: string;
+  };
+  grammarSyntax: {
+    rating: 'Clear & Grammatically Sound' | 'Minor Errors / Understandable' | 'Frequent Syntactical Issues';
+    notes: string;
+  };
+  vocabulary: {
+    rating: 'Rich & Professional' | 'Standard Conversational' | 'Limited / Repetitive';
+    notes: string;
+  };
+  comprehension: {
+    rating: 'Immediate Comprehension' | 'Required Minor Rephrasing' | 'Struggled to Comprehend';
+    notes: string;
+  };
+  candidateSampleQuotes: string[];
+  summary: string;
+}
+
+export interface HRCandidateScreening {
+  roleApplied: string;
+  candidateName: string;
+  verificationMatrix: ApplicantVerificationItem[];
+  discrepanciesCount: number;
+  englishAssessment: EnglishProficiencyAssessment;
+  hrRecommendation: 'Fast-Track to Round 1 Technical' | 'Review with Hiring Manager' | 'Ineligible / Discrepancy Flagged';
+  recommendationReason: string;
+}
+
 export interface CallIntelligence {
   executiveSummary?: string;
+  hrScreening?: HRCandidateScreening;
   leadScore?: LeadScoreAudit;
   objectionResolutions?: ObjectionResolutionItem[];
   followUpRecommendations?: FollowUpRecommendations;

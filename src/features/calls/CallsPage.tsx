@@ -167,10 +167,10 @@ export const CallsPage: React.FC = () => {
               <thead className="bg-[#F2E7D7]/70 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-[#EADCBD] font-mono">
                 <tr>
                   <th className="px-5 py-3.5">Call ID / External Ref</th>
-                  <th className="px-5 py-3.5">Campaign / Agent</th>
+                  <th className="px-5 py-3.5">Candidate / Role</th>
                   <th className="px-5 py-3.5">Duration</th>
                   <th className="px-5 py-3.5">Call Outcome</th>
-                  <th className="px-5 py-3.5">AI Lead Score & Tier</th>
+                  <th className="px-5 py-3.5">HR Screening & English</th>
                   <th className="px-5 py-3.5">AI Summary & Variables</th>
                   <th className="px-5 py-3.5">Timestamp</th>
                   <th className="px-5 py-3.5 text-right">Details</th>
@@ -187,8 +187,12 @@ export const CallsPage: React.FC = () => {
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="space-y-0.5">
-                        <span className="font-semibold text-slate-800 block">{call.campaignId || 'Direct Outreach'}</span>
-                        <span className="text-[11px] text-slate-500">Agent: Shubh (Fluid Voice)</span>
+                        <span className="font-semibold text-slate-800 block">
+                          {call.leadName || 'Applicant'}
+                        </span>
+                        <span className="text-[11px] text-slate-500">
+                          Role: {(call.extractedVariables as any)?.role_applied || call.campaignId || 'Software / AI Engineer'}
+                        </span>
                       </div>
                     </td>
                     <td className="px-5 py-3.5 font-mono font-medium text-slate-800">
@@ -201,31 +205,24 @@ export const CallsPage: React.FC = () => {
                         </Badge>
                         {(() => {
                           const vars = (call.extractedVariables || {}) as Record<string, any>;
-                          if (vars.interest_level === 'interested') {
-                            return (
-                              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
-                                Interested
-                              </span>
-                            );
-                          }
-                          if (vars.interest_level === 'not_interested') {
-                            return (
-                              <span className="text-[10px] font-bold text-red-800 bg-red-500/15 border border-red-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
-                                Not Interested
-                              </span>
-                            );
-                          }
                           if (vars.verification_status === 'completed') {
                             return (
-                              <span className="text-[10px] font-bold text-blue-800 bg-blue-500/15 border border-blue-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
+                              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
                                 Verified
+                              </span>
+                            );
+                          }
+                          if (vars.discrepancy_detected || vars.notice_discrepancy) {
+                            return (
+                              <span className="text-[10px] font-bold text-amber-800 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
+                                Discrepancy Noted
                               </span>
                             );
                           }
                           if (call.durationSeconds > 0) {
                             return (
                               <span className="text-[10px] font-medium text-slate-700 bg-white/80 border border-[#DACBB5] px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
-                                Connected
+                                Completed
                               </span>
                             );
                           }
@@ -236,25 +233,26 @@ export const CallsPage: React.FC = () => {
                     <td className="px-5 py-3.5">
                       {(() => {
                         const intel = call.extractedVariables?.intelligence;
-                        const leadScore = intel?.leadScore;
-                        const score = leadScore?.overallScore ?? (call.durationSeconds > 0 ? 75 : 0);
-                        const tier = leadScore?.tier || (score >= 75 ? 'Hot Lead' : score >= 45 ? 'Warm Prospect' : 'Cold / Disqualified');
-                        const badgeText = leadScore?.summaryBadge || (tier === 'Hot Lead' ? '🔥 Hot Lead' : tier === 'Warm Prospect' ? '⚡ Warm' : '❄️ Cold');
+                        const hr = intel?.hrScreening;
+                        const englishBand = hr?.englishAssessment?.overallBand || (call.durationSeconds > 20 ? 'Upper Intermediate (B2)' : 'Intermediate (B1)');
+                        const recommendation = hr?.hrRecommendation || (call.durationSeconds > 0 ? 'Fast-Track to Round 1' : 'Unreached / Retry');
+                        const discrepancies = hr?.discrepanciesCount ?? 0;
+
                         return (
                           <div className="flex flex-col gap-1 items-start">
-                            <span className="font-mono font-bold text-slate-900 text-xs">
-                              {score}/100
+                            <span className="inline-flex items-center gap-1 font-mono font-bold text-slate-900 text-xs bg-white/80 border border-[#DACBB5] px-2 py-0.5 rounded-full">
+                              <span className="text-slate-400 font-normal">English:</span> {englishBand.split(' ')[0]}
                             </span>
                             <span
                               className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                                tier === 'Hot Lead'
+                                recommendation.includes('Fast-Track')
                                   ? 'bg-emerald-500/15 text-emerald-800 border-emerald-500/30'
-                                  : tier === 'Warm Prospect'
+                                  : recommendation.includes('Review')
                                   ? 'bg-amber-500/15 text-amber-800 border-amber-500/30'
                                   : 'bg-slate-500/15 text-slate-700 border-slate-500/30'
                               }`}
                             >
-                              {badgeText}
+                              {discrepancies > 0 ? `⚠️ ${discrepancies} Discrepancy` : recommendation}
                             </span>
                           </div>
                         );
