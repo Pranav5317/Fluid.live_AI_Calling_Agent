@@ -1781,14 +1781,10 @@ var BackendSarvamProvider = class {
         const agentPhoneNumber = params.fromPhoneNumber && params.fromPhoneNumber.startsWith("+91") ? params.fromPhoneNumber : this.agentPhoneNumber;
         const cleanUserName = params.userName ? params.userName.replace(/\s*\(.*?\)\s*/g, "").trim() : "Valued Customer";
         const sarvamAgentVars = {
-          user_name: cleanUserName,
-          call_summary: "<call_summary>",
-          verification_status: "<verification_status>",
-          follow_up_preference: "<follow_up_preference>",
-          interest_level: "<interest_level>"
+          user_name: cleanUserName
         };
         if (params.agentVariables) {
-          const disallowedOnDefaultApp = /* @__PURE__ */ new Set([
+          const outputExtractionVars = /* @__PURE__ */ new Set([
             "screening_status",
             "location_willingness",
             "discrepancy_reason",
@@ -1802,7 +1798,7 @@ var BackendSarvamProvider = class {
             "confirmed_expected_ctc"
           ]);
           for (const [k, v] of Object.entries(params.agentVariables)) {
-            if (!disallowedOnDefaultApp.has(k)) {
+            if (!outputExtractionVars.has(k)) {
               sarvamAgentVars[k] = v;
             }
           }

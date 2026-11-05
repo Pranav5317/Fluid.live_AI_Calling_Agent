@@ -294,17 +294,16 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
 
         const cleanUserName = params.userName ? params.userName.replace(/\s*\(.*?\)\s*/g, '').trim() : 'Valued Customer';
 
-        // Filter agent_variables strictly to the schema supported by Sarvam app Conversatio-b063cf10-e735
+        // In Sarvam Studio, screening variables (screening_status, confirmed_experience, etc.)
+        // are defined as OUTPUT / extraction variables, not INPUT variables.
+        // For outbound call initiation, Sarvam strictly expects only declared INPUT variables.
         const sarvamAgentVars: Record<string, any> = {
           user_name: cleanUserName,
-          call_summary: '<call_summary>',
-          verification_status: '<verification_status>',
-          follow_up_preference: '<follow_up_preference>',
-          interest_level: '<interest_level>',
         };
 
+        // If specific input variables were explicitly passed, forward only valid input fields
         if (params.agentVariables) {
-          const disallowedOnDefaultApp = new Set([
+          const outputExtractionVars = new Set([
             'screening_status',
             'location_willingness',
             'discrepancy_reason',
@@ -318,7 +317,7 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
             'confirmed_expected_ctc',
           ]);
           for (const [k, v] of Object.entries(params.agentVariables)) {
-            if (!disallowedOnDefaultApp.has(k)) {
+            if (!outputExtractionVars.has(k)) {
               sarvamAgentVars[k] = v;
             }
           }
