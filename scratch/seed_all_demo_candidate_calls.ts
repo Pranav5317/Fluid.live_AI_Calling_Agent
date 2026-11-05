@@ -20,7 +20,7 @@ async function main() {
       leadId: 'lead_rohnit_roy_01',
       name: 'Rohnit Roy',
       email: 'rohnitroy.digitalite@gmail.com',
-      phone: '+919922935920',
+      phone: '+91 7522 911 068',
       role: 'Frontend Developer',
       company: 'FluidLive',
       experience: '2 Years',
