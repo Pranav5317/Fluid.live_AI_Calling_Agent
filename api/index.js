@@ -1780,6 +1780,33 @@ var BackendSarvamProvider = class {
         const connectionId = params.connectionId || this.connectionId;
         const agentPhoneNumber = params.fromPhoneNumber && params.fromPhoneNumber.startsWith("+91") ? params.fromPhoneNumber : this.agentPhoneNumber;
         const cleanUserName = params.userName ? params.userName.replace(/\s*\(.*?\)\s*/g, "").trim() : "Valued Customer";
+        const sarvamAgentVars = {
+          user_name: cleanUserName,
+          call_summary: "<call_summary>",
+          verification_status: "<verification_status>",
+          follow_up_preference: "<follow_up_preference>",
+          interest_level: "<interest_level>"
+        };
+        if (params.agentVariables) {
+          const disallowedOnDefaultApp = /* @__PURE__ */ new Set([
+            "screening_status",
+            "location_willingness",
+            "discrepancy_reason",
+            "english_proficiency_level",
+            "confirmed_notice_period",
+            "confirmed_experience",
+            "portal_experience",
+            "portal_notice_period",
+            "portal_work_mode",
+            "discrepancy_detected",
+            "confirmed_expected_ctc"
+          ]);
+          for (const [k, v] of Object.entries(params.agentVariables)) {
+            if (!disallowedOnDefaultApp.has(k)) {
+              sarvamAgentVars[k] = v;
+            }
+          }
+        }
         const payload = {
           app_config: {
             app_id: appId,
@@ -1788,21 +1815,7 @@ var BackendSarvamProvider = class {
               connection_id: connectionId,
               agent_phone_number: agentPhoneNumber
             },
-            agent_variables: {
-              user_name: cleanUserName,
-              call_summary: "<call_summary>",
-              screening_status: "<screening_status>",
-              confirmed_experience: "<confirmed_experience>",
-              confirmed_notice_period: "<confirmed_notice_period>",
-              discrepancy_reason: "<discrepancy_reason>",
-              location_willingness: "<location_willingness>",
-              english_proficiency_level: "<english_proficiency_level>",
-              // Legacy support
-              verification_status: "<verification_status>",
-              follow_up_preference: "<follow_up_preference>",
-              interest_level: "<interest_level>",
-              ...params.agentVariables || {}
-            }
+            agent_variables: sarvamAgentVars
           },
           user_config: {
             user_phone_number: params.toPhoneNumber
