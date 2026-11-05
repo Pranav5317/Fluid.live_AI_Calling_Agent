@@ -4682,20 +4682,23 @@ var DashboardRepository = class {
         transcript: rawCall.transcript || [],
         extractedVariables: rawCall.extractedVariables || {}
       };
-      const intelligence = callObj.extractedVariables?.intelligence || callAnalyticsService.analyzeCall(callObj);
-      totalQaScore += intelligence.qaScorecard.overallScore;
-      totalAgentTalkPct += intelligence.talkToListen.agentTalkPercentage;
-      totalLeadTalkPct += intelligence.talkToListen.leadTalkPercentage;
-      if (intelligence.sentimentTrajectory.overallSentiment === "positive") {
+      let intelligence = callObj.extractedVariables?.intelligence;
+      if (!intelligence || !intelligence.qaScorecard || !intelligence.talkToListen) {
+        intelligence = callAnalyticsService.analyzeCall(callObj);
+      }
+      totalQaScore += intelligence?.qaScorecard?.overallScore ?? 85;
+      totalAgentTalkPct += intelligence?.talkToListen?.agentTalkPercentage ?? 50;
+      totalLeadTalkPct += intelligence?.talkToListen?.leadTalkPercentage ?? 50;
+      if (intelligence?.sentimentTrajectory?.overallSentiment === "positive") {
         positiveSentimentCalls += 1;
       }
-      if (intelligence.buyingSignals.length > 0) {
+      if (Array.isArray(intelligence?.buyingSignals) && intelligence.buyingSignals.length > 0) {
         highIntentCalls += 1;
       }
-      for (const obj of intelligence.objections) {
+      for (const obj of intelligence?.objections || []) {
         objectionsMap.set(obj.label, (objectionsMap.get(obj.label) || 0) + 1);
       }
-      for (const sig of intelligence.buyingSignals) {
+      for (const sig of intelligence?.buyingSignals || []) {
         buyingSignalsMap.set(sig.label, (buyingSignalsMap.get(sig.label) || 0) + 1);
       }
     }

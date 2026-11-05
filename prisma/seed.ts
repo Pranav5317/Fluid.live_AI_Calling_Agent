@@ -527,6 +527,38 @@ Conversational Objectives:
         summary: `Automated screening verified candidate ${c.name} for the ${c.role} opening. Confirmed ${c.experience} experience, ${c.notice} notice period, and agreement with ${c.workMode}. Spoken English was evaluated at CEFR ${c.cefrBand} (${c.cefrLevel}).`,
         dealScore: Math.round(c.score * 10),
         sentiment: 'positive',
+        qaScorecard: {
+          overallScore: Math.round(c.score * 10),
+          grade: c.score >= 9 ? 'A' : 'B',
+          passedChecks: 5,
+          totalChecks: 5,
+          checklist: [],
+        },
+        talkToListen: {
+          agentTalkSeconds: Math.round(c.durationSeconds * 0.45),
+          leadTalkSeconds: Math.round(c.durationSeconds * 0.55),
+          agentTalkPercentage: 45,
+          leadTalkPercentage: 55,
+          silenceSeconds: 0,
+          interruptionsCount: 0,
+        },
+        sentimentTrajectory: {
+          overallSentiment: 'positive',
+          overallScore: 0.8,
+          phases: [],
+        },
+        leadScore: {
+          overallScore: Math.round(c.score * 10),
+          tier: 'high',
+          budget: { score: 25, status: 'confirmed' },
+          authority: { score: 25, status: 'confirmed' },
+          need: { score: 25, status: 'high' },
+          timing: { score: 25, status: 'immediate' },
+        },
+        buyingSignals: [
+          { time: '0:12', label: 'Role & Experience Confirmation', quote: c.quotes[0] || '' }
+        ],
+        objections: [],
         englishProficiency: {
           overallBand: c.cefrBand,
           overallLevel: c.cefrLevel,
