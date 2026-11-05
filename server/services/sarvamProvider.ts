@@ -294,14 +294,16 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
 
         const cleanUserName = params.userName ? params.userName.replace(/\s*\(.*?\)\s*/g, '').trim() : 'Valued Customer';
 
-        // In Sarvam Studio, screening variables (screening_status, confirmed_experience, etc.)
-        // are defined as OUTPUT / extraction variables, not INPUT variables.
-        // For outbound call initiation, Sarvam strictly expects only declared INPUT variables.
+        // Candidate portal application facts defined as Input Variables on Sarvam Studio
         const sarvamAgentVars: Record<string, any> = {
           user_name: cleanUserName,
+          applied_role: params.agentVariables?.applied_role || 'Frontend Developer',
+          portal_experience: params.agentVariables?.portal_experience || '2 Years',
+          portal_notice_period: params.agentVariables?.portal_notice_period || '30 Days',
+          portal_work_mode: params.agentVariables?.portal_work_mode || 'On Site, Pune',
         };
 
-        // If specific input variables were explicitly passed, forward only valid input fields
+        // Filter out extraction/output variables if passed, since Sarvam validates against declared Input Variables
         if (params.agentVariables) {
           const outputExtractionVars = new Set([
             'screening_status',
@@ -310,23 +312,22 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
             'english_proficiency_level',
             'confirmed_notice_period',
             'confirmed_experience',
-            'portal_experience',
-            'portal_notice_period',
-            'portal_work_mode',
             'discrepancy_detected',
             'confirmed_expected_ctc',
           ]);
           for (const [k, v] of Object.entries(params.agentVariables)) {
-            if (!outputExtractionVars.has(k)) {
+            if (!outputExtractionVars.has(k) && v !== undefined && v !== null) {
               sarvamAgentVars[k] = v;
             }
           }
         }
 
+        const appVersion = Number(process.env.SARVAM_APP_VERSION) || 3;
+
         const payload: any = {
           app_config: {
             app_id: appId,
-            app_version: 1,
+            app_version: appVersion,
             connection_config: {
               connection_id: connectionId,
               agent_phone_number: agentPhoneNumber,

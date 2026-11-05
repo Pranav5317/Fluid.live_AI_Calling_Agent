@@ -110,6 +110,7 @@ export class ServerCallService {
     );
 
     const config = (agentVersion.config as any) || {};
+    const leadMeta = (lead.metadata as any) || {};
 
     // 3. Initiate call via Sarvam Provider
     const result = await backendSarvamProvider.initiateOutboundCall({
@@ -123,6 +124,13 @@ export class ServerCallService {
       initialBotMessage: config.firstGreeting || config.openingLine,
       outroMessage: config.closingBehavior || config.outroMessage,
       systemPrompt: config.systemPrompt,
+      agentVariables: {
+        user_name: dto.userName || lead.name,
+        applied_role: leadMeta.role || 'Frontend Developer',
+        portal_experience: leadMeta.experience || '2 Years',
+        portal_notice_period: leadMeta.notice || '30 Days',
+        portal_work_mode: leadMeta.workMode || 'On Site, Pune',
+      },
     });
 
     // 4. On Provider Initiation Success, persist pending Call record

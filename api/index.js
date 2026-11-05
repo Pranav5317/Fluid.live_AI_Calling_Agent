@@ -1781,7 +1781,11 @@ var BackendSarvamProvider = class {
         const agentPhoneNumber = params.fromPhoneNumber && params.fromPhoneNumber.startsWith("+91") ? params.fromPhoneNumber : this.agentPhoneNumber;
         const cleanUserName = params.userName ? params.userName.replace(/\s*\(.*?\)\s*/g, "").trim() : "Valued Customer";
         const sarvamAgentVars = {
-          user_name: cleanUserName
+          user_name: cleanUserName,
+          applied_role: params.agentVariables?.applied_role || "Frontend Developer",
+          portal_experience: params.agentVariables?.portal_experience || "2 Years",
+          portal_notice_period: params.agentVariables?.portal_notice_period || "30 Days",
+          portal_work_mode: params.agentVariables?.portal_work_mode || "On Site, Pune"
         };
         if (params.agentVariables) {
           const outputExtractionVars = /* @__PURE__ */ new Set([
@@ -1791,22 +1795,20 @@ var BackendSarvamProvider = class {
             "english_proficiency_level",
             "confirmed_notice_period",
             "confirmed_experience",
-            "portal_experience",
-            "portal_notice_period",
-            "portal_work_mode",
             "discrepancy_detected",
             "confirmed_expected_ctc"
           ]);
           for (const [k, v] of Object.entries(params.agentVariables)) {
-            if (!outputExtractionVars.has(k)) {
+            if (!outputExtractionVars.has(k) && v !== void 0 && v !== null) {
               sarvamAgentVars[k] = v;
             }
           }
         }
+        const appVersion = Number(process.env.SARVAM_APP_VERSION) || 3;
         const payload = {
           app_config: {
             app_id: appId,
-            app_version: 1,
+            app_version: appVersion,
             connection_config: {
               connection_id: connectionId,
               agent_phone_number: agentPhoneNumber
@@ -3743,6 +3745,7 @@ var ServerCallService = class {
       agentVersion.config
     );
     const config = agentVersion.config || {};
+    const leadMeta = lead.metadata || {};
     const result = await backendSarvamProvider.initiateOutboundCall({
       agentVersionId: agentVersion.id,
       sarvamAgentId: config.sarvamAppId || mapping.sarvamAgentId,
@@ -3753,7 +3756,14 @@ var ServerCallService = class {
       userName: dto.userName || lead.name,
       initialBotMessage: config.firstGreeting || config.openingLine,
       outroMessage: config.closingBehavior || config.outroMessage,
-      systemPrompt: config.systemPrompt
+      systemPrompt: config.systemPrompt,
+      agentVariables: {
+        user_name: dto.userName || lead.name,
+        applied_role: leadMeta.role || "Frontend Developer",
+        portal_experience: leadMeta.experience || "2 Years",
+        portal_notice_period: leadMeta.notice || "30 Days",
+        portal_work_mode: leadMeta.workMode || "On Site, Pune"
+      }
     });
     return await callRepository.createCall({
       externalCallId: result.providerCallId,
