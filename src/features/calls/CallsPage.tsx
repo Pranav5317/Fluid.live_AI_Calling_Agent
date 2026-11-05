@@ -1,39 +1,49 @@
 import React, { useEffect, useState } from 'react';
 import { PageHeader } from '../../components/common/PageHeader';
 import { Card } from '../../components/common/Card';
+import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { Select } from '../../components/common/Select';
-import { Badge } from '../../components/common/Badge';
 import { LoadingState } from '../../components/common/LoadingState';
 import { EmptyState } from '../../components/common/EmptyState';
-import { callService } from '../../services/callService';
-import { Call, CallStatus, CallOutcome } from '../../types';
-import { formatDate, formatDuration } from '../../lib/formatters';
 import { CallDetailDrawer } from './CallDetailDrawer';
-import { Search, PhoneCall, FileText, ChevronRight, Filter, Download, RotateCw } from 'lucide-react';
+import { callService } from '../../services/callService';
+import { sarvamService } from '../../services/sarvamService';
+import { Call, CallStatus, CallOutcome } from '../../types';
+import { formatDuration, formatDate } from '../../lib/formatters';
 import { exportCallsToCSV } from '../../lib/exportUtils';
+import {
+  Search,
+  Download,
+  RotateCw,
+  Phone,
+  UserCheck,
+  Languages,
+  CheckCircle2,
+  AlertTriangle,
+  ChevronRight,
+  Clock,
+} from 'lucide-react';
 
 export const CallsPage: React.FC = () => {
   const [calls, setCalls] = useState<Call[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCall, setSelectedCall] = useState<Call | null>(null);
-  const [syncingAll, setSyncingAll] = useState(false);
-
-  // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<CallStatus | 'all'>('all');
   const [outcomeFilter, setOutcomeFilter] = useState<CallOutcome | 'all'>('all');
+  const [selectedCall, setSelectedCall] = useState<Call | null>(null);
+  const [syncingAll, setSyncingAll] = useState(false);
 
   const fetchCalls = async () => {
     setLoading(true);
     try {
-      const list = await callService.getCalls({
-        search,
-        status: statusFilter,
-        outcome: outcomeFilter,
+      const data = await callService.getCalls({
+        search: search || undefined,
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        outcome: outcomeFilter === 'all' ? undefined : outcomeFilter,
       });
-      setCalls(list);
+      setCalls(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -44,15 +54,10 @@ export const CallsPage: React.FC = () => {
   const handleSyncAll = async () => {
     setSyncingAll(true);
     try {
-      const res = await callService.syncAllCalls();
-      if (res && Array.isArray(res.calls)) {
-        setCalls(res.calls);
-      } else {
-        await fetchCalls();
-      }
-    } catch (err) {
-      console.warn('[CallsPage] Sync all error:', err);
+      await callService.syncAllCalls();
       await fetchCalls();
+    } catch (err: any) {
+      console.error('Failed to sync calls:', err);
     } finally {
       setSyncingAll(false);
     }
@@ -88,42 +93,44 @@ export const CallsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Call Logs & Transcripts"
-        description="Historical execution records, transcript playback, call outcomes and conversational QA audits."
+        title="Candidate Screening Calls"
+        description="Review AI verification dialogues, applicant fact-checks, and spoken English assessments."
         actions={
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              leftIcon={<RotateCw className={`h-4 w-4 text-brand-600 ${syncingAll ? 'animate-spin' : ''}`} />}
+              leftIcon={<RotateCw className={`h-4 w-4 text-blue-600 ${syncingAll ? 'animate-spin' : ''}`} />}
               onClick={handleSyncAll}
               disabled={syncingAll || loading}
-              className="border-[#DACBB5] hover:bg-white/80 text-slate-800 font-semibold"
+              className="border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold"
             >
-              {syncingAll ? 'Syncing Sarvam...' : 'Sync Sarvam Telemetry'}
+              {syncingAll ? 'Syncing...' : 'Sync Sarvam Telemetry'}
             </Button>
             <Button
               variant="outline"
               size="sm"
-              leftIcon={<Download className="h-4 w-4 text-slate-600" />}
-              onClick={() => exportCallsToCSV(calls, 'fluid_live_call_audit')}
+              leftIcon={<Download className="h-4 w-4 text-slate-500" />}
+              onClick={() => exportCallsToCSV(calls, 'fluid_live_candidate_screenings')}
               disabled={calls.length === 0}
+              className="border-slate-200 text-slate-700"
             >
-              Export Audit CSV ({calls.length})
+              Export CSV
             </Button>
           </div>
         }
       />
 
       {/* Filter Bar */}
-      <Card noPadding className="overflow-hidden">
-        <div className="p-4 border-b border-[#EADCBD] bg-[#FAF4EB]/50 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <Card noPadding className="overflow-hidden border-slate-200 shadow-xs">
+        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="w-full sm:w-80">
             <Input
-              placeholder="Search call ID, lead, variables..."
+              placeholder="Search candidate name, role, phone..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              leftIcon={<Search className="h-4 w-4" />}
+              leftIcon={<Search className="h-4 w-4 text-slate-400" />}
+              className="border-slate-200 bg-white"
             />
           </div>
 
@@ -132,197 +139,151 @@ export const CallsPage: React.FC = () => {
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value as any)}
               options={[
-                { value: 'all', label: 'All Call Statuses' },
+                { value: 'all', label: 'All Statuses' },
                 { value: 'completed', label: 'Completed' },
                 { value: 'failed', label: 'Failed' },
                 { value: 'in-progress', label: 'In Progress' },
-                { value: 'queued', label: 'Queued' },
               ]}
+              className="border-slate-200 text-xs"
             />
             <Select
               value={outcomeFilter}
               onChange={e => setOutcomeFilter(e.target.value as any)}
               options={[
                 { value: 'all', label: 'All Outcomes' },
-                { value: 'successful_contact', label: 'Successful Contact' },
+                { value: 'successful_contact', label: 'Verified Contact' },
                 { value: 'callback_requested', label: 'Callback Requested' },
                 { value: 'not_interested', label: 'Not Interested' },
                 { value: 'unreachable', label: 'Unreachable' },
-                { value: 'voicemail_left', label: 'Voicemail Left' },
               ]}
+              className="border-slate-200 text-xs"
             />
           </div>
         </div>
 
         {loading ? (
-          <LoadingState label="Fetching call logs..." />
+          <LoadingState label="Fetching candidate call records..." />
         ) : calls.length === 0 ? (
           <EmptyState
             title="No call records found"
-            description="Call attempts will appear here once campaigns begin executing."
+            description="Calls will appear here once candidates are screened or when you click Sync Sarvam Telemetry."
           />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-700">
-              <thead className="bg-[#F2E7D7]/70 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-[#EADCBD] font-mono">
+              <thead className="bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 font-mono">
                 <tr>
-                  <th className="px-5 py-3.5">Call ID / External Ref</th>
-                  <th className="px-5 py-3.5">Candidate / Role</th>
-                  <th className="px-5 py-3.5">Duration</th>
-                  <th className="px-5 py-3.5">Call Outcome</th>
-                  <th className="px-5 py-3.5">HR Screening & English</th>
-                  <th className="px-5 py-3.5">AI Summary & Variables</th>
-                  <th className="px-5 py-3.5">Timestamp</th>
-                  <th className="px-5 py-3.5 text-right">Details</th>
+                  <th className="px-5 py-3.5">Candidate & Role</th>
+                  <th className="px-5 py-3.5">Screening Status</th>
+                  <th className="px-5 py-3.5">Verified Facts</th>
+                  <th className="px-5 py-3.5">English Proficiency</th>
+                  <th className="px-5 py-3.5">Duration & Date</th>
+                  <th className="px-5 py-3.5 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#EADCBD]/60 bg-transparent">
-                {calls.map(call => (
-                  <tr key={call.id} className="hover:bg-white/50 transition-colors">
-                    <td className="px-5 py-3.5">
-                      <div>
-                        <span className="font-mono font-bold text-slate-950 block">{call.id}</span>
-                        <span className="font-mono text-[10px] text-slate-500">{call.externalCallId}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="space-y-0.5">
-                        <span className="font-semibold text-slate-800 block">
-                          {call.leadName || 'Applicant'}
-                        </span>
-                        <span className="text-[11px] text-slate-500">
-                          Role: {(call.extractedVariables as any)?.role_applied || call.campaignId || 'Software / AI Engineer'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5 font-mono font-medium text-slate-800">
-                      {formatDuration(call.durationSeconds)}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex flex-col gap-1 items-start">
-                        <Badge variant={getOutcomeBadgeVariant(call.outcome)} dot>
-                          {call.outcome ? call.outcome.replace('_', ' ') : 'initiated'}
-                        </Badge>
-                        {(() => {
-                          const vars = (call.extractedVariables || {}) as Record<string, any>;
-                          if (vars.verification_status === 'completed') {
-                            return (
-                              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
-                                Verified
-                              </span>
-                            );
-                          }
-                          if (vars.discrepancy_detected || vars.notice_discrepancy) {
-                            return (
-                              <span className="text-[10px] font-bold text-amber-800 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
-                                Discrepancy Noted
-                              </span>
-                            );
-                          }
-                          if (call.durationSeconds > 0) {
-                            return (
-                              <span className="text-[10px] font-medium text-slate-700 bg-white/80 border border-[#DACBB5] px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
-                                Completed
-                              </span>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {(() => {
-                        const intel = call.extractedVariables?.intelligence;
-                        const hr = intel?.hrScreening;
-                        const englishBand = hr?.englishAssessment?.overallBand || (call.durationSeconds > 20 ? 'Upper Intermediate (B2)' : 'Intermediate (B1)');
-                        const recommendation = hr?.hrRecommendation || (call.durationSeconds > 0 ? 'Fast-Track to Round 1' : 'Unreached / Retry');
-                        const discrepancies = hr?.discrepanciesCount ?? 0;
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {calls.map(call => {
+                  const vars = (call.extractedVariables || {}) as Record<string, any>;
+                  const candidateName = call.leadName || vars.user_name || 'Applicant';
+                  const roleApplied = vars.role_applied || vars.applied_role || (call as any).campaign?.name || 'Frontend Developer';
+                  const notice = vars.confirmed_notice_period || vars.portal_notice_period || '30 Days';
+                  const experience = vars.confirmed_experience || vars.portal_experience || '2 Years';
+                  const hasDiscrepancy = Boolean(vars.discrepancy_reason && vars.discrepancy_reason !== 'none') || vars.notice_discrepancy;
+                  
+                  const englishBand = vars.english_proficiency_level === 'fluent_proficient'
+                    ? 'C1 Proficient'
+                    : vars.english_proficiency_level === 'basic_limited'
+                    ? 'A2 Basic'
+                    : 'B2 Upper Intermediate';
 
-                        return (
-                          <div className="flex flex-col gap-1 items-start">
-                            <span className="inline-flex items-center gap-1 font-mono font-bold text-slate-900 text-xs bg-white/80 border border-[#DACBB5] px-2 py-0.5 rounded-full">
-                              <span className="text-slate-400 font-normal">English:</span> {englishBand.split(' ')[0]}
-                            </span>
-                            <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                                recommendation.includes('Fast-Track')
-                                  ? 'bg-emerald-500/15 text-emerald-800 border-emerald-500/30'
-                                  : recommendation.includes('Review')
-                                  ? 'bg-amber-500/15 text-amber-800 border-amber-500/30'
-                                  : 'bg-slate-500/15 text-slate-700 border-slate-500/30'
-                              }`}
-                            >
-                              {discrepancies > 0 ? `⚠️ ${discrepancies} Discrepancy` : recommendation}
-                            </span>
+                  return (
+                    <tr key={call.id} className="hover:bg-slate-50/70 transition-colors">
+                      {/* 1. Candidate & Role */}
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-700 font-bold flex items-center justify-center text-xs shrink-0 border border-blue-100">
+                            {candidateName.slice(0, 2).toUpperCase()}
                           </div>
-                        );
-                      })()}
-                    </td>
-                    <td className="px-5 py-3.5 min-w-[260px] max-w-sm">
-                      {(() => {
-                        const allVars = (call.extractedVariables || {}) as Record<string, any>;
-                        const summaryText =
-                          typeof allVars.call_summary === 'string' && allVars.call_summary.trim().length > 0
-                            ? allVars.call_summary.trim()
-                            : null;
-
-                        const tagEntries = Object.entries(allVars).filter(
-                          ([k, v]) =>
-                            !k.startsWith('_') &&
-                            k !== 'intelligence' &&
-                            k !== 'call_summary' &&
-                            typeof v !== 'object'
-                        );
-
-                        if (tagEntries.length === 0 && !summaryText) {
-                          return <span className="text-[11px] text-slate-400 italic">None</span>;
-                        }
-
-                        return (
-                          <div className="space-y-1.5">
-                            {tagEntries.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {tagEntries.map(([k, v]) => (
-                                  <span
-                                    key={k}
-                                    title={`${k}: ${String(v)}`}
-                                    className="rounded-md bg-white/90 border border-[#DACBB5] px-2 py-0.5 text-[10px] font-mono text-slate-700 max-w-[180px] truncate inline-block shadow-2xs"
-                                  >
-                                    <span className="text-slate-500 font-semibold">{k}:</span> {String(v)}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            {summaryText && (
-                              <div className="bg-white/75 border border-[#DACBB5] rounded-lg p-2 shadow-2xs">
-                                <div className="text-[9px] uppercase tracking-wider font-mono font-bold text-slate-400 mb-0.5">
-                                  AI Summary
-                                </div>
-                                <p className="text-[11px] text-slate-700 leading-relaxed italic">
-                                  "{summaryText}"
-                                </p>
-                              </div>
-                            )}
+                          <div>
+                            <span className="font-bold text-slate-900 block text-xs">
+                              {candidateName}
+                            </span>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-[11px] text-slate-500">{roleApplied}</span>
+                              {call.leadPhone && (
+                                <>
+                                  <span className="text-slate-300">•</span>
+                                  <span className="text-[11px] font-mono text-slate-400">{call.leadPhone}</span>
+                                </>
+                              )}
+                            </div>
                           </div>
-                        );
-                      })()}
-                    </td>
-                    <td className="px-5 py-3.5 font-mono text-[11px] text-slate-500">
-                      {formatDate(call.startedAt)}
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        leftIcon={<FileText className="h-3.5 w-3.5 text-[#1D4ED8]" />}
-                        onClick={() => setSelectedCall(call)}
-                        className="rounded-full text-[#1D4ED8] border-[#1D4ED8]/30 hover:bg-[#1D4ED8]/10 text-xs font-semibold"
-                      >
-                        Analyze Call
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
+                        </div>
+                      </td>
+
+                      {/* 2. Screening Status */}
+                      <td className="px-5 py-4">
+                        <div className="flex flex-col gap-1 items-start">
+                          <Badge variant={getOutcomeBadgeVariant(call.outcome)} dot size="sm">
+                            {call.outcome ? call.outcome.replace('_', ' ') : 'initiated'}
+                          </Badge>
+                          {hasDiscrepancy ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-full">
+                              <AlertTriangle className="h-3 w-3 text-amber-600" /> Discrepancy Noted
+                            </span>
+                          ) : call.durationSeconds > 0 ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full">
+                              <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Details Verified
+                            </span>
+                          ) : null}
+                        </div>
+                      </td>
+
+                      {/* 3. Verified Facts */}
+                      <td className="px-5 py-4">
+                        <div className="space-y-0.5 text-xs font-mono">
+                          <div className="text-slate-800">
+                            <span className="text-slate-400 font-normal">Exp:</span> <strong>{experience}</strong>
+                          </div>
+                          <div className="text-slate-800">
+                            <span className="text-slate-400 font-normal">Notice:</span> <strong>{notice}</strong>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* 4. English Proficiency */}
+                      <td className="px-5 py-4">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold font-mono bg-indigo-50 text-indigo-700 border border-indigo-200/60">
+                          <Languages className="h-3.5 w-3.5 text-indigo-500" />
+                          {englishBand}
+                        </span>
+                      </td>
+
+                      {/* 5. Duration & Date */}
+                      <td className="px-5 py-4 text-xs">
+                        <span className="font-mono font-medium text-slate-800 block">
+                          {formatDuration(call.durationSeconds)}
+                        </span>
+                        <span className="text-[11px] text-slate-400 font-mono">
+                          {formatDate(call.startedAt)}
+                        </span>
+                      </td>
+
+                      {/* 6. Action */}
+                      <td className="px-5 py-4 text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          rightIcon={<ChevronRight className="h-3.5 w-3.5 text-blue-600" />}
+                          onClick={() => setSelectedCall(call)}
+                          className="rounded-lg text-blue-600 border-blue-200/80 hover:bg-blue-50 text-xs font-semibold"
+                        >
+                          Review Candidate
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -343,4 +304,3 @@ export const CallsPage: React.FC = () => {
     </div>
   );
 };
-

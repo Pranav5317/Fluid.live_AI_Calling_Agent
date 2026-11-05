@@ -17,22 +17,21 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     scroll-behavior: smooth;
-    background-color: #F5EADB;
+    background-color: #F8FAFC;
     color: #0F172A;
   }
 
   body {
-    @apply text-slate-800 font-sans antialiased selection:bg-[#1D4ED8] selection:text-white min-h-screen;
-    background-color: #F5EADB;
+    @apply text-slate-900 font-sans antialiased selection:bg-[#1D4ED8] selection:text-white min-h-screen;
+    background-color: #F8FAFC;
     background-image: 
-      radial-gradient(80% 60% at 85% 15%, rgba(255, 255, 255, 0.7), transparent 70%),
-      radial-gradient(70% 50% at 15% 30%, rgba(238, 225, 207, 0.8), transparent 60%),
-      radial-gradient(60% 60% at 50% 90%, rgba(228, 212, 190, 0.5), transparent 70%);
+      radial-gradient(100% 80% at 90% 10%, rgba(239, 246, 255, 0.6), transparent 60%),
+      radial-gradient(80% 60% at 10% 20%, rgba(241, 245, 249, 0.8), transparent 50%);
     background-attachment: fixed;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply tracking-tight text-slate-950;
+    @apply tracking-tight text-slate-900;
   }
 }
 
