@@ -32,6 +32,7 @@ export interface ILeadService {
   enrollLeadInCampaign(leadId: string, campaignId: string): Promise<CampaignLead>;
   enrollLeadsInCampaign(leadIds: string[], campaignId: string): Promise<{ enrolledCount: number }>;
   updateCampaignLeadStatus(campaignLeadId: string, status: CampaignLeadStatus): Promise<CampaignLead>;
+  updateLead(leadId: string, updates: Partial<Lead>): Promise<Lead>;
   getCampaignLeads(campaignId?: string): Promise<CampaignLead[]>;
 }
 
@@ -92,6 +93,10 @@ class LeadService implements ILeadService {
 
   async getLeadTimeline(leadId: string): Promise<any> {
     return await apiClient.get<any>(`/leads/${leadId}/timeline`);
+  }
+
+  async updateLead(leadId: string, updates: Partial<Lead>): Promise<Lead> {
+    return await apiClient.put<Lead>(`/leads/${leadId}`, updates);
   }
 
   async deleteLead(leadId: string): Promise<void> {

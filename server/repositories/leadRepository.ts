@@ -126,6 +126,50 @@ export class LeadRepository {
     };
   }
 
+  async updateLead(id: string, updates: Partial<Lead>): Promise<Lead> {
+    const current = await prisma.lead.findUnique({ where: { id } });
+    if (!current) throw new Error(`Lead not found: ${id}`);
+
+    const newMetadata = updates.metadata !== undefined
+      ? { ...((current.metadata as Record<string, any>) || {}), ...updates.metadata }
+      : (current.metadata as Record<string, any>) || {};
+
+    const updated = await prisma.lead.update({
+      where: { id },
+      data: {
+        name: updates.name !== undefined ? updates.name : current.name,
+        phone: updates.phone !== undefined ? updates.phone : current.phone,
+        email: updates.email !== undefined ? updates.email : current.email,
+        metadata: newMetadata,
+      },
+    });
+
+    // If scheduledCallTime or scheduledAt was provided, sync to campaignLead queue
+    const scheduledTime = updates.metadata?.scheduledCallTime || updates.metadata?.scheduledAt;
+    if (scheduledTime) {
+      try {
+        await prisma.campaignLead.updateMany({
+          where: { leadId: id },
+          data: {
+            nextAttemptAt: new Date(scheduledTime),
+            status: 'retry_scheduled',
+          },
+        });
+      } catch (err: any) {
+        console.warn('Failed to sync scheduledCallTime to CampaignLead:', err?.message);
+      }
+    }
+
+    return {
+      id: updated.id,
+      name: updated.name,
+      phone: updated.phone,
+      email: updated.email || undefined,
+      metadata: (updated.metadata as Record<string, any>) || {},
+      createdAt: updated.createdAt.toISOString(),
+    };
+  }
+
   async addLead(leadData: Omit<Lead, 'id' | 'createdAt'>, campaignId?: string): Promise<Lead> {
     const created = await prisma.lead.create({
       data: {

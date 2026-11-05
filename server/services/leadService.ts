@@ -31,6 +31,10 @@ export class ServerLeadService {
     return leadRepository.getLeadById(id);
   }
 
+  async updateLead(id: string, updates: Partial<Lead>): Promise<Lead> {
+    return leadRepository.updateLead(id, updates);
+  }
+
   async getLeadTimeline(id: string) {
     return leadRepository.getLeadTimeline(id);
   }

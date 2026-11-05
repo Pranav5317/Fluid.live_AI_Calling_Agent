@@ -22,6 +22,8 @@ import {
   Volume2,
   ChevronDown,
   ChevronUp,
+  CalendarClock,
+  Edit3,
 } from 'lucide-react';
 import { Lead, Call } from '../../types';
 import { formatDate, formatDuration, formatPhoneNumber } from '../../lib/formatters';
@@ -36,9 +38,15 @@ export interface LeadDetailDrawerProps {
   leadId: string | null;
   onClose: () => void;
   onCallInitiated?: () => void;
+  onEditLead?: (lead: Lead) => void;
 }
 
-export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({ leadId, onClose, onCallInitiated }) => {
+export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
+  leadId,
+  onClose,
+  onCallInitiated,
+  onEditLead,
+}) => {
   const [timelineData, setTimelineData] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [isCalling, setIsCalling] = useState(false);
@@ -187,6 +195,17 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({ leadId, onCl
           </div>
 
           <div className="flex items-center gap-2">
+            {lead && onEditLead && (
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<Edit3 className="h-3.5 w-3.5 text-indigo-600" />}
+                onClick={() => onEditLead(lead)}
+                className="text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+              >
+                Edit & Schedule
+              </Button>
+            )}
             <button
               type="button"
               onClick={onClose}
@@ -210,6 +229,42 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({ leadId, onCl
             </div>
           ) : (
             <>
+              {/* Scheduled Call Highlight Banner (If scheduled) */}
+              {(lead.metadata?.scheduledCallTime || lead.metadata?.scheduledAt) && (
+                <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/80 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 font-bold">
+                      <CalendarClock className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 font-mono block">
+                        Screening Call Scheduled
+                      </span>
+                      <span className="text-xs font-semibold text-emerald-950">
+                        {new Date(lead.metadata.scheduledCallTime || lead.metadata.scheduledAt).toLocaleString('en-IN', {
+                          weekday: 'short',
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true,
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                  {onEditLead && (
+                    <button
+                      type="button"
+                      onClick={() => onEditLead(lead)}
+                      className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 underline underline-offset-2"
+                    >
+                      Reschedule
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Quick Actions & Instant Triggers Bar */}
               <div className="p-4 rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/60 via-white to-purple-50/30 space-y-3">
                 <div className="flex items-center justify-between">
@@ -233,6 +288,18 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({ leadId, onCl
                   >
                     {isCalling ? 'Dialing Call...' : 'Trigger AI Voice Call'}
                   </Button>
+
+                  {onEditLead && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      leftIcon={<CalendarClock className="h-4 w-4 text-slate-600" />}
+                      onClick={() => onEditLead(lead)}
+                      className="border-slate-300 text-slate-700 hover:bg-slate-50 shadow-xs"
+                    >
+                      Set Call Schedule
+                    </Button>
+                  )}
 
                   <a
                     href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(

@@ -1102,6 +1102,42 @@ var LeadRepository = class {
       createdAt: l.createdAt.toISOString()
     };
   }
+  async updateLead(id, updates) {
+    const current = await prisma_default.lead.findUnique({ where: { id } });
+    if (!current) throw new Error(`Lead not found: ${id}`);
+    const newMetadata = updates.metadata !== void 0 ? { ...current.metadata || {}, ...updates.metadata } : current.metadata || {};
+    const updated = await prisma_default.lead.update({
+      where: { id },
+      data: {
+        name: updates.name !== void 0 ? updates.name : current.name,
+        phone: updates.phone !== void 0 ? updates.phone : current.phone,
+        email: updates.email !== void 0 ? updates.email : current.email,
+        metadata: newMetadata
+      }
+    });
+    const scheduledTime = updates.metadata?.scheduledCallTime || updates.metadata?.scheduledAt;
+    if (scheduledTime) {
+      try {
+        await prisma_default.campaignLead.updateMany({
+          where: { leadId: id },
+          data: {
+            nextAttemptAt: new Date(scheduledTime),
+            status: "retry_scheduled"
+          }
+        });
+      } catch (err) {
+        console.warn("Failed to sync scheduledCallTime to CampaignLead:", err?.message);
+      }
+    }
+    return {
+      id: updated.id,
+      name: updated.name,
+      phone: updated.phone,
+      email: updated.email || void 0,
+      metadata: updated.metadata || {},
+      createdAt: updated.createdAt.toISOString()
+    };
+  }
   async addLead(leadData, campaignId) {
     const created = await prisma_default.lead.create({
       data: {
@@ -1283,6 +1319,9 @@ var ServerLeadService = class {
   async getLeadById(id) {
     return leadRepository.getLeadById(id);
   }
+  async updateLead(id, updates) {
+    return leadRepository.updateLead(id, updates);
+  }
   async getLeadTimeline(id) {
     return leadRepository.getLeadTimeline(id);
   }
@@ -1347,6 +1386,22 @@ leadRoutes.get("/:id", async (req, res) => {
     res.json({ success: true, data: lead, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   } catch (err) {
     res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+leadRoutes.put("/:id", async (req, res) => {
+  try {
+    const updated = await serverLeadService.updateLead(req.params.id, req.body);
+    res.json({ success: true, data: updated, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+leadRoutes.patch("/:id", async (req, res) => {
+  try {
+    const updated = await serverLeadService.updateLead(req.params.id, req.body);
+    res.json({ success: true, data: updated, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   }
 });
 leadRoutes.post("/", async (req, res) => {

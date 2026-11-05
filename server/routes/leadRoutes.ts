@@ -46,6 +46,25 @@ leadRoutes.get('/:id', async (req, res) => {
   }
 });
 
+// PUT /api/leads/:id or PATCH /api/leads/:id
+leadRoutes.put('/:id', async (req, res) => {
+  try {
+    const updated = await serverLeadService.updateLead(req.params.id, req.body);
+    res.json({ success: true, data: updated, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
+leadRoutes.patch('/:id', async (req, res) => {
+  try {
+    const updated = await serverLeadService.updateLead(req.params.id, req.body);
+    res.json({ success: true, data: updated, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
 // POST /api/leads
 leadRoutes.post('/', async (req, res) => {
   try {
