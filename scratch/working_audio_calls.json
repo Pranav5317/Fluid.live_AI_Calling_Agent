@@ -1,0 +1,198 @@
+[
+  {
+    "id": "20261007/8adebeb7-13:54:12-991aaeb4",
+    "duration": 56,
+    "contact": "+919922935920",
+    "bytes": 1238416,
+    "vars": {
+      "user_name": "Manan",
+      "call_summary": "Manan was called to verify interest in Fluid.live's AI voice calling; he expressed interest despite budget concerns and requested details via WhatsApp, ending the call politely.",
+      "interest_level": "interested",
+      "follow_up_preference": "whatsapp_details",
+      "verification_status": "completed"
+    },
+    "date": "2026-10-07T08:24:12"
+  },
+  {
+    "id": "20261007/8adebeb7-14:38:29-b142976d",
+    "duration": 88,
+    "contact": "+919922935920",
+    "bytes": 1946308,
+    "vars": {
+      "user_name": "Pranav",
+      "call_summary": "Pranav was called to verify interest in AI voice calling; he expressed interest for his college club and preferred receiving details via WhatsApp before consulting his seniors, ending the call on a positive note.",
+      "follow_up_preference": "whatsapp_details",
+      "interest_level": "interested",
+      "verification_status": "completed"
+    },
+    "date": "2026-10-07T09:08:30"
+  },
+  {
+    "id": "20261008/8adebeb7-12:18:26-ff179ef6",
+    "duration": 76,
+    "contact": "+919922935920",
+    "bytes": 1686868,
+    "vars": {
+      "user_name": "Pranav",
+      "call_summary": "Pranav was called to verify interest in Fluid.live's AI voice calling; he expressed interest pending budget approval and requested a demo, and the call ended with the agent agreeing to schedule it.",
+      "follow_up_preference": "demo",
+      "interest_level": "interested",
+      "verification_status": "completed"
+    },
+    "date": "2026-10-08T06:48:26"
+  },
+  {
+    "id": "20261008/8adebeb7-12:28:43-3d09b34d",
+    "duration": 43,
+    "contact": "+919922935920",
+    "bytes": 953198,
+    "vars": {
+      "user_name": "Pranav",
+      "call_summary": "The agent called Pranav, but spoke with someone named Spreeswood instead. Neither verification question was answered as the intended person was unavailable, and the call ended with the agent agreeing to call back later.",
+      "follow_up_preference": "not_captured",
+      "interest_level": "not_captured",
+      "verification_status": "incomplete"
+    },
+    "date": "2026-10-08T06:58:43"
+  },
+  {
+    "id": "20261008/8adebeb7-12:29:37-b574ef73",
+    "duration": 26,
+    "contact": "+919922935920",
+    "bytes": 565626,
+    "vars": {
+      "user_name": "Pranav",
+      "call_summary": "The agent called Pranav, but the recipient informed the agent that Pranav has left the job; consequently, no verification questions were asked and the call ended abruptly.",
+      "follow_up_preference": "none",
+      "interest_level": "not_captured",
+      "verification_status": "incomplete"
+    },
+    "date": "2026-10-08T06:59:37"
+  },
+  {
+    "id": "20261008/8adebeb7-12:30:12-480a5942",
+    "duration": 101,
+    "contact": "+919922935920",
+    "bytes": 2219420,
+    "vars": {
+      "user_name": "Pranav",
+      "call_summary": "The agent called Pranav, but spoke with his replacement who expressed interest in AI voice calling. The customer requested more information to understand the service, so the call ended with the agreement that details would be sent via WhatsApp.",
+      "follow_up_preference": "whatsapp_details",
+      "interest_level": "interested",
+      "verification_status": "completed"
+    },
+    "date": "2026-10-08T07:00:12"
+  },
+  {
+    "id": "20261008/8adebeb7-12:33:23-1b97dbdd",
+    "duration": 126,
+    "contact": "+919922935920",
+    "bytes": 2782730,
+    "vars": {
+      "user_name": "Pranav",
+      "call_summary": "Pranav was called to verify interest in Fluid.live's AI voice calling; he expressed interest but noted that the decision lies with his manager and finance department, requesting details via WhatsApp. The call ended with the agent agreeing to send the information for internal sharing.",
+      "follow_up_preference": "whatsapp_details",
+      "interest_level": "interested",
+      "verification_status": "completed"
+    },
+    "date": "2026-10-08T07:03:23"
+  },
+  {
+    "id": "20261008/8adebeb7-13:09:01-3b88ae78",
+    "duration": 168,
+    "contact": "+919922935920",
+    "bytes": 3703274,
+    "vars": {
+      "user_name": "Pranav",
+      "call_summary": "Pranav was called to verify interest in Fluid.live AI voice calling; he expressed interest by asking technical questions and preferred to receive details via WhatsApp, though he found the bot's persistence disruptive. The call ended with the agent agreeing to send the WhatsApp details.",
+      "follow_up_preference": "whatsapp_details",
+      "interest_level": "interested",
+      "verification_status": "completed"
+    },
+    "date": "2026-10-08T07:39:01"
+  },
+  {
+    "id": "20261008/8adebeb7-13:41:07-6730b622",
+    "duration": 87,
+    "contact": "+919922935920",
+    "bytes": 1913454,
+    "vars": {
+      "user_name": "Pranav",
+      "call_summary": "Pranav was called to verify interest in Fluid.live's AI voice calling; he expressed interest and requested a demo to understand how it fits his marketing workflow, and the call ended with the agent scheduling the demo.",
+      "follow_up_preference": "demo",
+      "interest_level": "interested",
+      "verification_status": "completed"
+    },
+    "date": "2026-10-08T08:11:07"
+  },
+  {
+    "id": "20261012/8adebeb7-19:31:15-356db9f0",
+    "duration": 52,
+    "contact": "+919922935920",
+    "bytes": 1147548,
+    "vars": {
+      "user_name": "Pranav",
+      "call_summary": "The agent called Pranav to verify interest in AI voice calling, but the customer remained silent and did not answer any questions. The call ended with the agent concluding that it was not the right time to talk.",
+      "follow_up_preference": "not_captured",
+      "interest_level": "not_captured",
+      "verification_status": "incomplete"
+    },
+    "date": "2026-10-12T14:01:15"
+  },
+  {
+    "id": "20261012/8adebeb7-19:36:05-c8b02e5a",
+    "duration": 3,
+    "contact": "+919922935920",
+    "bytes": 71860,
+    "vars": {
+      "user_name": "Pranav",
+      "call_summary": "<call_summary>",
+      "follow_up_preference": "<follow_up_preference>",
+      "interest_level": "<interest_level>",
+      "verification_status": "<verification_status>"
+    },
+    "date": "2026-10-12T14:06:05"
+  },
+  {
+    "id": "20261012/8adebeb7-19:40:16-837f68c0",
+    "duration": 53,
+    "contact": "+919922935920",
+    "bytes": 1172176,
+    "vars": {
+      "user_name": "Pranav",
+      "call_summary": "Pranav was called to verify interest in Fluid.live's AI voice calling; he expressed interest and preferred receiving details via WhatsApp, and the call ended politely.",
+      "follow_up_preference": "whatsapp_details",
+      "interest_level": "interested",
+      "verification_status": "completed"
+    },
+    "date": "2026-10-12T14:10:16"
+  },
+  {
+    "id": "20261019/8adebeb7-18:17:04-b8a6f047",
+    "duration": 21,
+    "contact": "+919922935920",
+    "bytes": 937036,
+    "vars": {
+      "user_name": "Pranav",
+      "call_summary": "Pranav was called to verify interest in AI voice calling for his business; however, the call ended abruptly without the customer answering the interest or follow-up questions.",
+      "follow_up_preference": "not_captured",
+      "interest_level": "not_captured",
+      "verification_status": "incomplete"
+    },
+    "date": "2026-10-19T12:47:04"
+  },
+  {
+    "id": "20261031/8adebeb7-22:34:49-01db38bb",
+    "duration": 31,
+    "contact": "+919922935920",
+    "bytes": 1352984,
+    "vars": {
+      "user_name": "Pranav",
+      "call_summary": "Pranav was called to verify interest in Fluid.live's AI voice calling; he stated he was not interested, and the call ended politely without a follow-up preference being discussed.",
+      "follow_up_preference": "none",
+      "interest_level": "not_interested",
+      "verification_status": "incomplete"
+    },
+    "date": "2026-10-31T17:04:49"
+  }
+]
