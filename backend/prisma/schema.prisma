@@ -27,13 +27,16 @@ model Business {
 }
 
 model Lead {
-  id         String   @id @default(cuid())
-  businessId String?
-  name       String
-  phone      String
-  email      String?
-  metadata   Json     @default("{}")
-  createdAt  DateTime @default(now())
+  id           String    @id @default(cuid())
+  businessId   String?
+  name         String
+  phone        String
+  email        String?
+  doNotCall    Boolean   @default(false)
+  dncReason    String?
+  dncUpdatedAt DateTime?
+  metadata     Json      @default("{}")
+  createdAt    DateTime  @default(now())
 
   business      Business?      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   campaignLeads CampaignLead[]
@@ -263,5 +266,13 @@ model CallActivityPoint {
   completed Int
 
   @@map("call_activity_points")
+}
+
+model SystemSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
 }
 

@@ -101,6 +101,9 @@ export class ServerCallService {
     if (!lead) {
       throw new Error(`Lead not found: ${leadId}`);
     }
+    if (lead.doNotCall) {
+      throw new Error(`Lead ${lead.name} is marked Do Not Call (DNC): ${lead.dncReason || 'Opted out'}`);
+    }
 
     // 2. Sync/Ensure Sarvam Agent Config
     const mapping = await backendSarvamProvider.syncAgentConfig(

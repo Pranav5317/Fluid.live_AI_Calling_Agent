@@ -26,13 +26,22 @@ const handleSchedulerTick = async (req: any, res: any) => {
   }
 };
 campaignRoutes.post('/scheduler/tick', handleSchedulerTick);
-campaignRoutes.get('/scheduler/tick', handleSchedulerTick);
+campaignRoutes.get('/scheduler/tick', (req, res, next) => {
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret) {
+    const auth = req.headers.authorization;
+    if (auth !== `Bearer ${cronSecret}`) {
+      return res.status(401).json({ success: false, error: 'Unauthorized: Invalid CRON_SECRET', timestamp: new Date().toISOString() });
+    }
+  }
+  return next();
+}, handleSchedulerTick);
 
 // --- FEATURE 3: CADENCE & RETRY ENGINE ROUTES (Placed before /:id) ---
 // GET /api/campaigns/cadence/policy
 campaignRoutes.get('/cadence/policy', async (req, res) => {
   try {
-    const policy = callSchedulerService.getPolicy();
+    const policy = await callSchedulerService.loadPolicyFromDb();
     res.json({ success: true, data: { policy, presets: CADENCE_PRESETS }, timestamp: new Date().toISOString() });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
@@ -42,7 +51,7 @@ campaignRoutes.get('/cadence/policy', async (req, res) => {
 // POST /api/campaigns/cadence/policy
 campaignRoutes.post('/cadence/policy', async (req, res) => {
   try {
-    const updated = callSchedulerService.updatePolicy(req.body);
+    const updated = await callSchedulerService.updatePolicyAndPersist(req.body);
     res.json({ success: true, data: { policy: updated }, timestamp: new Date().toISOString() });
   } catch (err: any) {
     res.status(400).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
@@ -103,6 +112,16 @@ campaignRoutes.get('/', async (req, res) => {
     res.json({ success: true, data: campaigns, timestamp: new Date().toISOString() });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
+// GET /api/campaigns/:id/preflight
+campaignRoutes.get('/:id/preflight', async (req, res) => {
+  try {
+    const preflight = await serverCampaignService.getCampaignPreflight(req.params.id);
+    res.json({ success: true, data: preflight, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(404).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
   }
 });
 

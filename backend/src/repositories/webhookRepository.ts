@@ -69,6 +69,16 @@ export class WebhookRepository {
         },
       });
 
+      let sideEffectContext: {
+        callId: string;
+        leadId: string;
+        campaignId: string | null;
+        status: string;
+        outcome?: string;
+        extractedVariables: Record<string, any>;
+      } | null = null;
+      const extracted = (norm.extractedVariables || {}) as Record<string, any>;
+
       // Handle Call Lifecycle Correlation if externalCallId is present
       if (norm.externalCallId && norm.canonicalStatus !== 'unknown') {
         const firstAgent = await tx.agent.findFirst();
@@ -201,6 +211,31 @@ export class WebhookRepository {
             });
           }
         }
+        if (existingCall) {
+          sideEffectContext = {
+            callId: existingCall.id,
+            leadId: existingCall.leadId,
+            campaignId,
+            status: norm.canonicalStatus,
+            outcome: norm.outcome,
+            extractedVariables: extracted,
+          };
+
+          if (extracted.do_not_call === true || extracted.opt_out === true) {
+            await tx.lead.update({
+              where: { id: existingCall.leadId },
+              data: {
+                doNotCall: true,
+                dncReason: 'Candidate opted out during AI screening call',
+                dncUpdatedAt: receivedAt,
+              },
+            });
+            await tx.campaignLead.updateMany({
+              where: { leadId: existingCall.leadId },
+              data: { status: 'dnc_blocked', nextAttemptAt: null },
+            });
+          }
+        }
       }
 
       return {
@@ -208,8 +243,102 @@ export class WebhookRepository {
         externalId: norm.providerEventId,
         status: 'processed',
         processedAt: receivedAt.toISOString(),
-      };
+        _sideEffectContext: sideEffectContext,
+      } as any;
+    }).then(async (txResult: any) => {
+      const ctx = txResult._sideEffectContext;
+      delete txResult._sideEffectContext;
+      if (!ctx) return txResult;
+
+      // Fire non-blocking outbound hooks (ATS sync, WhatsApp callback invite, Calendar booking)
+      await this.dispatchPostCallWebhooks(ctx);
+      return txResult as WebhookProcessingResult;
     });
+  }
+
+  private async dispatchPostCallWebhooks(ctx: {
+    callId: string;
+    leadId: string;
+    campaignId: string | null;
+    status: string;
+    outcome?: string;
+    extractedVariables: Record<string, any>;
+  }) {
+    const lead = await prisma.lead.findUnique({ where: { id: ctx.leadId } });
+    if (!lead) return;
+
+    const dispatch = async (provider: string, url: string | undefined, eventType: string, body: Record<string, any>) => {
+      if (!url) return;
+      try {
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status}`);
+        }
+      } catch (err: any) {
+        await prisma.webhookEvent.create({
+          data: {
+            provider,
+            eventType,
+            externalId: `dlq_${provider}_${ctx.callId}_${Date.now()}`,
+            payload: body as any,
+            status: 'failed',
+            error: err?.message || 'Outbound webhook delivery failed',
+            receivedAt: new Date(),
+          },
+        });
+      }
+    };
+
+    await dispatch(
+      'ats_outbound',
+      process.env.ATS_WEBHOOK_URL,
+      'screening.completed',
+      {
+        event: 'screening.completed',
+        callId: ctx.callId,
+        campaignId: ctx.campaignId,
+        lead: { id: lead.id, name: lead.name, phone: lead.phone, email: lead.email },
+        status: ctx.status,
+        outcome: ctx.outcome,
+        extractedVariables: ctx.extractedVariables,
+      }
+    );
+
+    if (ctx.outcome === 'unreachable' || ctx.status === 'busy' || ctx.status === 'no_answer') {
+      await dispatch(
+        'whatsapp_callback',
+        process.env.WHATSAPP_WEBHOOK_URL,
+        'callback.invite_requested',
+        {
+          event: 'callback.invite_requested',
+          leadId: lead.id,
+          name: lead.name,
+          phone: lead.phone,
+          callbackEndpoint: '/api/integrations/callback-slot',
+          availablePresets: ['morning_10_12', 'midday_12_2', 'afternoon_2_4', 'late_afternoon_4_6', 'evening_6_8'],
+        }
+      );
+    }
+
+    if (ctx.extractedVariables?.screening_status === 'passed') {
+      await dispatch(
+        'calendar_booking',
+        process.env.CALENDAR_BOOKING_WEBHOOK_URL,
+        'interview.ready_to_book',
+        {
+          event: 'interview.ready_to_book',
+          leadId: lead.id,
+          name: lead.name,
+          phone: lead.phone,
+          email: lead.email,
+          role: ctx.extractedVariables?.applied_role || (lead.metadata as any)?.applied_role,
+        }
+      );
+    }
   }
 
   async reprocessEvent(eventId: string): Promise<WebhookEvent> {

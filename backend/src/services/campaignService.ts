@@ -46,6 +46,14 @@ export class ServerCampaignService {
 
     // 3. Dispatch live outbound calls to Sarvam Voice Agents API for each enrolled lead
     for (const cl of campaignLeads) {
+      if (cl.lead.doNotCall) {
+        await prisma.campaignLead.update({
+          where: { campaignId_leadId: { campaignId: campaign.id, leadId: cl.lead.id } },
+          data: { status: 'dnc_blocked', nextAttemptAt: null },
+        });
+        console.log(`[Campaign Engine] Skipped DNC lead ${cl.lead.name} (${cl.lead.phone}).`);
+        continue;
+      }
       try {
         console.log(`[Campaign Engine] Calling lead ${cl.lead.name} (${cl.lead.phone}) via Sarvam API...`);
 
@@ -177,6 +185,21 @@ export class ServerCampaignService {
     }> = [];
 
     for (const cl of campaignLeads) {
+      if (cl.lead.doNotCall) {
+        await prisma.campaignLead.update({
+          where: { campaignId_leadId: { campaignId: campaign.id, leadId: cl.lead.id } },
+          data: { status: 'dnc_blocked', nextAttemptAt: null },
+        });
+        results.push({
+          leadId: cl.lead.id,
+          leadName: cl.lead.name,
+          phone: cl.lead.phone,
+          status: 'dnc_blocked',
+          error: cl.lead.dncReason || 'Lead is marked Do Not Call (DNC)',
+          attemptNumber: cl.attemptCount,
+        });
+        continue;
+      }
       try {
         console.log(`[Batch Dialer] Dialing lead ${cl.lead.name} (${cl.lead.phone}) for campaign "${campaign.name}"...`);
 
@@ -410,6 +433,9 @@ export class ServerCampaignService {
 
     const campaign = campaignLead.campaign;
     const lead = campaignLead.lead;
+    if (lead.doNotCall) {
+      throw new Error(`Lead ${lead.name} is marked Do Not Call (DNC): ${lead.dncReason || 'Opted out'}`);
+    }
 
     const phoneNumberObj = await prisma.phoneNumber.findUnique({
       where: { id: campaign.phoneNumberId },
@@ -510,6 +536,52 @@ export class ServerCampaignService {
       processedCount: executedResults.length,
       totalDue: dueItems.length,
       results: executedResults,
+    };
+  }
+
+  /**
+   * Validates campaign readiness before launching or dialing:
+   * checks calling window status, DNC-blocked leads, and Sarvam input variables.
+   */
+  async getCampaignPreflight(campaignId: string) {
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      include: {
+        agentVersion: true,
+        phoneNumber: true,
+        campaignLeads: { include: { lead: true } },
+      },
+    });
+    if (!campaign) {
+      throw new Error(`Campaign not found: ${campaignId}`);
+    }
+
+    const windowInfo = callSchedulerService.getCallingWindowInfo();
+    const dncLeads = campaign.campaignLeads.filter(cl => cl.lead.doNotCall);
+    const dialableLeads = campaign.campaignLeads.filter(cl => !cl.lead.doNotCall);
+    const missingMetadataLeads = dialableLeads
+      .map(cl => {
+        const meta = (cl.lead.metadata as Record<string, any>) || {};
+        const missing: string[] = [];
+        if (!meta.applied_role && !meta.role) missing.push('applied_role');
+        if (!meta.portal_experience && !meta.experience) missing.push('portal_experience');
+        if (!meta.portal_notice_period && !meta.notice) missing.push('portal_notice_period');
+        if (!meta.portal_work_mode && !meta.workMode) missing.push('portal_work_mode');
+        return missing.length > 0 ? { leadId: cl.lead.id, leadName: cl.lead.name, missing } : null;
+      })
+      .filter(Boolean);
+
+    return {
+      campaignId: campaign.id,
+      campaignName: campaign.name,
+      totalEnrolled: campaign.campaignLeads.length,
+      dialableCount: dialableLeads.length,
+      dncBlockedCount: dncLeads.length,
+      dncLeads: dncLeads.map(cl => ({ leadId: cl.lead.id, name: cl.lead.name, reason: cl.lead.dncReason })),
+      missingMetadataCount: missingMetadataLeads.length,
+      missingMetadataLeads,
+      windowInfo,
+      readyToDial: dialableLeads.length > 0 && Boolean(campaign.phoneNumber?.phoneNumber),
     };
   }
 }

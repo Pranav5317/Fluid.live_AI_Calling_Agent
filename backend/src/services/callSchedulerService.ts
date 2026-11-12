@@ -102,7 +102,31 @@ export const CADENCE_PRESETS: Record<string, RetryPolicyConfig> = {
 export class CallSchedulerService {
   private policy: RetryPolicyConfig = { ...CADENCE_PRESETS.standard };
 
+  private isTickRunning = false;
+  private policyLoaded = false;
+
   getPolicy(): RetryPolicyConfig {
+    return { ...this.policy };
+  }
+
+  /**
+   * Loads persisted cadence policy from SystemSetting (survives serverless cold starts).
+   */
+  async loadPolicyFromDb(): Promise<RetryPolicyConfig> {
+    try {
+      const row = await prisma.systemSetting.findUnique({
+        where: { key: 'scheduler_policy' },
+      });
+      if (row?.value && typeof row.value === 'object') {
+        this.policy = {
+          ...this.policy,
+          ...(row.value as Partial<RetryPolicyConfig>),
+        };
+      }
+      this.policyLoaded = true;
+    } catch (err: any) {
+      console.warn('[Dynamic Scheduler] Could not load policy from DB, using in-memory policy:', err?.message);
+    }
     return { ...this.policy };
   }
 
@@ -114,7 +138,51 @@ export class CallSchedulerService {
     };
     return { ...this.policy };
   }
-  private isTickRunning = false;
+
+  async updatePolicyAndPersist(updates: Partial<RetryPolicyConfig>): Promise<RetryPolicyConfig> {
+    const next = this.updatePolicy(updates);
+    await prisma.systemSetting.upsert({
+      where: { key: 'scheduler_policy' },
+      create: { key: 'scheduler_policy', value: next as any },
+      update: { value: next as any },
+    });
+    this.policyLoaded = true;
+    return next;
+  }
+
+  private async acquireDistributedTickLock(ttlMs = 90000): Promise<boolean> {
+    const now = Date.now();
+    const lockOwner = `tick_${now}_${Math.random().toString(36).slice(2, 8)}`;
+    try {
+      const existing = await prisma.systemSetting.findUnique({
+        where: { key: 'scheduler_tick_lock' },
+      });
+      const existingVal = existing?.value as { expiresAt?: number } | undefined;
+      if (existingVal?.expiresAt && existingVal.expiresAt > now) {
+        return false;
+      }
+      await prisma.systemSetting.upsert({
+        where: { key: 'scheduler_tick_lock' },
+        create: { key: 'scheduler_tick_lock', value: { owner: lockOwner, expiresAt: now + ttlMs } },
+        update: { value: { owner: lockOwner, expiresAt: now + ttlMs } },
+      });
+      return true;
+    } catch {
+      return true; // Fail-open on transient lock read error; in-memory guard still applies
+    }
+  }
+
+  private async releaseDistributedTickLock(): Promise<void> {
+    try {
+      await prisma.systemSetting.upsert({
+        where: { key: 'scheduler_tick_lock' },
+        create: { key: 'scheduler_tick_lock', value: { owner: null, expiresAt: 0 } },
+        update: { value: { owner: null, expiresAt: 0 } },
+      });
+    } catch {
+      // Ignore release errors; TTL expires automatically
+    }
+  }
 
   /**
    * Evaluates if current time falls within legal/safe consumer calling windows (TRAI / IST).
@@ -247,6 +315,7 @@ export class CallSchedulerService {
    * Supports `dryRun: true` for full sanity testing without consuming telephony credits.
    */
   async runSchedulerTick(options?: { forceIgnoreWindow?: boolean; maxConcurrency?: number; dryRun?: boolean; leadId?: string }) {
+    const isDryRun = !!options?.dryRun;
     if (this.isTickRunning) {
       return {
         success: true,
@@ -255,10 +324,23 @@ export class CallSchedulerService {
       };
     }
 
+    if (!isDryRun) {
+      const acquired = await this.acquireDistributedTickLock();
+      if (!acquired) {
+        return {
+          success: true,
+          skipped: true,
+          message: 'Another scheduler instance holds the distributed tick lock. Skipping.',
+        };
+      }
+    }
+
     this.isTickRunning = true;
+    if (!this.policyLoaded && !isDryRun) {
+      await this.loadPolicyFromDb();
+    }
     const startTime = Date.now();
     const windowInfo = this.getCallingWindowInfo();
-    const isDryRun = !!options?.dryRun;
 
     try {
       // 1. Guard: Check Safe Legal Calling Window
@@ -273,6 +355,26 @@ export class CallSchedulerService {
           dispatchedCount: 0,
           isDryRun,
         };
+      }
+
+      // 1b. Guard: Billing Spend Cap Check (live ticks only)
+      if (!isDryRun) {
+        const guardrailRow = await prisma.systemSetting.findUnique({ where: { key: 'billing_guardrails' } });
+        const guardrails = guardrailRow?.value as { monthlyBudgetCapUsd?: number; enforceHardCap?: boolean } | undefined;
+        if (guardrails?.enforceHardCap && typeof guardrails.monthlyBudgetCapUsd === 'number') {
+          const currentPeriod = await prisma.billingPeriod.findFirst({ where: { status: 'current' } });
+          if (currentPeriod && currentPeriod.estimatedTotalCost >= guardrails.monthlyBudgetCapUsd) {
+            return {
+              success: true,
+              skipped: true,
+              reason: 'budget_cap_reached',
+              message: `Monthly budget cap ($${guardrails.monthlyBudgetCapUsd}) reached ($${currentPeriod.estimatedTotalCost.toFixed(2)} used). Autonomous dials paused.`,
+              windowInfo,
+              dispatchedCount: 0,
+              isDryRun,
+            };
+          }
+        }
       }
 
       // 2. Concurrency Check: how many calls are currently 'initiated' in Neon DB
@@ -355,6 +457,24 @@ export class CallSchedulerService {
 
       for (const cl of dueLeads) {
         const meta = (cl.lead.metadata as Record<string, any>) || {};
+
+        // 0. DNC Compliance Guard: hard-block any lead marked Do Not Call
+        if (cl.lead.doNotCall) {
+          if (!isDryRun) {
+            await prisma.campaignLead.update({
+              where: { id: cl.id },
+              data: { status: 'dnc_blocked', nextAttemptAt: null },
+            });
+          }
+          skippedLeads.push({
+            campaignLeadId: cl.id,
+            leadName: cl.lead.name,
+            phone: cl.lead.phone,
+            reason: 'do_not_call',
+            detail: cl.lead.dncReason || 'Lead is marked Do Not Call (DNC).',
+          });
+          continue;
+        }
 
         // If lead has a specific window end (e.g. 8:00 PM) and current time has passed it:
         if (meta.scheduledWindowEnd) {
@@ -570,6 +690,9 @@ export class CallSchedulerService {
       };
     } finally {
       this.isTickRunning = false;
+      if (!isDryRun) {
+        await this.releaseDistributedTickLock();
+      }
     }
   }
 
@@ -577,6 +700,9 @@ export class CallSchedulerService {
    * Retrieves overall telemetry and queued upcoming dispatches for the UI.
    */
   async getSchedulerStatus() {
+    if (!this.policyLoaded) {
+      await this.loadPolicyFromDb();
+    }
     const windowInfo = this.getCallingWindowInfo();
     const now = new Date();
 

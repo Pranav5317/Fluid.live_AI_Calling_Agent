@@ -108,13 +108,19 @@ export type CampaignLeadStatus =
   | 'contacted' 
   | 'completed' 
   | 'failed' 
-  | 'callback';
+  | 'callback'
+  | 'retry_scheduled'
+  | 'exhausted'
+  | 'dnc_blocked';
 
 export interface Lead {
   id: string;
   name: string;
   phone: string;
   email?: string;
+  doNotCall?: boolean;
+  dncReason?: string | null;
+  dncUpdatedAt?: string | null;
   metadata: Record<string, any>;
   createdAt: string;
 }

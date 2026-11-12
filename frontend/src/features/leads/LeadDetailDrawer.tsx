@@ -24,6 +24,7 @@ import {
   ChevronUp,
   CalendarClock,
   Edit3,
+  Ban,
 } from 'lucide-react';
 import { Lead, Call } from '../../types';
 import { formatDate, formatDuration, formatPhoneNumber, getIstDateKey, isLeadScheduleActive } from '../../lib/formatters';
@@ -94,6 +95,26 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
   const calls: Call[] = timelineData?.calls || [];
   const campaigns = timelineData?.campaigns || [];
   const summary = timelineData?.summary || {};
+
+  const [reviewSaving, setReviewSaving] = useState(false);
+
+  const handleReviewStatus = async (reviewStatus: 'approved' | 'follow_up' | 'rejected') => {
+    if (!lead || reviewSaving) return;
+    setReviewSaving(true);
+    try {
+      await leadService.updateLead(lead.id, {
+        metadata: {
+          ...(lead.metadata || {}),
+          reviewStatus,
+          reviewedAt: new Date().toISOString(),
+        },
+      });
+      await fetchTimeline(lead.id);
+      if (onCallInitiated) onCallInitiated();
+    } finally {
+      setReviewSaving(false);
+    }
+  };
 
   const handleInstantCall = async () => {
     if (!lead || isCalling) return;
@@ -231,6 +252,25 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
             </div>
           ) : (
             <>
+              {/* DNC Compliance Banner */}
+              {lead.doNotCall && (
+                <div className="p-3.5 rounded-xl border border-rose-200 bg-rose-50/90 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-100 text-rose-700">
+                      <Ban className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold uppercase tracking-wider font-mono text-rose-800 block">
+                        Do Not Call (DNC) Active
+                      </span>
+                      <span className="text-xs font-medium text-rose-900">
+                        {lead.dncReason || 'Candidate is blocked from autonomous & manual outbound dials.'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Scheduled Call Highlight Banner (If scheduled) */}
               {(lead.metadata?.scheduledSlotLabel || lead.metadata?.scheduledCallTime || lead.metadata?.scheduledAt) && (() => {
                 const isToday = lead.metadata?.scheduledSlotDate === getIstDateKey(0);
@@ -280,6 +320,58 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
                   </div>
                 );
               })()}
+
+              {/* Recruiter Triage & Review Bar */}
+              <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/80 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider font-mono text-slate-500 block">
+                    Recruiter Triage Status
+                  </span>
+                  <span className="text-xs font-semibold text-slate-800 capitalize">
+                    {lead.metadata?.reviewStatus
+                      ? String(lead.metadata.reviewStatus).replace('_', ' ')
+                      : 'Pending Recruiter Review'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={reviewSaving}
+                    onClick={() => handleReviewStatus('approved')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors ${
+                      lead.metadata?.reviewStatus === 'approved'
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'bg-white text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                    }`}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    disabled={reviewSaving}
+                    onClick={() => handleReviewStatus('follow_up')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors ${
+                      lead.metadata?.reviewStatus === 'follow_up'
+                        ? 'bg-amber-600 text-white border-amber-600'
+                        : 'bg-white text-amber-700 border-amber-200 hover:bg-amber-50'
+                    }`}
+                  >
+                    Follow-Up
+                  </button>
+                  <button
+                    type="button"
+                    disabled={reviewSaving}
+                    onClick={() => handleReviewStatus('rejected')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors ${
+                      lead.metadata?.reviewStatus === 'rejected'
+                        ? 'bg-rose-600 text-white border-rose-600'
+                        : 'bg-white text-rose-700 border-rose-200 hover:bg-rose-50'
+                    }`}
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
 
               {/* Quick Actions & Instant Triggers Bar */}
               <div className="p-4 rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/60 via-white to-purple-50/30 space-y-3">

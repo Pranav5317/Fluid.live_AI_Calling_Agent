@@ -20,6 +20,7 @@ import {
   CalendarClock,
   X,
   CheckCircle2,
+  Ban,
 } from 'lucide-react';
 
 export interface LeadEditModalProps {
@@ -115,6 +116,9 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
   const [customStartTime, setCustomStartTime] = useState('18:00');
   const [customEndTime, setCustomEndTime] = useState('20:00');
 
+  const [doNotCall, setDoNotCall] = useState(false);
+  const [dncReason, setDncReason] = useState('');
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -123,6 +127,8 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
       setName(lead.name || '');
       setPhone(lead.phone || '');
       setEmail(lead.email || '');
+      setDoNotCall(Boolean(lead.doNotCall));
+      setDncReason(lead.dncReason || '');
 
       const meta = (lead.metadata || {}) as Record<string, any>;
       setRole(meta.role || meta.applied_role || '');
@@ -292,6 +298,8 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
         name: name.trim(),
         phone: phone.trim(),
         email: email.trim() || undefined,
+        doNotCall,
+        dncReason: doNotCall ? (dncReason.trim() || 'Marked Do Not Call') : null,
         metadata: updatedMetadata,
       });
 
@@ -626,6 +634,43 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
           ) : (
             <div className="text-center p-3 rounded-lg border border-dashed border-slate-300 bg-white/60 text-xs text-slate-500">
               No calling window set. Candidate will remain in regular outbound queue. Click any slot above to schedule.
+            </div>
+          )}
+        </div>
+
+        {/* Section 4: Compliance / Do Not Call */}
+        <div
+          className={`p-3.5 rounded-xl border transition-colors ${
+            doNotCall ? 'bg-rose-50/70 border-rose-200' : 'bg-slate-50/70 border-slate-200'
+          }`}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Ban className={`h-4 w-4 ${doNotCall ? 'text-rose-600' : 'text-slate-400'}`} />
+              <div>
+                <div className="text-xs font-bold text-slate-800">Do Not Call (DNC) Compliance Lock</div>
+                <div className="text-[11px] text-slate-500">
+                  Blocks all autonomous scheduler dispatches, campaign dials, and manual test calls.
+                </div>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={doNotCall}
+                onChange={e => setDoNotCall(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-600" />
+            </label>
+          </div>
+          {doNotCall && (
+            <div className="mt-2.5">
+              <Input
+                value={dncReason}
+                onChange={e => setDncReason(e.target.value)}
+                placeholder="Reason (e.g., Candidate opted out, Offer accepted elsewhere)"
+              />
             </div>
           )}
         </div>

@@ -191,14 +191,57 @@ async function main() {
     assert.ok(rolledSkip.nextAttemptAt, 'Expected nextAttemptAt on rolled-forward skip');
     assert.ok(new Date(rolledSkip.nextAttemptAt).getTime() > now, 'Expected rolled-forward nextAttemptAt in the future');
     console.log(`[PASS] Case C: Expired interval blocked & computed roll-forward (${rolledSkip.detail})`);
+
+    // --- Case D: DNC Enforcement & DB Policy Persistence ---
+    await leadRepository.updateLead(testLead.id, {
+      doNotCall: true,
+      dncReason: 'Candidate requested opt-out in sanity test',
+      metadata: {
+        ...origMeta,
+        scheduledCallTime: activeStart,
+        scheduledWindowEnd: activeEnd,
+        scheduledSlotLabel: 'Between 6:00 PM – 8:00 PM',
+        scheduledTimezone: 'Asia/Kolkata',
+      },
+    } as any);
+
+    const tickDnc = await callSchedulerService.runSchedulerTick({
+      dryRun: true,
+      forceIgnoreWindow: true,
+      leadId: testLead.id,
+    });
+    assert.equal(tickDnc.dispatchedCount, 0, 'Expected 0 dispatches for DNC lead');
+    const dncSkip = (tickDnc.skippedLeads ?? []).find((s) => s.leadName === testLead.name);
+    assert.ok(dncSkip, 'Expected DNC lead in skippedLeads');
+    assert.equal(dncSkip.reason, 'do_not_call', `Unexpected DNC skip reason: ${dncSkip.reason}`);
+    console.log('[PASS] Case D1: DNC compliance lock blocks autonomous dispatch cleanly');
+
+    await callSchedulerService.updatePolicyAndPersist({ maxAttempts: 4 });
+    callSchedulerService.updatePolicy({ maxAttempts: 3 }); // Mutate in-memory, then verify DB reload restores 4
+    const reloadedPolicy = await callSchedulerService.loadPolicyFromDb();
+    assert.equal(reloadedPolicy.maxAttempts, 4, 'Expected persisted scheduler policy to survive reload');
+    console.log('[PASS] Case D2: Scheduler policy persists to SystemSetting & reloads across cold starts');
   } finally {
-    // Restore original metadata and CampaignLead rows so DB remains spotless
-    console.log('\nRestoring initial Lead metadata and CampaignLead state...');
+    // Restore original metadata, DNC state, CampaignLead rows, and default policy so DB remains spotless
+    console.log('\nRestoring initial Lead metadata, DNC, Policy, and CampaignLead state...');
+    await callSchedulerService.updatePolicyAndPersist({
+      presetName: 'standard',
+      maxAttempts: 3,
+      maxCallsPer24Hours: 2,
+      windowStartHour: 10.0,
+      windowEndHour: 20.5,
+      blockSundays: true,
+    });
     for (const lead of initialLeads) {
       const cleanMeta = { ...((lead.metadata as Record<string, any>) || {}) };
       await prisma.lead.update({
         where: { id: lead.id },
-        data: { metadata: cleanMeta },
+        data: {
+          doNotCall: lead.doNotCall,
+          dncReason: lead.dncReason,
+          dncUpdatedAt: lead.dncUpdatedAt,
+          metadata: cleanMeta,
+        },
       });
     }
     await prisma.campaignLead.deleteMany({});

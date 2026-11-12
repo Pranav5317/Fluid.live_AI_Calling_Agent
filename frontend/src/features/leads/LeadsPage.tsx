@@ -377,8 +377,26 @@ export const LeadsPage: React.FC = () => {
                             {lead.name ? lead.name.slice(0, 2).toUpperCase() : 'LE'}
                           </div>
                           <div>
-                            <div className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors flex items-center gap-1.5">
+                            <div className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors flex items-center gap-1.5 flex-wrap">
                               <span>{lead.name}</span>
+                              {lead.doNotCall && (
+                                <span className="rounded bg-rose-100 border border-rose-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-rose-700 font-mono">
+                                  DNC
+                                </span>
+                              )}
+                              {meta.reviewStatus && (
+                                <span
+                                  className={`rounded px-1.5 py-0.5 text-[10px] font-semibold capitalize border ${
+                                    meta.reviewStatus === 'approved'
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                      : meta.reviewStatus === 'rejected'
+                                      ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                                  }`}
+                                >
+                                  {String(meta.reviewStatus).replace('_', ' ')}
+                                </span>
+                              )}
                             </div>
                             <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
                               <Briefcase className="h-3 w-3 text-slate-400" />
@@ -465,12 +483,18 @@ export const LeadsPage: React.FC = () => {
                           <Button
                             size="sm"
                             variant="outline"
+                            disabled={Boolean(lead.doNotCall)}
                             isLoading={callingLeadId === lead.id}
-                            leftIcon={<Phone className="h-3.5 w-3.5 text-emerald-600" />}
+                            leftIcon={<Phone className={`h-3.5 w-3.5 ${lead.doNotCall ? 'text-slate-400' : 'text-emerald-600'}`} />}
                             onClick={() => handleCallLead(lead.id, lead.phone, lead.name)}
-                            className="rounded-lg text-emerald-700 border-emerald-200 hover:bg-emerald-50 text-xs px-2.5 font-semibold"
+                            title={lead.doNotCall ? 'Blocked by Do Not Call (DNC)' : 'Call candidate now'}
+                            className={`rounded-lg text-xs px-2.5 font-semibold ${
+                              lead.doNotCall
+                                ? 'text-slate-400 border-slate-200 cursor-not-allowed'
+                                : 'text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                            }`}
                           >
-                            Call Now
+                            {lead.doNotCall ? 'DNC' : 'Call Now'}
                           </Button>
 
                           <Button

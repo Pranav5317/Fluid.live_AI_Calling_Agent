@@ -1003,6 +1003,9 @@ var LeadRepository = class {
       name: l.name,
       phone: l.phone,
       email: l.email || void 0,
+      doNotCall: l.doNotCall,
+      dncReason: l.dncReason,
+      dncUpdatedAt: l.dncUpdatedAt ? l.dncUpdatedAt.toISOString() : null,
       metadata: l.metadata || {},
       createdAt: l.createdAt.toISOString()
     }));
@@ -1073,6 +1076,9 @@ var LeadRepository = class {
           name: l.name,
           phone: l.phone,
           email: l.email || void 0,
+          doNotCall: l.doNotCall,
+          dncReason: l.dncReason,
+          dncUpdatedAt: l.dncUpdatedAt ? l.dncUpdatedAt.toISOString() : null,
           metadata: l.metadata || {},
           createdAt: l.createdAt.toISOString()
         },
@@ -1106,15 +1112,31 @@ var LeadRepository = class {
     const current = await prisma_default.lead.findUnique({ where: { id } });
     if (!current) throw new Error(`Lead not found: ${id}`);
     const newMetadata = updates.metadata !== void 0 ? { ...current.metadata || {}, ...updates.metadata } : current.metadata || {};
+    const nextDnc = updates.doNotCall !== void 0 ? Boolean(updates.doNotCall) : current.doNotCall;
+    const dncChanged = updates.doNotCall !== void 0 && nextDnc !== current.doNotCall;
     const updated = await prisma_default.lead.update({
       where: { id },
       data: {
         name: updates.name !== void 0 ? updates.name : current.name,
         phone: updates.phone !== void 0 ? updates.phone : current.phone,
         email: updates.email !== void 0 ? updates.email : current.email,
+        doNotCall: nextDnc,
+        dncReason: nextDnc ? updates.dncReason ?? current.dncReason ?? "Marked Do Not Call" : null,
+        dncUpdatedAt: dncChanged ? /* @__PURE__ */ new Date() : current.dncUpdatedAt,
         metadata: newMetadata
       }
     });
+    if (nextDnc) {
+      await prisma_default.campaignLead.updateMany({
+        where: { leadId: id },
+        data: { status: "dnc_blocked", nextAttemptAt: null }
+      });
+    } else if (dncChanged && !nextDnc) {
+      await prisma_default.campaignLead.updateMany({
+        where: { leadId: id, status: "dnc_blocked" },
+        data: { status: "untouched" }
+      });
+    }
     const scheduledTime = updates.metadata?.scheduledCallTime || updates.metadata?.scheduledAt;
     if (scheduledTime) {
       try {
@@ -1166,6 +1188,9 @@ var LeadRepository = class {
       name: updated.name,
       phone: updated.phone,
       email: updated.email || void 0,
+      doNotCall: updated.doNotCall,
+      dncReason: updated.dncReason,
+      dncUpdatedAt: updated.dncUpdatedAt ? updated.dncUpdatedAt.toISOString() : null,
       metadata: updated.metadata || {},
       createdAt: updated.createdAt.toISOString()
     };
@@ -2661,7 +2686,29 @@ var CADENCE_PRESETS = {
 };
 var CallSchedulerService = class {
   policy = { ...CADENCE_PRESETS.standard };
+  isTickRunning = false;
+  policyLoaded = false;
   getPolicy() {
+    return { ...this.policy };
+  }
+  /**
+   * Loads persisted cadence policy from SystemSetting (survives serverless cold starts).
+   */
+  async loadPolicyFromDb() {
+    try {
+      const row = await prisma_default.systemSetting.findUnique({
+        where: { key: "scheduler_policy" }
+      });
+      if (row?.value && typeof row.value === "object") {
+        this.policy = {
+          ...this.policy,
+          ...row.value
+        };
+      }
+      this.policyLoaded = true;
+    } catch (err) {
+      console.warn("[Dynamic Scheduler] Could not load policy from DB, using in-memory policy:", err?.message);
+    }
     return { ...this.policy };
   }
   updatePolicy(updates) {
@@ -2672,7 +2719,47 @@ var CallSchedulerService = class {
     };
     return { ...this.policy };
   }
-  isTickRunning = false;
+  async updatePolicyAndPersist(updates) {
+    const next = this.updatePolicy(updates);
+    await prisma_default.systemSetting.upsert({
+      where: { key: "scheduler_policy" },
+      create: { key: "scheduler_policy", value: next },
+      update: { value: next }
+    });
+    this.policyLoaded = true;
+    return next;
+  }
+  async acquireDistributedTickLock(ttlMs = 9e4) {
+    const now = Date.now();
+    const lockOwner = `tick_${now}_${Math.random().toString(36).slice(2, 8)}`;
+    try {
+      const existing = await prisma_default.systemSetting.findUnique({
+        where: { key: "scheduler_tick_lock" }
+      });
+      const existingVal = existing?.value;
+      if (existingVal?.expiresAt && existingVal.expiresAt > now) {
+        return false;
+      }
+      await prisma_default.systemSetting.upsert({
+        where: { key: "scheduler_tick_lock" },
+        create: { key: "scheduler_tick_lock", value: { owner: lockOwner, expiresAt: now + ttlMs } },
+        update: { value: { owner: lockOwner, expiresAt: now + ttlMs } }
+      });
+      return true;
+    } catch {
+      return true;
+    }
+  }
+  async releaseDistributedTickLock() {
+    try {
+      await prisma_default.systemSetting.upsert({
+        where: { key: "scheduler_tick_lock" },
+        create: { key: "scheduler_tick_lock", value: { owner: null, expiresAt: 0 } },
+        update: { value: { owner: null, expiresAt: 0 } }
+      });
+    } catch {
+    }
+  }
   /**
    * Evaluates if current time falls within legal/safe consumer calling windows (TRAI / IST).
    * Safe Calling Window: 10:00 AM - 7:30 PM IST (Monday - Saturday). Sunday cold outreach is blocked.
@@ -2768,6 +2855,7 @@ var CallSchedulerService = class {
    * Supports `dryRun: true` for full sanity testing without consuming telephony credits.
    */
   async runSchedulerTick(options) {
+    const isDryRun = !!options?.dryRun;
     if (this.isTickRunning) {
       return {
         success: true,
@@ -2775,10 +2863,22 @@ var CallSchedulerService = class {
         message: "A scheduler tick is already in progress. Skipping concurrent run."
       };
     }
+    if (!isDryRun) {
+      const acquired = await this.acquireDistributedTickLock();
+      if (!acquired) {
+        return {
+          success: true,
+          skipped: true,
+          message: "Another scheduler instance holds the distributed tick lock. Skipping."
+        };
+      }
+    }
     this.isTickRunning = true;
+    if (!this.policyLoaded && !isDryRun) {
+      await this.loadPolicyFromDb();
+    }
     const startTime = Date.now();
     const windowInfo = this.getCallingWindowInfo();
-    const isDryRun = !!options?.dryRun;
     try {
       if (!windowInfo.isOpen && !options?.forceIgnoreWindow) {
         console.log(`[Dynamic Scheduler] Calling window closed (${windowInfo.currentISTTime}, ${windowInfo.dayOfWeek}). Dispatches paused until ${windowInfo.nextWindowStart}.`);
@@ -2791,6 +2891,24 @@ var CallSchedulerService = class {
           dispatchedCount: 0,
           isDryRun
         };
+      }
+      if (!isDryRun) {
+        const guardrailRow = await prisma_default.systemSetting.findUnique({ where: { key: "billing_guardrails" } });
+        const guardrails = guardrailRow?.value;
+        if (guardrails?.enforceHardCap && typeof guardrails.monthlyBudgetCapUsd === "number") {
+          const currentPeriod = await prisma_default.billingPeriod.findFirst({ where: { status: "current" } });
+          if (currentPeriod && currentPeriod.estimatedTotalCost >= guardrails.monthlyBudgetCapUsd) {
+            return {
+              success: true,
+              skipped: true,
+              reason: "budget_cap_reached",
+              message: `Monthly budget cap ($${guardrails.monthlyBudgetCapUsd}) reached ($${currentPeriod.estimatedTotalCost.toFixed(2)} used). Autonomous dials paused.`,
+              windowInfo,
+              dispatchedCount: 0,
+              isDryRun
+            };
+          }
+        }
       }
       const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1e3);
       const activeCallsCount = await prisma_default.call.count({
@@ -2862,6 +2980,22 @@ var CallSchedulerService = class {
       const skippedLeads = [];
       for (const cl of dueLeads) {
         const meta = cl.lead.metadata || {};
+        if (cl.lead.doNotCall) {
+          if (!isDryRun) {
+            await prisma_default.campaignLead.update({
+              where: { id: cl.id },
+              data: { status: "dnc_blocked", nextAttemptAt: null }
+            });
+          }
+          skippedLeads.push({
+            campaignLeadId: cl.id,
+            leadName: cl.lead.name,
+            phone: cl.lead.phone,
+            reason: "do_not_call",
+            detail: cl.lead.dncReason || "Lead is marked Do Not Call (DNC)."
+          });
+          continue;
+        }
         if (meta.scheduledWindowEnd) {
           const windowEnd = new Date(meta.scheduledWindowEnd);
           if (!isNaN(windowEnd.getTime()) && now > windowEnd) {
@@ -3048,12 +3182,18 @@ var CallSchedulerService = class {
       };
     } finally {
       this.isTickRunning = false;
+      if (!isDryRun) {
+        await this.releaseDistributedTickLock();
+      }
     }
   }
   /**
    * Retrieves overall telemetry and queued upcoming dispatches for the UI.
    */
   async getSchedulerStatus() {
+    if (!this.policyLoaded) {
+      await this.loadPolicyFromDb();
+    }
     const windowInfo = this.getCallingWindowInfo();
     const now = /* @__PURE__ */ new Date();
     const [totalScheduled, dueNow, runningCampaigns, upcomingLeads] = await Promise.all([
@@ -3199,6 +3339,14 @@ var ServerCampaignService = class {
     });
     const config = agentVersion?.config || {};
     for (const cl of campaignLeads) {
+      if (cl.lead.doNotCall) {
+        await prisma_default.campaignLead.update({
+          where: { campaignId_leadId: { campaignId: campaign.id, leadId: cl.lead.id } },
+          data: { status: "dnc_blocked", nextAttemptAt: null }
+        });
+        console.log(`[Campaign Engine] Skipped DNC lead ${cl.lead.name} (${cl.lead.phone}).`);
+        continue;
+      }
       try {
         console.log(`[Campaign Engine] Calling lead ${cl.lead.name} (${cl.lead.phone}) via Sarvam API...`);
         const callResult = await backendSarvamProvider.initiateOutboundCall({
@@ -3296,6 +3444,21 @@ var ServerCampaignService = class {
     await campaignRepository.updateCampaignStatus(campaignId, "running");
     const results = [];
     for (const cl of campaignLeads) {
+      if (cl.lead.doNotCall) {
+        await prisma_default.campaignLead.update({
+          where: { campaignId_leadId: { campaignId: campaign.id, leadId: cl.lead.id } },
+          data: { status: "dnc_blocked", nextAttemptAt: null }
+        });
+        results.push({
+          leadId: cl.lead.id,
+          leadName: cl.lead.name,
+          phone: cl.lead.phone,
+          status: "dnc_blocked",
+          error: cl.lead.dncReason || "Lead is marked Do Not Call (DNC)",
+          attemptNumber: cl.attemptCount
+        });
+        continue;
+      }
       try {
         console.log(`[Batch Dialer] Dialing lead ${cl.lead.name} (${cl.lead.phone}) for campaign "${campaign.name}"...`);
         const callResult = await backendSarvamProvider.initiateOutboundCall({
@@ -3503,6 +3666,9 @@ var ServerCampaignService = class {
     if (!campaignLead) throw new Error(`Campaign lead not found: ${campaignLeadId}`);
     const campaign = campaignLead.campaign;
     const lead = campaignLead.lead;
+    if (lead.doNotCall) {
+      throw new Error(`Lead ${lead.name} is marked Do Not Call (DNC): ${lead.dncReason || "Opted out"}`);
+    }
     const phoneNumberObj = await prisma_default.phoneNumber.findUnique({
       where: { id: campaign.phoneNumberId }
     });
@@ -3590,6 +3756,47 @@ var ServerCampaignService = class {
       results: executedResults
     };
   }
+  /**
+   * Validates campaign readiness before launching or dialing:
+   * checks calling window status, DNC-blocked leads, and Sarvam input variables.
+   */
+  async getCampaignPreflight(campaignId) {
+    const campaign = await prisma_default.campaign.findUnique({
+      where: { id: campaignId },
+      include: {
+        agentVersion: true,
+        phoneNumber: true,
+        campaignLeads: { include: { lead: true } }
+      }
+    });
+    if (!campaign) {
+      throw new Error(`Campaign not found: ${campaignId}`);
+    }
+    const windowInfo = callSchedulerService.getCallingWindowInfo();
+    const dncLeads = campaign.campaignLeads.filter((cl) => cl.lead.doNotCall);
+    const dialableLeads = campaign.campaignLeads.filter((cl) => !cl.lead.doNotCall);
+    const missingMetadataLeads = dialableLeads.map((cl) => {
+      const meta = cl.lead.metadata || {};
+      const missing = [];
+      if (!meta.applied_role && !meta.role) missing.push("applied_role");
+      if (!meta.portal_experience && !meta.experience) missing.push("portal_experience");
+      if (!meta.portal_notice_period && !meta.notice) missing.push("portal_notice_period");
+      if (!meta.portal_work_mode && !meta.workMode) missing.push("portal_work_mode");
+      return missing.length > 0 ? { leadId: cl.lead.id, leadName: cl.lead.name, missing } : null;
+    }).filter(Boolean);
+    return {
+      campaignId: campaign.id,
+      campaignName: campaign.name,
+      totalEnrolled: campaign.campaignLeads.length,
+      dialableCount: dialableLeads.length,
+      dncBlockedCount: dncLeads.length,
+      dncLeads: dncLeads.map((cl) => ({ leadId: cl.lead.id, name: cl.lead.name, reason: cl.lead.dncReason })),
+      missingMetadataCount: missingMetadataLeads.length,
+      missingMetadataLeads,
+      windowInfo,
+      readyToDial: dialableLeads.length > 0 && Boolean(campaign.phoneNumber?.phoneNumber)
+    };
+  }
 };
 var serverCampaignService = new ServerCampaignService();
 
@@ -3613,10 +3820,19 @@ var handleSchedulerTick = async (req, res) => {
   }
 };
 campaignRoutes.post("/scheduler/tick", handleSchedulerTick);
-campaignRoutes.get("/scheduler/tick", handleSchedulerTick);
+campaignRoutes.get("/scheduler/tick", (req, res, next) => {
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret) {
+    const auth = req.headers.authorization;
+    if (auth !== `Bearer ${cronSecret}`) {
+      return res.status(401).json({ success: false, error: "Unauthorized: Invalid CRON_SECRET", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+    }
+  }
+  return next();
+}, handleSchedulerTick);
 campaignRoutes.get("/cadence/policy", async (req, res) => {
   try {
-    const policy = callSchedulerService.getPolicy();
+    const policy = await callSchedulerService.loadPolicyFromDb();
     res.json({ success: true, data: { policy, presets: CADENCE_PRESETS }, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   } catch (err) {
     res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
@@ -3624,7 +3840,7 @@ campaignRoutes.get("/cadence/policy", async (req, res) => {
 });
 campaignRoutes.post("/cadence/policy", async (req, res) => {
   try {
-    const updated = callSchedulerService.updatePolicy(req.body);
+    const updated = await callSchedulerService.updatePolicyAndPersist(req.body);
     res.json({ success: true, data: { policy: updated }, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   } catch (err) {
     res.status(400).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
@@ -3675,6 +3891,14 @@ campaignRoutes.get("/", async (req, res) => {
     res.json({ success: true, data: campaigns, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   } catch (err) {
     res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+campaignRoutes.get("/:id/preflight", async (req, res) => {
+  try {
+    const preflight = await serverCampaignService.getCampaignPreflight(req.params.id);
+    res.json({ success: true, data: preflight, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(404).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   }
 });
 campaignRoutes.get("/:id", async (req, res) => {
@@ -3960,6 +4184,9 @@ var ServerCallService = class {
     const lead = await prisma_default.lead.findUnique({ where: { id: leadId } });
     if (!lead) {
       throw new Error(`Lead not found: ${leadId}`);
+    }
+    if (lead.doNotCall) {
+      throw new Error(`Lead ${lead.name} is marked Do Not Call (DNC): ${lead.dncReason || "Opted out"}`);
     }
     const mapping = await backendSarvamProvider.syncAgentConfig(
       agentVersion.agentId,
@@ -4882,6 +5109,33 @@ billingRoutes.get("/billing/history", async (req, res) => {
     res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   }
 });
+billingRoutes.get("/billing/guardrails", async (req, res) => {
+  try {
+    const row = await prisma_default.systemSetting.findUnique({ where: { key: "billing_guardrails" } });
+    const guardrails = row?.value || {
+      monthlyBudgetCapUsd: 250,
+      enforceHardCap: false
+    };
+    res.json({ success: true, data: guardrails, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+billingRoutes.post("/billing/guardrails", async (req, res) => {
+  try {
+    const monthlyBudgetCapUsd = Number(req.body?.monthlyBudgetCapUsd ?? 250);
+    const enforceHardCap = Boolean(req.body?.enforceHardCap);
+    const guardrails = { monthlyBudgetCapUsd, enforceHardCap };
+    await prisma_default.systemSetting.upsert({
+      where: { key: "billing_guardrails" },
+      create: { key: "billing_guardrails", value: guardrails },
+      update: { value: guardrails }
+    });
+    res.json({ success: true, data: guardrails, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
 
 // backend/src/routes/dashboardRoutes.ts
 import { Router as Router8 } from "express";
@@ -5210,6 +5464,8 @@ var WebhookRepository = class {
           processedAt: receivedAt
         }
       });
+      let sideEffectContext = null;
+      const extracted = norm.extractedVariables || {};
       if (norm.externalCallId && norm.canonicalStatus !== "unknown") {
         const firstAgent = await tx.agent.findFirst();
         const firstLead = await tx.lead.findFirst();
@@ -5323,14 +5579,118 @@ var WebhookRepository = class {
             });
           }
         }
+        if (existingCall) {
+          sideEffectContext = {
+            callId: existingCall.id,
+            leadId: existingCall.leadId,
+            campaignId,
+            status: norm.canonicalStatus,
+            outcome: norm.outcome,
+            extractedVariables: extracted
+          };
+          if (extracted.do_not_call === true || extracted.opt_out === true) {
+            await tx.lead.update({
+              where: { id: existingCall.leadId },
+              data: {
+                doNotCall: true,
+                dncReason: "Candidate opted out during AI screening call",
+                dncUpdatedAt: receivedAt
+              }
+            });
+            await tx.campaignLead.updateMany({
+              where: { leadId: existingCall.leadId },
+              data: { status: "dnc_blocked", nextAttemptAt: null }
+            });
+          }
+        }
       }
       return {
         receivedEventId: dbEventId,
         externalId: norm.providerEventId,
         status: "processed",
-        processedAt: receivedAt.toISOString()
+        processedAt: receivedAt.toISOString(),
+        _sideEffectContext: sideEffectContext
       };
+    }).then(async (txResult) => {
+      const ctx = txResult._sideEffectContext;
+      delete txResult._sideEffectContext;
+      if (!ctx) return txResult;
+      await this.dispatchPostCallWebhooks(ctx);
+      return txResult;
     });
+  }
+  async dispatchPostCallWebhooks(ctx) {
+    const lead = await prisma_default.lead.findUnique({ where: { id: ctx.leadId } });
+    if (!lead) return;
+    const dispatch = async (provider, url, eventType, body) => {
+      if (!url) return;
+      try {
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status}`);
+        }
+      } catch (err) {
+        await prisma_default.webhookEvent.create({
+          data: {
+            provider,
+            eventType,
+            externalId: `dlq_${provider}_${ctx.callId}_${Date.now()}`,
+            payload: body,
+            status: "failed",
+            error: err?.message || "Outbound webhook delivery failed",
+            receivedAt: /* @__PURE__ */ new Date()
+          }
+        });
+      }
+    };
+    await dispatch(
+      "ats_outbound",
+      process.env.ATS_WEBHOOK_URL,
+      "screening.completed",
+      {
+        event: "screening.completed",
+        callId: ctx.callId,
+        campaignId: ctx.campaignId,
+        lead: { id: lead.id, name: lead.name, phone: lead.phone, email: lead.email },
+        status: ctx.status,
+        outcome: ctx.outcome,
+        extractedVariables: ctx.extractedVariables
+      }
+    );
+    if (ctx.outcome === "unreachable" || ctx.status === "busy" || ctx.status === "no_answer") {
+      await dispatch(
+        "whatsapp_callback",
+        process.env.WHATSAPP_WEBHOOK_URL,
+        "callback.invite_requested",
+        {
+          event: "callback.invite_requested",
+          leadId: lead.id,
+          name: lead.name,
+          phone: lead.phone,
+          callbackEndpoint: "/api/integrations/callback-slot",
+          availablePresets: ["morning_10_12", "midday_12_2", "afternoon_2_4", "late_afternoon_4_6", "evening_6_8"]
+        }
+      );
+    }
+    if (ctx.extractedVariables?.screening_status === "passed") {
+      await dispatch(
+        "calendar_booking",
+        process.env.CALENDAR_BOOKING_WEBHOOK_URL,
+        "interview.ready_to_book",
+        {
+          event: "interview.ready_to_book",
+          leadId: lead.id,
+          name: lead.name,
+          phone: lead.phone,
+          email: lead.email,
+          role: ctx.extractedVariables?.applied_role || lead.metadata?.applied_role
+        }
+      );
+    }
   }
   async reprocessEvent(eventId) {
     const updated = await prisma_default.webhookEvent.update({
@@ -5374,6 +5734,15 @@ webhookRoutes.get("/", async (req, res) => {
   try {
     const events = await serverWebhookService.getWebhookEvents();
     res.json({ success: true, data: events, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+webhookRoutes.get("/dead-letter", async (req, res) => {
+  try {
+    const events = await serverWebhookService.getWebhookEvents();
+    const failed = events.filter((e) => e.status === "failed");
+    res.json({ success: true, data: failed, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   } catch (err) {
     res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   }
@@ -5509,6 +5878,259 @@ sarvamRoutes.post("/connect", async (req, res) => {
   }
 });
 
+// backend/src/routes/integrationRoutes.ts
+import { Router as Router12 } from "express";
+var integrationRoutes = Router12();
+var SLOT_PRESET_MAP = {
+  evening_6_8: { startTime: "18:00", endTime: "20:00", label: "Between 6:00 PM \u2013 8:00 PM" },
+  morning_10_12: { startTime: "10:00", endTime: "12:00", label: "Between 10:00 AM \u2013 12:00 PM" },
+  midday_12_2: { startTime: "12:00", endTime: "14:00", label: "Between 12:00 PM \u2013 2:00 PM" },
+  afternoon_2_4: { startTime: "14:00", endTime: "16:00", label: "Between 2:00 PM \u2013 4:00 PM" },
+  late_afternoon_4_6: { startTime: "16:00", endTime: "18:00", label: "Between 4:00 PM \u2013 6:00 PM" }
+};
+function getTodayIstDate() {
+  const ist = new Date(Date.now() + 5.5 * 36e5);
+  return ist.toISOString().slice(0, 10);
+}
+function buildIntervalMetadata(dateKey, startTime, endTime, label) {
+  const startIso = (/* @__PURE__ */ new Date(`${dateKey}T${startTime}:00+05:30`)).toISOString();
+  const endIso = (/* @__PURE__ */ new Date(`${dateKey}T${endTime}:00+05:30`)).toISOString();
+  return {
+    scheduledSlotDate: dateKey,
+    scheduledSlotStart: startTime,
+    scheduledSlotEnd: endTime,
+    scheduledSlotLabel: label || `Between ${startTime} \u2013 ${endTime}`,
+    scheduledCallTime: startIso,
+    scheduledWindowEnd: endIso,
+    scheduledAt: startIso,
+    scheduledTimezone: "Asia/Kolkata"
+  };
+}
+function verifyIntegrationApiKey(req, res, next) {
+  const expected = process.env.INTEGRATION_API_KEY;
+  if (!expected) return next();
+  const provided = req.headers["x-api-key"] || req.headers["authorization"]?.replace(/^Bearer\s+/i, "");
+  if (!provided || provided !== expected) {
+    return res.status(401).json({
+      success: false,
+      error: "Unauthorized: Invalid or missing INTEGRATION_API_KEY (x-api-key header).",
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  }
+  return next();
+}
+integrationRoutes.get("/status", (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      integrations: [
+        {
+          id: "sarvam",
+          name: "Sarvam Voice AI",
+          configured: Boolean(process.env.SARVAM_API_KEY),
+          envVars: ["SARVAM_API_KEY", "SARVAM_APP_ID", "SARVAM_WEBHOOK_SECRET"],
+          endpoint: "/api/webhooks/sarvam"
+        },
+        {
+          id: "ats_inbound",
+          name: "ATS / HR Portal Inbound Lead Sync",
+          configured: true,
+          securedByKey: Boolean(process.env.INTEGRATION_API_KEY),
+          envVars: ["INTEGRATION_API_KEY"],
+          endpoint: "/api/integrations/ats/leads"
+        },
+        {
+          id: "ats_outbound",
+          name: "ATS Outbound Screening Sync Webhook",
+          configured: Boolean(process.env.ATS_WEBHOOK_URL),
+          envVars: ["ATS_WEBHOOK_URL"],
+          endpoint: "Outbound POST on call completion"
+        },
+        {
+          id: "callback_slot",
+          name: "Self-Service WhatsApp / SMS Callback Slot",
+          configured: Boolean(process.env.WHATSAPP_WEBHOOK_URL),
+          envVars: ["WHATSAPP_WEBHOOK_URL", "INTEGRATION_API_KEY"],
+          endpoint: "/api/integrations/callback-slot"
+        },
+        {
+          id: "calendar_booking",
+          name: "Interview Calendar Booking Hook",
+          configured: Boolean(process.env.CALENDAR_BOOKING_WEBHOOK_URL),
+          envVars: ["CALENDAR_BOOKING_WEBHOOK_URL"],
+          endpoint: "/api/integrations/calendar/book"
+        },
+        {
+          id: "cron_security",
+          name: "Vercel / External Scheduler Cron Secret",
+          configured: Boolean(process.env.CRON_SECRET),
+          envVars: ["CRON_SECRET"],
+          endpoint: "/api/campaigns/scheduler/tick"
+        },
+        {
+          id: "r2_storage",
+          name: "Cloudflare R2 Audio Archival",
+          configured: Boolean(process.env.R2_BUCKET_NAME && process.env.R2_ACCESS_KEY_ID),
+          envVars: ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME"],
+          endpoint: "Automatic post-call archival"
+        }
+      ]
+    },
+    timestamp: (/* @__PURE__ */ new Date()).toISOString()
+  });
+});
+integrationRoutes.post("/ats/leads", verifyIntegrationApiKey, async (req, res) => {
+  try {
+    const {
+      name,
+      phone,
+      email,
+      applied_role,
+      portal_experience,
+      portal_notice_period,
+      portal_work_mode,
+      company,
+      preferredSlotPreset,
+      preferredDate,
+      startTime,
+      endTime,
+      campaignId
+    } = req.body || {};
+    if (!name || !phone) {
+      return res.status(400).json({
+        success: false,
+        error: "name and phone are required",
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      });
+    }
+    const baseMeta = {
+      role: applied_role || "Frontend Developer",
+      applied_role: applied_role || "Frontend Developer",
+      experience: portal_experience || "2 Years",
+      portal_experience: portal_experience || "2 Years",
+      notice: portal_notice_period || "30 Days",
+      portal_notice_period: portal_notice_period || "30 Days",
+      workMode: portal_work_mode || "On Site, Pune",
+      portal_work_mode: portal_work_mode || "On Site, Pune",
+      company: company || "FluidLive",
+      source: "ats_webhook"
+    };
+    const dateKey = preferredDate || getTodayIstDate();
+    if (preferredSlotPreset && SLOT_PRESET_MAP[preferredSlotPreset]) {
+      const preset = SLOT_PRESET_MAP[preferredSlotPreset];
+      Object.assign(baseMeta, buildIntervalMetadata(dateKey, preset.startTime, preset.endTime, preset.label));
+    } else if (startTime && endTime) {
+      Object.assign(baseMeta, buildIntervalMetadata(dateKey, startTime, endTime));
+    }
+    const existing = await prisma_default.lead.findFirst({ where: { phone: String(phone).trim() } });
+    const lead = existing ? await leadRepository.updateLead(existing.id, {
+      name: String(name).trim(),
+      email: email ? String(email).trim() : void 0,
+      metadata: { ...existing.metadata || {}, ...baseMeta }
+    }) : await leadRepository.addLead(
+      {
+        name: String(name).trim(),
+        phone: String(phone).trim(),
+        email: email ? String(email).trim() : void 0,
+        metadata: baseMeta
+      },
+      campaignId
+    );
+    res.status(existing ? 200 : 201).json({
+      success: true,
+      data: { lead, updatedExisting: Boolean(existing) },
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+integrationRoutes.post("/callback-slot", verifyIntegrationApiKey, async (req, res) => {
+  try {
+    const { leadId, phone, date, slotPreset, startTime, endTime } = req.body || {};
+    if (!leadId && !phone) {
+      return res.status(400).json({
+        success: false,
+        error: "leadId or phone is required",
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      });
+    }
+    const lead = leadId ? await prisma_default.lead.findUnique({ where: { id: String(leadId) } }) : await prisma_default.lead.findFirst({ where: { phone: String(phone).trim() } });
+    if (!lead) {
+      return res.status(404).json({ success: false, error: "Lead not found", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+    }
+    if (lead.doNotCall) {
+      return res.status(403).json({ success: false, error: "Lead is marked Do Not Call (DNC)", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+    }
+    const dateKey = date || getTodayIstDate();
+    let intervalMeta;
+    if (slotPreset && SLOT_PRESET_MAP[slotPreset]) {
+      const preset = SLOT_PRESET_MAP[slotPreset];
+      intervalMeta = buildIntervalMetadata(dateKey, preset.startTime, preset.endTime, preset.label);
+    } else if (startTime && endTime) {
+      intervalMeta = buildIntervalMetadata(dateKey, startTime, endTime);
+    } else {
+      const defaultPreset = SLOT_PRESET_MAP.evening_6_8;
+      intervalMeta = buildIntervalMetadata(dateKey, defaultPreset.startTime, defaultPreset.endTime, defaultPreset.label);
+    }
+    const updated = await leadRepository.updateLead(lead.id, {
+      metadata: {
+        ...lead.metadata || {},
+        ...intervalMeta,
+        callbackSource: "self_service_webhook"
+      }
+    });
+    res.json({
+      success: true,
+      data: { lead: updated, scheduledInterval: intervalMeta },
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+integrationRoutes.post("/calendar/book", verifyIntegrationApiKey, async (req, res) => {
+  try {
+    const { leadId, slotIso, notes } = req.body || {};
+    if (!leadId) {
+      return res.status(400).json({ success: false, error: "leadId is required", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+    }
+    const lead = await prisma_default.lead.findUnique({ where: { id: String(leadId) } });
+    if (!lead) {
+      return res.status(404).json({ success: false, error: "Lead not found", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+    }
+    const hookUrl = process.env.CALENDAR_BOOKING_WEBHOOK_URL;
+    if (!hookUrl) {
+      return res.status(400).json({
+        success: false,
+        error: "CALENDAR_BOOKING_WEBHOOK_URL is not configured in environment variables.",
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      });
+    }
+    const resp = await fetch(hookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event: "interview.booking_requested",
+        lead: { id: lead.id, name: lead.name, phone: lead.phone, email: lead.email, metadata: lead.metadata },
+        slotIso: slotIso || null,
+        notes: notes || null,
+        requestedAt: (/* @__PURE__ */ new Date()).toISOString()
+      })
+    });
+    if (!resp.ok) {
+      throw new Error(`Calendar webhook responded with HTTP ${resp.status}`);
+    }
+    res.json({
+      success: true,
+      data: { booked: true, leadId: lead.id, status: resp.status },
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  } catch (err) {
+    res.status(502).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+
 // backend/src/index.ts
 var app = express();
 var PORT = process.env.PORT || 5e3;
@@ -5531,6 +6153,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/webhooks", webhookRoutes);
 app.use("/api/business", businessRoutes);
 app.use("/api/sarvam", sarvamRoutes);
+app.use("/api/integrations", integrationRoutes);
 app.get(["/api", "/api/health"], (req, res) => {
   res.json({
     status: "healthy",

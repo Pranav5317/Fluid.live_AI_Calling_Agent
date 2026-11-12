@@ -13,6 +13,17 @@ webhookRoutes.get('/', async (req, res) => {
   }
 });
 
+// GET /api/webhooks/dead-letter
+webhookRoutes.get('/dead-letter', async (req, res) => {
+  try {
+    const events = await serverWebhookService.getWebhookEvents();
+    const failed = events.filter(e => e.status === 'failed');
+    res.json({ success: true, data: failed, timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
 // POST /api/webhooks/sarvam (Sarvam Webhook Listener Endpoint)
 webhookRoutes.post('/sarvam', async (req, res) => {
   try {

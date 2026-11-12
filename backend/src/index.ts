@@ -11,6 +11,7 @@ import { dashboardRoutes } from './routes/dashboardRoutes';
 import { webhookRoutes } from './routes/webhookRoutes';
 import { businessRoutes } from './routes/businessRoutes';
 import { sarvamRoutes } from './routes/sarvamRoutes';
+import { integrationRoutes } from './routes/integrationRoutes';
 import { callSchedulerService } from './services/callSchedulerService';
 
 const app = express();
@@ -39,6 +40,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/sarvam', sarvamRoutes);
+app.use('/api/integrations', integrationRoutes);
 
 // Health check endpoints
 app.get(['/api', '/api/health'], (req, res) => {

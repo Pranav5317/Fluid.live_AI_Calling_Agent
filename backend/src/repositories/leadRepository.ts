@@ -12,6 +12,9 @@ export class LeadRepository {
       name: l.name,
       phone: l.phone,
       email: l.email || undefined,
+      doNotCall: l.doNotCall,
+      dncReason: l.dncReason,
+      dncUpdatedAt: l.dncUpdatedAt ? l.dncUpdatedAt.toISOString() : null,
       metadata: (l.metadata as Record<string, any>) || {},
       createdAt: l.createdAt.toISOString(),
     }));
@@ -93,6 +96,9 @@ export class LeadRepository {
           name: l.name,
           phone: l.phone,
           email: l.email || undefined,
+          doNotCall: l.doNotCall,
+          dncReason: l.dncReason,
+          dncUpdatedAt: l.dncUpdatedAt ? l.dncUpdatedAt.toISOString() : null,
           metadata: (l.metadata as Record<string, any>) || {},
           createdAt: l.createdAt.toISOString(),
         },
@@ -134,15 +140,33 @@ export class LeadRepository {
       ? { ...((current.metadata as Record<string, any>) || {}), ...updates.metadata }
       : (current.metadata as Record<string, any>) || {};
 
+    const nextDnc = updates.doNotCall !== undefined ? Boolean(updates.doNotCall) : current.doNotCall;
+    const dncChanged = updates.doNotCall !== undefined && nextDnc !== current.doNotCall;
+
     const updated = await prisma.lead.update({
       where: { id },
       data: {
         name: updates.name !== undefined ? updates.name : current.name,
         phone: updates.phone !== undefined ? updates.phone : current.phone,
         email: updates.email !== undefined ? updates.email : current.email,
+        doNotCall: nextDnc,
+        dncReason: nextDnc ? (updates.dncReason ?? current.dncReason ?? 'Marked Do Not Call') : null,
+        dncUpdatedAt: dncChanged ? new Date() : current.dncUpdatedAt,
         metadata: newMetadata,
       },
     });
+
+    if (nextDnc) {
+      await prisma.campaignLead.updateMany({
+        where: { leadId: id },
+        data: { status: 'dnc_blocked', nextAttemptAt: null },
+      });
+    } else if (dncChanged && !nextDnc) {
+      await prisma.campaignLead.updateMany({
+        where: { leadId: id, status: 'dnc_blocked' },
+        data: { status: 'untouched' },
+      });
+    }
 
     // If scheduledCallTime or scheduledAt was provided, sync to campaignLead queue
     const scheduledTime = updates.metadata?.scheduledCallTime || updates.metadata?.scheduledAt;
@@ -200,6 +224,9 @@ export class LeadRepository {
       name: updated.name,
       phone: updated.phone,
       email: updated.email || undefined,
+      doNotCall: updated.doNotCall,
+      dncReason: updated.dncReason,
+      dncUpdatedAt: updated.dncUpdatedAt ? updated.dncUpdatedAt.toISOString() : null,
       metadata: (updated.metadata as Record<string, any>) || {},
       createdAt: updated.createdAt.toISOString(),
     };
