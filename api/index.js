@@ -1,11 +1,11 @@
-// server/index.ts
+// backend/src/index.ts
 import express from "express";
 import cors from "cors";
 
-// server/routes/leadRoutes.ts
+// backend/src/routes/leadRoutes.ts
 import { Router } from "express";
 
-// server/lib/prisma.ts
+// backend/src/lib/prisma.ts
 import { PrismaClient } from "@prisma/client";
 function getDatabaseUrl() {
   const envUrl = process.env.DATABASE_URL;
@@ -39,7 +39,7 @@ if (process.env.NODE_ENV !== "production") {
 }
 var prisma_default = prisma;
 
-// server/services/callAnalyticsService.ts
+// backend/src/services/callAnalyticsService.ts
 var CallAnalyticsService = class {
   /**
    * Performs deep, automated conversational analysis on a call session.
@@ -164,7 +164,7 @@ var CallAnalyticsService = class {
     const agentTurns = transcript.filter((t) => t.speaker === "agent");
     const combinedAgentText = agentTurns.map((t) => t.text.toLowerCase()).join(" ");
     const brandPattern = /(fluid\.live|fluid\s*live|fluid)/i;
-    const agentNamePattern = /(shubh|शुभ|mera\s*naam|my\s*name)/i;
+    const agentNamePattern = /(shubh|à¤¶à¥à¤­|mera\s*naam|my\s*name)/i;
     const passedBrand = brandPattern.test(combinedAgentText) && agentNamePattern.test(combinedAgentText);
     checklist.push({
       id: "qa_brand_id",
@@ -205,7 +205,7 @@ var CallAnalyticsService = class {
       passed: passedDiscovery,
       details: passedDiscovery ? "Politely sought permission before pitching and gathered follow-up channel preference." : "No customer consent or follow-up preference captured."
     });
-    const closingPattern = /(shukriya|शुक्रिया|din\s*shubh|thank\s*you|thanks|aapka\s*din|have\s*a\s*great\s*day)/i;
+    const closingPattern = /(shukriya|à¤¶à¥à¤•à¥à¤°à¤¿à¤¯à¤¾|din\s*shubh|thank\s*you|thanks|aapka\s*din|have\s*a\s*great\s*day)/i;
     const passedClosing = closingPattern.test(combinedAgentText);
     checklist.push({
       id: "qa_closing",
@@ -382,8 +382,8 @@ var CallAnalyticsService = class {
     const closingTurns = transcript.slice(pitchEnd);
     const scorePhase = (phase, turns) => {
       const combined = turns.map((t) => t.text).join(" ").toLowerCase();
-      let positiveMarkers = (combined.match(/(shukriya|शुक्रिया|achha|acha|great|interested|sure|haan|हाँ|bhejo|sahi|wah|good|whatsapp|शुभ|धन्यवाद|thanks)/gi) || []).length;
-      let negativeMarkers = (combined.match(/(nahi|नहीं|busy|mat|not|fursat|wrong|disconnect|bekaar)/gi) || []).length;
+      let positiveMarkers = (combined.match(/(shukriya|à¤¶à¥à¤•à¥à¤°à¤¿à¤¯à¤¾|achha|acha|great|interested|sure|haan|à¤¹à¤¾à¤|bhejo|sahi|wah|good|whatsapp|à¤¶à¥à¤­|à¤§à¤¨à¥à¤¯à¤µà¤¾à¤¦|thanks)/gi) || []).length;
+      let negativeMarkers = (combined.match(/(nahi|à¤¨à¤¹à¥€à¤‚|busy|mat|not|fursat|wrong|disconnect|bekaar)/gi) || []).length;
       let score = 0;
       let sentiment = "neutral";
       if (positiveMarkers > negativeMarkers) {
@@ -678,7 +678,7 @@ var CallAnalyticsService = class {
       return {
         overallScore: 0,
         tier: "Cold / Disqualified",
-        summaryBadge: "\u2744\uFE0F Disqualified",
+        summaryBadge: "\xE2\x9D\u201E\xEF\xB8\x8F Disqualified",
         bant: {
           budget: { score: 0, max: 25, status: "unqualified", note: "No contact established" },
           authority: { score: 0, max: 25, status: "gatekeeper", note: "Unreachable" },
@@ -754,13 +754,13 @@ var CallAnalyticsService = class {
     }
     const overallScore = Math.min(100, Math.max(0, budgetScore + authorityScore + needScore + timingScore));
     let tier = "Warm Prospect";
-    let summaryBadge = "\u26A1 Warm Prospect";
+    let summaryBadge = "\xE2\u0161\xA1 Warm Prospect";
     if (overallScore >= 75) {
       tier = "Hot Lead";
-      summaryBadge = "\u{1F525} Hot Lead";
+      summaryBadge = "\xF0\u0178\u201D\xA5 Hot Lead";
     } else if (overallScore < 45) {
       tier = "Cold / Disqualified";
-      summaryBadge = "\u2744\uFE0F Disqualified";
+      summaryBadge = "\xE2\x9D\u201E\xEF\xB8\x8F Disqualified";
     }
     return {
       overallScore,
@@ -810,21 +810,21 @@ var CallAnalyticsService = class {
   generateFollowUpRecommendations(call, leadScore, buyingSignals, extractedVars) {
     const leadName = extractedVars.user_name || call.leadName || "there";
     const cleanPhone = (call.leadPhone || "").replace(/\D/g, "") || "919922935920";
-    let whatsappMsg = `Hi ${leadName}! \u{1F44B} Thank you for speaking with our AI team at Fluid.live today. `;
+    let whatsappMsg = `Hi ${leadName}! \xF0\u0178\u2018\u2039 Thank you for speaking with our AI team at Fluid.live today. `;
     if (leadScore.tier === "Hot Lead") {
-      whatsappMsg += `As discussed, here is the executive overview and demo deck on how our autonomous voice agents streamline customer calling: https://fluid.live/demo. Let us know when is best for a quick 10-minute setup walkthrough! \u{1F680}`;
+      whatsappMsg += `As discussed, here is the executive overview and demo deck on how our autonomous voice agents streamline customer calling: https://fluid.live/demo. Let us know when is best for a quick 10-minute setup walkthrough! \xF0\u0178\u0161\u20AC`;
     } else {
-      whatsappMsg += `Sharing our 1-minute platform overview on enterprise voice AI automation: https://fluid.live/overview. Feel free to reply here whenever convenient! \u{1F60A}`;
+      whatsappMsg += `Sharing our 1-minute platform overview on enterprise voice AI automation: https://fluid.live/overview. Feel free to reply here whenever convenient! \xF0\u0178\u02DC\u0160`;
     }
-    const emailSubject = `Fluid.live Voice AI \u2014 Next Steps & Executive Summary for ${leadName}`;
+    const emailSubject = `Fluid.live Voice AI \xE2\u20AC\u201D Next Steps & Executive Summary for ${leadName}`;
     const emailBody = `Hi ${leadName},
 
 Thank you for your time on our call today.
 
 Summary of Our Discussion:
-\u2022 Explored how Fluid.live deploys low-latency voice AI agents for high-volume customer calling.
-\u2022 Identified key requirements around automated outbound workflows and qualification.
-\u2022 Next milestone: Solution architect walkthrough and live pilot trial.
+\xE2\u20AC\xA2 Explored how Fluid.live deploys low-latency voice AI agents for high-volume customer calling.
+\xE2\u20AC\xA2 Identified key requirements around automated outbound workflows and qualification.
+\xE2\u20AC\xA2 Next milestone: Solution architect walkthrough and live pilot trial.
 
 You can explore our interactive calling platform anytime at:
 https://fluid.live
@@ -852,17 +852,17 @@ https://fluid.live`;
   extractDealActionItems(call, leadScore, nextBestAction, objections) {
     const actions = [];
     if (leadScore.tier === "Hot Lead") {
-      actions.push("\u26A1 High Priority: Trigger one-click WhatsApp follow-up with executive one-pager.");
-      actions.push("\u{1F4C5} Book 15-minute Solution Architecture demonstration with enterprise AE.");
+      actions.push("\xE2\u0161\xA1 High Priority: Trigger one-click WhatsApp follow-up with executive one-pager.");
+      actions.push("\xF0\u0178\u201C\u2026 Book 15-minute Solution Architecture demonstration with enterprise AE.");
     } else if (leadScore.tier === "Warm Prospect") {
-      actions.push("\u{1F4AC} Dispatch product collateral and case studies via digital channel.");
-      actions.push("\u23F0 Schedule follow-up outreach in automated cadence within 48 hours.");
+      actions.push("\xF0\u0178\u2019\xAC Dispatch product collateral and case studies via digital channel.");
+      actions.push("\xE2\x8F\xB0 Schedule follow-up outreach in automated cadence within 48 hours.");
     } else {
-      actions.push("\u{1F6D1} Suppress dialer from immediate outbound rotation.");
-      actions.push("\u{1F4E5} Enroll lead into quarterly newsletter / nurture drip.");
+      actions.push("\xF0\u0178\u203A\u2018 Suppress dialer from immediate outbound rotation.");
+      actions.push("\xF0\u0178\u201C\xA5 Enroll lead into quarterly newsletter / nurture drip.");
     }
     if (objections.some((o) => o.category === "pricing")) {
-      actions.push("\u{1F4CA} Prepare custom ROI comparison vs legacy BPO call center costs.");
+      actions.push("\xF0\u0178\u201C\u0160 Prepare custom ROI comparison vs legacy BPO call center costs.");
     }
     return actions;
   }
@@ -992,7 +992,7 @@ https://fluid.live`;
 };
 var callAnalyticsService = new CallAnalyticsService();
 
-// server/repositories/leadRepository.ts
+// backend/src/repositories/leadRepository.ts
 var LeadRepository = class {
   async getAllLeadsRaw() {
     const list = await prisma_default.lead.findMany({
@@ -1340,7 +1340,7 @@ var LeadRepository = class {
 };
 var leadRepository = new LeadRepository();
 
-// server/services/leadService.ts
+// backend/src/services/leadService.ts
 var ServerLeadService = class {
   async getLeads(options = {}) {
     return leadRepository.getLeads(options);
@@ -1381,7 +1381,7 @@ var ServerLeadService = class {
 };
 var serverLeadService = new ServerLeadService();
 
-// server/routes/leadRoutes.ts
+// backend/src/routes/leadRoutes.ts
 var leadRoutes = Router();
 leadRoutes.get("/", async (req, res) => {
   try {
@@ -1476,10 +1476,10 @@ leadRoutes.delete("/:id", async (req, res) => {
   }
 });
 
-// server/routes/agentRoutes.ts
+// backend/src/routes/agentRoutes.ts
 import { Router as Router2 } from "express";
 
-// server/repositories/agentRepository.ts
+// backend/src/repositories/agentRepository.ts
 var AgentRepository = class {
   async getAgents() {
     const list = await prisma_default.agent.findMany({
@@ -1624,10 +1624,10 @@ var AgentRepository = class {
 };
 var agentRepository = new AgentRepository();
 
-// server/services/sarvamProvider.ts
+// backend/src/services/sarvamProvider.ts
 import crypto from "crypto";
 
-// server/lib/envUtils.ts
+// backend/src/lib/envUtils.ts
 import fs from "fs";
 import path from "path";
 function updateEnvVariables(updates) {
@@ -1665,7 +1665,7 @@ function updateEnvVariables(updates) {
   }
 }
 
-// server/services/sarvamProvider.ts
+// backend/src/services/sarvamProvider.ts
 var BackendSarvamProvider = class {
   providerName = "Sarvam AI Voice Infrastructure (Server Bridge)";
   mappings = /* @__PURE__ */ new Map();
@@ -1705,7 +1705,7 @@ var BackendSarvamProvider = class {
       defaultAppId: this.defaultAppId,
       connectionId: this.connectionId,
       agentPhoneNumber: this.agentPhoneNumber,
-      maskedApiKey: key ? key.length > 18 ? `${key.substring(0, 14)}\u2022\u2022\u2022\u2022${key.substring(key.length - 4)}` : "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" : null,
+      maskedApiKey: key ? key.length > 18 ? `${key.substring(0, 14)}\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2${key.substring(key.length - 4)}` : "\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2" : null,
       lastVerifiedAt: this.lastVerifiedAt,
       latencyMs: this.lastLatencyMs
     };
@@ -2201,7 +2201,7 @@ var BackendSarvamProvider = class {
 };
 var backendSarvamProvider = new BackendSarvamProvider();
 
-// server/services/agentService.ts
+// backend/src/services/agentService.ts
 var ServerAgentService = class {
   async getAgents() {
     return agentRepository.getAgents();
@@ -2237,7 +2237,7 @@ var ServerAgentService = class {
 };
 var serverAgentService = new ServerAgentService();
 
-// server/routes/agentRoutes.ts
+// backend/src/routes/agentRoutes.ts
 var agentRoutes = Router2();
 agentRoutes.get("/", async (req, res) => {
   try {
@@ -2347,10 +2347,10 @@ agentRoutes.post("/voice-preview", async (req, res) => {
   }
 });
 
-// server/routes/campaignRoutes.ts
+// backend/src/routes/campaignRoutes.ts
 import { Router as Router3 } from "express";
 
-// server/repositories/campaignRepository.ts
+// backend/src/repositories/campaignRepository.ts
 var CampaignRepository = class {
   async getCampaigns(search = "", status = "all") {
     const where = {};
@@ -2473,7 +2473,7 @@ var CampaignRepository = class {
 };
 var campaignRepository = new CampaignRepository();
 
-// server/repositories/callRepository.ts
+// backend/src/repositories/callRepository.ts
 var CallRepository = class {
   async getCalls(options = {}) {
     const where = {};
@@ -2591,7 +2591,7 @@ var CallRepository = class {
 };
 var callRepository = new CallRepository();
 
-// server/services/callSchedulerService.ts
+// backend/src/services/callSchedulerService.ts
 function buildLeadAgentVariables(lead) {
   const meta = lead.metadata || {};
   return {
@@ -3169,7 +3169,7 @@ var CallSchedulerService = class {
 };
 var callSchedulerService = new CallSchedulerService();
 
-// server/services/campaignService.ts
+// backend/src/services/campaignService.ts
 var ServerCampaignService = class {
   async getCampaigns(search = "", status = "all") {
     return campaignRepository.getCampaigns(search, status);
@@ -3593,7 +3593,7 @@ var ServerCampaignService = class {
 };
 var serverCampaignService = new ServerCampaignService();
 
-// server/routes/campaignRoutes.ts
+// backend/src/routes/campaignRoutes.ts
 var campaignRoutes = Router3();
 campaignRoutes.get("/scheduler/status", async (req, res) => {
   try {
@@ -3745,10 +3745,10 @@ campaignRoutes.get("/:id/monitor", async (req, res) => {
   }
 });
 
-// server/routes/callRoutes.ts
+// backend/src/routes/callRoutes.ts
 import { Router as Router4 } from "express";
 
-// server/services/r2StorageService.ts
+// backend/src/services/r2StorageService.ts
 import {
   S3Client,
   PutObjectCommand,
@@ -3888,7 +3888,7 @@ var R2StorageService = class {
 };
 var r2StorageService = new R2StorageService();
 
-// server/services/callService.ts
+// backend/src/services/callService.ts
 var ServerCallService = class {
   async getCalls(options = {}) {
     const calls = await callRepository.getCalls(options);
@@ -4250,7 +4250,7 @@ var ServerCallService = class {
 };
 var serverCallService = new ServerCallService();
 
-// server/routes/callRoutes.ts
+// backend/src/routes/callRoutes.ts
 var callRoutes = Router4();
 callRoutes.get("/storage/status", (req, res) => {
   res.json({
@@ -4337,10 +4337,10 @@ callRoutes.get("/:id", async (req, res) => {
   }
 });
 
-// server/routes/phoneRoutes.ts
+// backend/src/routes/phoneRoutes.ts
 import { Router as Router5 } from "express";
 
-// server/repositories/phoneRepository.ts
+// backend/src/repositories/phoneRepository.ts
 var PhoneRepository = class {
   async getPhoneNumbers() {
     const list = await prisma_default.phoneNumber.findMany({
@@ -4460,7 +4460,7 @@ var PhoneRepository = class {
 };
 var phoneRepository = new PhoneRepository();
 
-// server/services/phoneService.ts
+// backend/src/services/phoneService.ts
 var ServerPhoneService = class {
   async getPhoneNumbers() {
     return phoneRepository.getPhoneNumbers();
@@ -4483,7 +4483,7 @@ var ServerPhoneService = class {
 };
 var serverPhoneService = new ServerPhoneService();
 
-// server/routes/phoneRoutes.ts
+// backend/src/routes/phoneRoutes.ts
 var phoneRoutes = Router5();
 phoneRoutes.get("/", async (req, res) => {
   try {
@@ -4547,10 +4547,10 @@ phoneRoutes.delete("/:id", async (req, res) => {
   }
 });
 
-// server/routes/knowledgeRoutes.ts
+// backend/src/routes/knowledgeRoutes.ts
 import { Router as Router6 } from "express";
 
-// server/repositories/knowledgeRepository.ts
+// backend/src/repositories/knowledgeRepository.ts
 var KnowledgeRepository = class {
   async getKnowledgeBases() {
     const list = await prisma_default.knowledgeBase.findMany({
@@ -4625,7 +4625,7 @@ var KnowledgeRepository = class {
 };
 var knowledgeRepository = new KnowledgeRepository();
 
-// server/services/knowledgeService.ts
+// backend/src/services/knowledgeService.ts
 var ServerKnowledgeService = class {
   async getKnowledgeBases() {
     return knowledgeRepository.getKnowledgeBases();
@@ -4642,7 +4642,7 @@ var ServerKnowledgeService = class {
 };
 var serverKnowledgeService = new ServerKnowledgeService();
 
-// server/routes/knowledgeRoutes.ts
+// backend/src/routes/knowledgeRoutes.ts
 var knowledgeRoutes = Router6();
 knowledgeRoutes.get("/", async (req, res) => {
   try {
@@ -4679,10 +4679,10 @@ knowledgeRoutes.post("/:id/documents", async (req, res) => {
   }
 });
 
-// server/routes/billingRoutes.ts
+// backend/src/routes/billingRoutes.ts
 import { Router as Router7 } from "express";
 
-// server/repositories/billingRepository.ts
+// backend/src/repositories/billingRepository.ts
 var BillingRepository = class {
   async getUsageEvents(campaignId) {
     const where = {};
@@ -4756,7 +4756,7 @@ var BillingRepository = class {
           id: "li_srv_1",
           name: "Outbound SIP Trunk Telephony & Audio Streaming",
           category: "telephony",
-          unitRate: "\u20B90.60 / min",
+          unitRate: "\xE2\u201A\xB90.60 / min",
           quantity: `${totalMinutesUsed.toFixed(1)} mins`,
           amount: Number((totalMinutesUsed * 0.6).toFixed(2))
         },
@@ -4764,7 +4764,7 @@ var BillingRepository = class {
           id: "li_srv_2",
           name: "Sarvam Saaras Real-Time Speech-to-Text (Indic ASR)",
           category: "telephony",
-          unitRate: "\u20B90.30 / min",
+          unitRate: "\xE2\u201A\xB90.30 / min",
           quantity: `${totalMinutesUsed.toFixed(1)} mins`,
           amount: Number((totalMinutesUsed * 0.3).toFixed(2))
         },
@@ -4772,7 +4772,7 @@ var BillingRepository = class {
           id: "li_srv_3",
           name: "Sarvam Bulbul Speech Synthesis (Natural Indic TTS)",
           category: "telephony",
-          unitRate: "\u20B90.10 / min",
+          unitRate: "\xE2\u201A\xB90.10 / min",
           quantity: `${totalMinutesUsed.toFixed(1)} mins`,
           amount: Number((totalMinutesUsed * 0.1).toFixed(2))
         }
@@ -4795,7 +4795,7 @@ var BillingRepository = class {
           id: "li_fld_1",
           name: "Dashboard Campaign Orchestration & State Machine",
           category: "platform",
-          unitRate: "\u20B90.50 / min",
+          unitRate: "\xE2\u201A\xB90.50 / min",
           quantity: `${totalMinutesUsed.toFixed(1)} mins`,
           amount: platformCostTotal
         }
@@ -4841,7 +4841,7 @@ var BillingRepository = class {
 };
 var billingRepository = new BillingRepository();
 
-// server/services/billingService.ts
+// backend/src/services/billingService.ts
 var ServerBillingService = class {
   async getUsageEvents(campaignId) {
     return billingRepository.getUsageEvents(campaignId);
@@ -4855,7 +4855,7 @@ var ServerBillingService = class {
 };
 var serverBillingService = new ServerBillingService();
 
-// server/routes/billingRoutes.ts
+// backend/src/routes/billingRoutes.ts
 var billingRoutes = Router7();
 billingRoutes.get("/usage", async (req, res) => {
   try {
@@ -4883,10 +4883,10 @@ billingRoutes.get("/billing/history", async (req, res) => {
   }
 });
 
-// server/routes/dashboardRoutes.ts
+// backend/src/routes/dashboardRoutes.ts
 import { Router as Router8 } from "express";
 
-// server/repositories/dashboardRepository.ts
+// backend/src/repositories/dashboardRepository.ts
 var DashboardRepository = class {
   async getMetrics() {
     const [totalLeads, untouchedLeads, campaignsBuilt, callsAttempted, completedCallsCount, billing, activeCalls] = await Promise.all([
@@ -5042,7 +5042,7 @@ var DashboardRepository = class {
         id: `act_${call.id}`,
         type: "call_completed",
         title: `Outbound Call ${call.status === "completed" ? "Completed" : "Initiated"} (${leadName})`,
-        description: `Duration: ${call.durationSeconds}s \u2022 Outcome: ${outcomeText} \u2022 Provider ID: ${call.externalCallId.slice(0, 18)}...`,
+        description: `Duration: ${call.durationSeconds}s \xE2\u20AC\xA2 Outcome: ${outcomeText} \xE2\u20AC\xA2 Provider ID: ${call.externalCallId.slice(0, 18)}...`,
         timestamp: call.startedAt.toISOString(),
         entityId: call.id
       });
@@ -5052,7 +5052,7 @@ var DashboardRepository = class {
         id: `act_${cmp.id}`,
         type: "campaign_started",
         title: `Campaign: ${cmp.name}`,
-        description: `Agent: ${cmp.agent?.name || cmp.agentId} \u2022 Target Audience: ${cmp.totalLeads} lead(s) \u2022 Status: ${cmp.status}`,
+        description: `Agent: ${cmp.agent?.name || cmp.agentId} \xE2\u20AC\xA2 Target Audience: ${cmp.totalLeads} lead(s) \xE2\u20AC\xA2 Status: ${cmp.status}`,
         timestamp: cmp.createdAt.toISOString(),
         entityId: cmp.id
       });
@@ -5063,7 +5063,7 @@ var DashboardRepository = class {
 };
 var dashboardRepository = new DashboardRepository();
 
-// server/services/dashboardService.ts
+// backend/src/services/dashboardService.ts
 var ServerDashboardService = class {
   async getMetrics() {
     return dashboardRepository.getMetrics();
@@ -5080,7 +5080,7 @@ var ServerDashboardService = class {
 };
 var serverDashboardService = new ServerDashboardService();
 
-// server/repositories/businessRepository.ts
+// backend/src/repositories/businessRepository.ts
 var BusinessRepository = class {
   async getBusinessProfile() {
     const biz = await prisma_default.business.findFirst();
@@ -5116,7 +5116,7 @@ var BusinessRepository = class {
 };
 var businessRepository = new BusinessRepository();
 
-// server/routes/dashboardRoutes.ts
+// backend/src/routes/dashboardRoutes.ts
 var dashboardRoutes = Router8();
 dashboardRoutes.get(["/metrics", "/stats"], async (req, res) => {
   try {
@@ -5151,10 +5151,10 @@ dashboardRoutes.get("/business", async (req, res) => {
   }
 });
 
-// server/routes/webhookRoutes.ts
+// backend/src/routes/webhookRoutes.ts
 import { Router as Router9 } from "express";
 
-// server/repositories/webhookRepository.ts
+// backend/src/repositories/webhookRepository.ts
 var WebhookRepository = class {
   async getWebhookEvents() {
     const list = await prisma_default.webhookEvent.findMany({
@@ -5354,7 +5354,7 @@ var WebhookRepository = class {
 };
 var webhookRepository = new WebhookRepository();
 
-// server/services/webhookService.ts
+// backend/src/services/webhookService.ts
 var ServerWebhookService = class {
   async getWebhookEvents() {
     return webhookRepository.getWebhookEvents();
@@ -5368,7 +5368,7 @@ var ServerWebhookService = class {
 };
 var serverWebhookService = new ServerWebhookService();
 
-// server/routes/webhookRoutes.ts
+// backend/src/routes/webhookRoutes.ts
 var webhookRoutes = Router9();
 webhookRoutes.get("/", async (req, res) => {
   try {
@@ -5414,10 +5414,10 @@ webhookRoutes.post("/:id/reprocess", async (req, res) => {
   }
 });
 
-// server/routes/businessRoutes.ts
+// backend/src/routes/businessRoutes.ts
 import { Router as Router10 } from "express";
 
-// server/services/businessService.ts
+// backend/src/services/businessService.ts
 var ServerBusinessService = class {
   async getBusinessProfile() {
     return await businessRepository.getBusinessProfile();
@@ -5428,7 +5428,7 @@ var ServerBusinessService = class {
 };
 var serverBusinessService = new ServerBusinessService();
 
-// server/routes/businessRoutes.ts
+// backend/src/routes/businessRoutes.ts
 var businessRoutes = Router10();
 businessRoutes.get("/", async (req, res) => {
   try {
@@ -5447,7 +5447,7 @@ businessRoutes.patch("/:id", async (req, res) => {
   }
 });
 
-// server/routes/sarvamRoutes.ts
+// backend/src/routes/sarvamRoutes.ts
 import { Router as Router11 } from "express";
 var sarvamRoutes = Router11();
 sarvamRoutes.get("/status", (req, res) => {
@@ -5509,7 +5509,7 @@ sarvamRoutes.post("/connect", async (req, res) => {
   }
 });
 
-// server/index.ts
+// backend/src/index.ts
 var app = express();
 var PORT = process.env.PORT || 5e3;
 app.use(cors());
@@ -5547,7 +5547,7 @@ app.use((err, req, res, next) => {
     timestamp: (/* @__PURE__ */ new Date()).toISOString()
   });
 });
-var server_default = app;
+var src_default = app;
 if (!process.env.VERCEL && process.env.NODE_ENV !== "test") {
   app.listen(PORT, () => {
     console.log(`[Fluid.Live Backend API] Modular Monolith Server running on http://localhost:${PORT}`);
@@ -5561,5 +5561,5 @@ if (!process.env.VERCEL && process.env.NODE_ENV !== "test") {
   });
 }
 export {
-  server_default as default
+  src_default as default
 };

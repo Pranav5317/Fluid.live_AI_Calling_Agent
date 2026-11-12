@@ -1,0 +1,10 @@
+# Scheduler Cron Configuration Reference
+# Note: vercel.json controls live Vercel cron deployment.
+# Vercel Hobby limits crons to once daily (0 5 * * * = 10:30 AM IST).
+# Upgrade to Vercel Pro or use an external 5-minute cron pinger to auto-dispatch evening windows (e.g., 6 PM - 8 PM IST).
+scheduler:
+  endpoint: /api/campaigns/scheduler/tick
+  timezone: Asia/Kolkata
+  recommended_cron: "*/5 * * * *"
+  current_vercel_hobby_cron: "0 5 * * *"
+

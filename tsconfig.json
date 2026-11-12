@@ -22,10 +22,11 @@
 
     /* Path Aliases */
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./frontend/src/*"],
+      "@contracts/*": ["./packages/contracts/*"]
     },
     "types": ["node"]
   },
-  "include": ["src", "server", "prisma", "api"],
+  "include": ["frontend/src", "backend/src", "backend/prisma", "packages", "tests", "api"],
   "exclude": ["node_modules", "dist", "scratch"]
 }
