@@ -141,36 +141,40 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
     verificationMatrix: [
       {
         field: 'Role Applied',
-        portalValue: rawVars.portal_role || rawVars.applied_role || 'Frontend Developer',
-        statedValue: rawVars.confirmed_role || rawVars.applied_role || 'Frontend Developer',
+        portalValue: rawVars.portal_role || rawVars.applied_role || 'Not provided',
+        statedValue: rawVars.confirmed_role || rawVars.applied_role || 'Not confirmed',
         status: 'confirmed' as const,
       },
       {
         field: 'Total Experience',
-        portalValue: rawVars.portal_experience || '2 Years',
-        statedValue: rawVars.confirmed_experience || rawVars.experience || '2 Years',
+        portalValue: rawVars.portal_experience || 'Not provided',
+        statedValue: rawVars.confirmed_experience || rawVars.experience || 'Not confirmed',
         status: (rawVars.experience_discrepancy ? 'discrepancy' : 'confirmed') as 'discrepancy' | 'confirmed',
         reasonForChange: rawVars.experience_change_reason || rawVars.discrepancy_reason,
       },
       {
         field: 'Notice Period',
-        portalValue: rawVars.portal_notice_period || '30 Days',
-        statedValue: rawVars.confirmed_notice_period || rawVars.notice_period || '30 Days',
+        portalValue: rawVars.portal_notice_period || 'Not provided',
+        statedValue: rawVars.confirmed_notice_period || rawVars.notice_period || 'Not confirmed',
         status: (rawVars.notice_discrepancy ? 'discrepancy' : 'confirmed') as 'discrepancy' | 'confirmed',
         reasonForChange: rawVars.notice_change_reason || rawVars.discrepancy_reason,
       },
       {
         field: 'Work Mode & Location',
-        portalValue: rawVars.portal_work_mode || 'On Site, Pune',
-        statedValue: rawVars.location_willingness || rawVars.work_mode_comfort || 'On Site, Pune',
+        portalValue: rawVars.portal_work_mode || 'Not provided',
+        statedValue: rawVars.location_willingness || rawVars.work_mode_comfort || 'Not confirmed',
         status: 'confirmed' as const,
       },
-      {
-        field: 'Expected CTC',
-        portalValue: rawVars.portal_expected_ctc || '₹6.0 LPA',
-        statedValue: rawVars.confirmed_expected_ctc || '₹6.0 LPA',
-        status: 'confirmed' as const,
-      },
+      ...(rawVars.portal_expected_ctc || rawVars.confirmed_expected_ctc
+        ? [
+            {
+              field: 'Expected CTC',
+              portalValue: rawVars.portal_expected_ctc || 'Not provided',
+              statedValue: rawVars.confirmed_expected_ctc || 'Not confirmed',
+              status: 'confirmed' as const,
+            },
+          ]
+        : []),
     ],
     englishAssessment: {
       overallBand: (rawVars.english_proficiency_level === 'fluent_proficient'

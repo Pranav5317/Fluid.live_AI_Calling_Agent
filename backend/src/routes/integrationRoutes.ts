@@ -139,15 +139,15 @@ integrationRoutes.post('/ats/leads', verifyIntegrationApiKey, async (req, res) =
     }
 
     const baseMeta: Record<string, any> = {
-      role: applied_role || 'Frontend Developer',
-      applied_role: applied_role || 'Frontend Developer',
-      experience: portal_experience || '2 Years',
-      portal_experience: portal_experience || '2 Years',
-      notice: portal_notice_period || '30 Days',
-      portal_notice_period: portal_notice_period || '30 Days',
-      workMode: portal_work_mode || 'On Site, Pune',
-      portal_work_mode: portal_work_mode || 'On Site, Pune',
-      company: company || 'FluidLive',
+      role: applied_role || '',
+      applied_role: applied_role || '',
+      experience: portal_experience || '',
+      portal_experience: portal_experience || '',
+      notice: portal_notice_period || '',
+      portal_notice_period: portal_notice_period || '',
+      workMode: portal_work_mode || '',
+      portal_work_mode: portal_work_mode || '',
+      company: company || '',
       source: 'ats_webhook',
     };
 
@@ -287,3 +287,4 @@ integrationRoutes.post('/calendar/book', verifyIntegrationApiKey, async (req, re
     res.status(502).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
   }
 });
+

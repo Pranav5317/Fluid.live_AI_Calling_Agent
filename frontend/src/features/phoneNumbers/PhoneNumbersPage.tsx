@@ -7,6 +7,7 @@ import { Modal } from '../../components/common/Modal';
 import { Input } from '../../components/common/Input';
 import { Select } from '../../components/common/Select';
 import { LoadingState } from '../../components/common/LoadingState';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { phoneService } from '../../services/phoneService';
 import { agentService } from '../../services/agentService';
 import { sarvamService } from '../../services/sarvamService';
@@ -28,6 +29,8 @@ export const PhoneNumbersPage: React.FC = () => {
   const [selectedAgentId, setSelectedAgentId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -86,11 +89,13 @@ export const PhoneNumbersPage: React.FC = () => {
 
   const handleSyncAccountLine = async () => {
     setSyncing(true);
+    setNotice(null);
     try {
       await phoneService.syncAccountPhone();
       await fetchData();
+      setNotice({ type: 'success', text: 'Synchronized telephony line with Sarvam account.' });
     } catch (err: any) {
-      alert(`Sync failed: ${err?.message}`);
+      setNotice({ type: 'error', text: `Sync failed: ${err?.message || 'Unknown error'}` });
     } finally {
       setSyncing(false);
     }
@@ -101,14 +106,21 @@ export const PhoneNumbersPage: React.FC = () => {
     fetchData();
   };
 
-  const handleDelete = async (phoneId: string) => {
-    if (!confirm('Are you sure you want to unlink and remove this phone number?')) return;
-    setDeletingId(phoneId);
+  const handleDelete = (phoneId: string) => {
+    setPendingDeleteId(phoneId);
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) return;
+    setDeletingId(pendingDeleteId);
+    setNotice(null);
     try {
-      await phoneService.deletePhoneNumber(phoneId);
+      await phoneService.deletePhoneNumber(pendingDeleteId);
       await fetchData();
+      setNotice({ type: 'success', text: 'Phone number unlinked and removed.' });
+      setPendingDeleteId(null);
     } catch (err: any) {
-      alert(err?.message || 'Failed to delete phone number.');
+      setNotice({ type: 'error', text: err?.message || 'Failed to delete phone number.' });
     } finally {
       setDeletingId(null);
     }
@@ -147,6 +159,25 @@ export const PhoneNumbersPage: React.FC = () => {
           </div>
         }
       />
+
+      {notice && (
+        <div
+          className={`px-4 py-3 rounded-xl border text-xs font-medium flex items-center justify-between gap-3 ${
+            notice.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}
+        >
+          <span>{notice.text}</span>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            className="text-[11px] font-bold underline underline-offset-2 shrink-0"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Provider Notice */}
       <div className="p-4 rounded-lg bg-slate-900 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
@@ -333,6 +364,17 @@ export const PhoneNumbersPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={Boolean(pendingDeleteId)}
+        onClose={() => setPendingDeleteId(null)}
+        onConfirm={confirmDelete}
+        title="Unlink Phone Number"
+        message="Are you sure you want to unlink and remove this phone number from outbound routing?"
+        confirmText="Unlink & Remove"
+        isDanger
+        isLoading={Boolean(deletingId)}
+      />
     </div>
   );
 };

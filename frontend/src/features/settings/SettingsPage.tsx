@@ -6,9 +6,10 @@ import { Button } from '../../components/common/Button';
 import { webhookService } from '../../services/webhookService';
 import { sarvamService } from '../../services/sarvamService';
 import { phoneService } from '../../services/phoneService';
+import { businessService } from '../../services/businessService';
 import { apiFetch } from '../../services/apiClient';
 import { SarvamConnectModal } from '../../components/sarvam/SarvamConnectModal';
-import { WebhookEvent, SarvamAccountStatus } from '../../types';
+import { WebhookEvent, SarvamAccountStatus, Business } from '../../types';
 import { formatDate } from '../../lib/formatters';
 import { Building2, Users, Zap, RefreshCw, Activity, Phone, KeyRound, ExternalLink, CheckCircle, ShieldCheck, Webhook } from 'lucide-react';
 
@@ -24,6 +25,7 @@ export const SettingsPage: React.FC = () => {
   const [pingMessage, setPingMessage] = useState<{ success: boolean; text: string } | null>(null);
 
   // Integrations & Billing Guardrails State
+  const [business, setBusiness] = useState<Business | null>(null);
   const [integrations, setIntegrations] = useState<Array<{ id: string; name: string; configured: boolean; envVars: string[]; endpoint: string }>>([]);
   const [budgetCapUsd, setBudgetCapUsd] = useState(250);
   const [enforceHardCap, setEnforceHardCap] = useState(false);
@@ -46,10 +48,12 @@ export const SettingsPage: React.FC = () => {
 
   const fetchIntegrationsAndGuardrails = async () => {
     try {
-      const [intRes, guardRes] = await Promise.all([
+      const [bizRes, intRes, guardRes] = await Promise.all([
+        businessService.getBusinessProfile().catch(() => null),
         apiFetch<{ integrations: any[] }>('/integrations/status'),
         apiFetch<{ monthlyBudgetCapUsd: number; enforceHardCap: boolean }>('/billing/guardrails'),
       ]);
+      if (bizRes) setBusiness(bizRes);
       setIntegrations(intRes?.integrations || []);
       if (guardRes) {
         setBudgetCapUsd(Number(guardRes.monthlyBudgetCapUsd ?? 250));
@@ -114,11 +118,18 @@ export const SettingsPage: React.FC = () => {
 
   const handleSyncPhone = async () => {
     setSyncingPhone(true);
+    setPingMessage(null);
     try {
       await phoneService.syncAccountPhone();
-      alert(`Synchronized Carrier Caller ID: ${sarvamStatus?.agentPhoneNumber || '+917965480599'}`);
+      setPingMessage({
+        success: true,
+        text: `Synchronized Carrier Caller ID: ${sarvamStatus?.agentPhoneNumber || 'Account Line'}`,
+      });
     } catch (err: any) {
-      alert(`Failed to sync phone line: ${err?.message}`);
+      setPingMessage({
+        success: false,
+        text: `Failed to sync phone line: ${err?.message}`,
+      });
     } finally {
       setSyncingPhone(false);
     }
@@ -250,7 +261,7 @@ export const SettingsPage: React.FC = () => {
               <Badge variant="success" size="sm">Active</Badge>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Fluid.live Technologies • Timezone: Asia/Kolkata (IST)
+              {business ? `${business.name} • Plan: ${business.plan} • Timezone: ${business.timezone}` : 'Loading workspace profile...'}
             </p>
           </div>
         </Card>

@@ -185,16 +185,18 @@ export const CallsPage: React.FC = () => {
                 {calls.map(call => {
                   const vars = (call.extractedVariables || {}) as Record<string, any>;
                   const candidateName = call.leadName || vars.user_name || 'Applicant';
-                  const roleApplied = vars.role_applied || vars.applied_role || (call as any).campaign?.name || 'Frontend Developer';
-                  const notice = vars.confirmed_notice_period || vars.portal_notice_period || '30 Days';
-                  const experience = vars.confirmed_experience || vars.portal_experience || '2 Years';
+                  const roleApplied = vars.role_applied || vars.applied_role || (call as any).campaign?.name || '—';
+                  const notice = vars.confirmed_notice_period || vars.portal_notice_period || '—';
+                  const experience = vars.confirmed_experience || vars.portal_experience || '—';
                   const hasDiscrepancy = Boolean(vars.discrepancy_reason && vars.discrepancy_reason !== 'none') || vars.notice_discrepancy;
                   
                   const englishBand = vars.english_proficiency_level === 'fluent_proficient'
                     ? 'C1 Proficient'
                     : vars.english_proficiency_level === 'basic_limited'
                     ? 'A2 Basic'
-                    : 'B2 Upper Intermediate';
+                    : vars.english_proficiency_level
+                    ? 'B2 Upper Intermediate'
+                    : 'Pending';
 
                   return (
                     <tr key={call.id} className="hover:bg-slate-50/70 transition-colors">

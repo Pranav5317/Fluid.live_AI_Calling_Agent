@@ -1894,10 +1894,10 @@ var BackendSarvamProvider = class {
         const cleanUserName = params.userName ? params.userName.replace(/\s*\(.*?\)\s*/g, "").trim() : "Valued Customer";
         const sarvamAgentVars = {
           user_name: cleanUserName,
-          applied_role: params.agentVariables?.applied_role || "Frontend Developer",
-          portal_experience: params.agentVariables?.portal_experience || "2 Years",
-          portal_notice_period: params.agentVariables?.portal_notice_period || "30 Days",
-          portal_work_mode: params.agentVariables?.portal_work_mode || "On Site, Pune"
+          applied_role: params.agentVariables?.applied_role || "Not specified",
+          portal_experience: params.agentVariables?.portal_experience || "Not specified",
+          portal_notice_period: params.agentVariables?.portal_notice_period || "Not specified",
+          portal_work_mode: params.agentVariables?.portal_work_mode || "Not specified"
         };
         if (params.agentVariables) {
           const outputExtractionVars = /* @__PURE__ */ new Set([
@@ -2621,10 +2621,10 @@ function buildLeadAgentVariables(lead) {
   const meta = lead.metadata || {};
   return {
     user_name: lead.name,
-    applied_role: meta.applied_role || meta.role || "Frontend Developer",
-    portal_experience: meta.portal_experience || meta.experience || "2 Years",
-    portal_notice_period: meta.portal_notice_period || meta.notice || "30 Days",
-    portal_work_mode: meta.portal_work_mode || meta.workMode || "On Site, Pune"
+    applied_role: meta.applied_role || meta.role || "Not specified",
+    portal_experience: meta.portal_experience || meta.experience || "Not specified",
+    portal_notice_period: meta.portal_notice_period || meta.notice || "Not specified",
+    portal_work_mode: meta.portal_work_mode || meta.workMode || "Not specified"
   };
 }
 function formatHourFraction(hourFrac) {
@@ -4194,7 +4194,10 @@ var ServerCallService = class {
       agentVersion.config
     );
     const config = agentVersion.config || {};
-    const leadMeta = lead.metadata || {};
+    const agentVariables = buildLeadAgentVariables({
+      name: dto.userName || lead.name,
+      metadata: lead.metadata
+    });
     const result = await backendSarvamProvider.initiateOutboundCall({
       agentVersionId: agentVersion.id,
       sarvamAgentId: config.sarvamAppId || mapping.sarvamAgentId,
@@ -4206,13 +4209,7 @@ var ServerCallService = class {
       initialBotMessage: config.firstGreeting || config.openingLine,
       outroMessage: config.closingBehavior || config.outroMessage,
       systemPrompt: config.systemPrompt,
-      agentVariables: {
-        user_name: dto.userName || lead.name,
-        applied_role: leadMeta.role || "Frontend Developer",
-        portal_experience: leadMeta.experience || "2 Years",
-        portal_notice_period: leadMeta.notice || "30 Days",
-        portal_work_mode: leadMeta.workMode || "On Site, Pune"
-      }
+      agentVariables
     });
     return await callRepository.createCall({
       externalCallId: result.providerCallId,
@@ -6004,15 +6001,15 @@ integrationRoutes.post("/ats/leads", verifyIntegrationApiKey, async (req, res) =
       });
     }
     const baseMeta = {
-      role: applied_role || "Frontend Developer",
-      applied_role: applied_role || "Frontend Developer",
-      experience: portal_experience || "2 Years",
-      portal_experience: portal_experience || "2 Years",
-      notice: portal_notice_period || "30 Days",
-      portal_notice_period: portal_notice_period || "30 Days",
-      workMode: portal_work_mode || "On Site, Pune",
-      portal_work_mode: portal_work_mode || "On Site, Pune",
-      company: company || "FluidLive",
+      role: applied_role || "",
+      applied_role: applied_role || "",
+      experience: portal_experience || "",
+      portal_experience: portal_experience || "",
+      notice: portal_notice_period || "",
+      portal_notice_period: portal_notice_period || "",
+      workMode: portal_work_mode || "",
+      portal_work_mode: portal_work_mode || "",
+      company: company || "",
       source: "ats_webhook"
     };
     const dateKey = preferredDate || getTodayIstDate();

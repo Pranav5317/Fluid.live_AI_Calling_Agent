@@ -132,10 +132,10 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
 
       const meta = (lead.metadata || {}) as Record<string, any>;
       setRole(meta.role || meta.applied_role || '');
-      setCompany(meta.company || 'FluidLive');
-      setExperience(meta.experience || meta.portal_experience || '2 Years');
-      setNotice(meta.notice || meta.portal_notice_period || '30 Days');
-      setWorkMode(meta.workMode || meta.portal_work_mode || 'On Site, Pune');
+      setCompany(meta.company || '');
+      setExperience(meta.experience || meta.portal_experience || '');
+      setNotice(meta.notice || meta.portal_notice_period || '');
+      setWorkMode(meta.workMode || meta.portal_work_mode || '');
       setCompensation(meta.compensation || meta.portal_expected_ctc || '');
 
       // Parse interval schedule if already set

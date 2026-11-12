@@ -44,6 +44,7 @@ export const LeadsPage: React.FC = () => {
   const [callingLeadId, setCallingLeadId] = useState<string | null>(null);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [drawerRefreshKey, setDrawerRefreshKey] = useState(0);
+  const [callNotice, setCallNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Edit & Schedule Modal state
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
@@ -96,10 +97,16 @@ export const LeadsPage: React.FC = () => {
         leadId,
         userName: name,
       });
-      alert(`Outbound AI Call successfully initiated to ${phone} via Sarvam Voice Gateway!`);
+      setCallNotice({
+        type: 'success',
+        text: `Outbound AI call initiated to ${name} (${phone}) via Sarvam Voice Gateway.`,
+      });
       fetchLeads();
     } catch (err: any) {
-      alert(`Call Initiation Failed: ${err?.message}`);
+      setCallNotice({
+        type: 'error',
+        text: `Call Initiation Failed: ${err?.message || 'Unknown error'}`,
+      });
     } finally {
       setCallingLeadId(null);
     }
@@ -253,6 +260,25 @@ export const LeadsPage: React.FC = () => {
         }
       />
 
+      {callNotice && (
+        <div
+          className={`px-4 py-3 rounded-xl border text-xs font-medium flex items-center justify-between gap-3 ${
+            callNotice.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}
+        >
+          <span>{callNotice.text}</span>
+          <button
+            type="button"
+            onClick={() => setCallNotice(null)}
+            className="text-[11px] font-bold underline underline-offset-2 shrink-0"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Summary KPI Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-5 flex items-center justify-between border-slate-200 shadow-xs">
@@ -362,7 +388,7 @@ export const LeadsPage: React.FC = () => {
                   const status = campaignLead?.status || 'untouched';
                   const meta = (lead.metadata || {}) as Record<string, any>;
                   const appliedRole = meta.role || meta.applied_role || 'Candidate';
-                  const company = meta.company || 'FluidLive';
+                  const company = meta.company || '';
 
                   return (
                     <tr
@@ -401,8 +427,12 @@ export const LeadsPage: React.FC = () => {
                             <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
                               <Briefcase className="h-3 w-3 text-slate-400" />
                               <span>{appliedRole}</span>
-                              <span className="text-slate-300">•</span>
-                              <span className="text-slate-500">{company}</span>
+                              {company && (
+                                <>
+                                  <span className="text-slate-300">•</span>
+                                  <span className="text-slate-500">{company}</span>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>

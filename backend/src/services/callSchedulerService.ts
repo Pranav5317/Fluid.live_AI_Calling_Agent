@@ -10,10 +10,10 @@ export function buildLeadAgentVariables(lead: { name: string; metadata?: any }) 
   const meta = (lead.metadata as Record<string, any>) || {};
   return {
     user_name: lead.name,
-    applied_role: meta.applied_role || meta.role || 'Frontend Developer',
-    portal_experience: meta.portal_experience || meta.experience || '2 Years',
-    portal_notice_period: meta.portal_notice_period || meta.notice || '30 Days',
-    portal_work_mode: meta.portal_work_mode || meta.workMode || 'On Site, Pune',
+    applied_role: meta.applied_role || meta.role || 'Not specified',
+    portal_experience: meta.portal_experience || meta.experience || 'Not specified',
+    portal_notice_period: meta.portal_notice_period || meta.notice || 'Not specified',
+    portal_work_mode: meta.portal_work_mode || meta.workMode || 'Not specified',
   };
 }
 

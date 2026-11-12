@@ -297,10 +297,10 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
         // Candidate portal application facts defined as Input Variables on Sarvam Studio
         const sarvamAgentVars: Record<string, any> = {
           user_name: cleanUserName,
-          applied_role: params.agentVariables?.applied_role || 'Frontend Developer',
-          portal_experience: params.agentVariables?.portal_experience || '2 Years',
-          portal_notice_period: params.agentVariables?.portal_notice_period || '30 Days',
-          portal_work_mode: params.agentVariables?.portal_work_mode || 'On Site, Pune',
+          applied_role: params.agentVariables?.applied_role || 'Not specified',
+          portal_experience: params.agentVariables?.portal_experience || 'Not specified',
+          portal_notice_period: params.agentVariables?.portal_notice_period || 'Not specified',
+          portal_work_mode: params.agentVariables?.portal_work_mode || 'Not specified',
         };
 
         // Filter out extraction/output variables if passed, since Sarvam validates against declared Input Variables
