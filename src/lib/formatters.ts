@@ -59,3 +59,45 @@ export function formatPhoneNumber(phone: string): string {
   return phone;
 }
 
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+
+/**
+ * Returns YYYY-MM-DD in IST (+05:30), avoiding UTC midnight day shifts.
+ */
+export function getIstDateKey(daysOffset = 0, baseDate = new Date()): string {
+  const ist = new Date(baseDate.getTime() + IST_OFFSET_MS);
+  if (daysOffset !== 0) {
+    ist.setUTCDate(ist.getUTCDate() + daysOffset);
+  }
+  return ist.toISOString().slice(0, 10);
+}
+
+/**
+ * Converts a 24h "HH:mm" string (e.g. "18:00") to 12h format (e.g. "6:00 PM").
+ */
+export function formatTime12h(hhmm: string): string {
+  if (!hhmm || !hhmm.includes(':')) return hhmm;
+  const [hStr, mStr] = hhmm.split(':');
+  const h = Number(hStr);
+  const m = Number(mStr);
+  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
+}
+
+/**
+ * Checks whether the current timestamp falls inside a lead's scheduled interval.
+ */
+export function isLeadScheduleActive(meta?: Record<string, any> | null, nowMs = Date.now()): boolean {
+  if (!meta?.scheduledCallTime) return false;
+  const start = new Date(meta.scheduledCallTime).getTime();
+  if (Number.isNaN(start)) return false;
+  const end = meta.scheduledWindowEnd
+    ? new Date(meta.scheduledWindowEnd).getTime()
+    : start + 2 * 3600000;
+  if (Number.isNaN(end)) return false;
+  return nowMs >= start && nowMs <= end;
+}
+
+

@@ -148,15 +148,50 @@ export class LeadRepository {
     const scheduledTime = updates.metadata?.scheduledCallTime || updates.metadata?.scheduledAt;
     if (scheduledTime) {
       try {
+        const parsedDate = new Date(scheduledTime);
+        if (!isNaN(parsedDate.getTime())) {
+          const syncResult = await prisma.campaignLead.updateMany({
+            where: { leadId: id },
+            data: {
+              nextAttemptAt: parsedDate,
+              status: 'retry_scheduled',
+            },
+          });
+
+          // If lead wasn't previously linked to any campaign, link to the active running campaign
+          if (syncResult.count === 0) {
+            const activeCampaign = await prisma.campaign.findFirst({
+              where: { status: 'running' },
+              orderBy: { createdAt: 'desc' },
+            }) || await prisma.campaign.findFirst({ orderBy: { createdAt: 'desc' } });
+
+            if (activeCampaign) {
+              await prisma.campaignLead.create({
+                data: {
+                  campaignId: activeCampaign.id,
+                  leadId: id,
+                  status: 'retry_scheduled',
+                  attemptCount: 0,
+                  nextAttemptAt: parsedDate,
+                },
+              });
+            }
+          }
+        }
+      } catch (err: any) {
+        console.warn('Failed to sync scheduledCallTime to CampaignLead:', err?.message);
+      }
+    } else if (updates.metadata && (updates.metadata.scheduledCallTime === null || updates.metadata.scheduledAt === null)) {
+      try {
         await prisma.campaignLead.updateMany({
           where: { leadId: id },
           data: {
-            nextAttemptAt: new Date(scheduledTime),
-            status: 'retry_scheduled',
+            nextAttemptAt: null,
+            status: 'untouched',
           },
         });
       } catch (err: any) {
-        console.warn('Failed to sync scheduledCallTime to CampaignLead:', err?.message);
+        console.warn('Failed to clear scheduledCallTime from CampaignLead:', err?.message);
       }
     }
 

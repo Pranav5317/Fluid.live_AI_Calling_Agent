@@ -3,7 +3,7 @@ import { Campaign } from '../../src/types';
 import { campaignRepository, ServerCreateCampaignDTO } from '../repositories/campaignRepository';
 import { callRepository } from '../repositories/callRepository';
 import { backendSarvamProvider } from './sarvamProvider';
-import { callSchedulerService } from './callSchedulerService';
+import { callSchedulerService, buildLeadAgentVariables } from './callSchedulerService';
 
 export class ServerCampaignService {
   async getCampaigns(search = '', status = 'all'): Promise<Campaign[]> {
@@ -61,6 +61,7 @@ export class ServerCampaignService {
           initialBotMessage: config.firstGreeting || config.openingLine,
           outroMessage: config.closingBehavior || config.outroMessage,
           systemPrompt: config.systemPrompt,
+          agentVariables: buildLeadAgentVariables(cl.lead),
         });
 
         // 4. Create pending Call record in Neon PostgreSQL
@@ -191,6 +192,7 @@ export class ServerCampaignService {
           initialBotMessage: config.firstGreeting || config.openingLine,
           outroMessage: config.closingBehavior || config.outroMessage,
           systemPrompt: config.systemPrompt,
+          agentVariables: buildLeadAgentVariables(cl.lead),
         });
 
         // Create pending Call record
@@ -434,6 +436,7 @@ export class ServerCampaignService {
       initialBotMessage: config.firstGreeting || config.openingLine,
       outroMessage: config.closingBehavior || config.outroMessage,
       systemPrompt: config.systemPrompt,
+      agentVariables: buildLeadAgentVariables(lead),
     });
 
     const newAttemptCount = campaignLead.attemptCount + 1;

@@ -1,0 +1,6 @@
+{
+  "extends": "../tsconfig.json",
+  "include": ["./sanity_test_scheduler.ts"],
+  "exclude": []
+}
+

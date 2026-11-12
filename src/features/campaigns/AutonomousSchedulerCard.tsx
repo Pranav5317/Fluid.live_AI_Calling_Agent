@@ -28,8 +28,10 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
   const [schedulerData, setSchedulerData] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [ticking, setTicking] = useState(false);
+  const [dryRunning, setDryRunning] = useState(false);
   const [forceBypassWindow, setForceBypassWindow] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'warn' | 'error'; text: string } | null>(null);
+  const [lastTickDetails, setLastTickDetails] = useState<any | null>(null);
 
   const fetchSchedulerStatus = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -51,18 +53,30 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
     return () => clearInterval(interval);
   }, []);
 
-  const handleTriggerTick = async () => {
-    setTicking(true);
+  const handleTriggerTick = async (dryRun = false) => {
+    if (dryRun) {
+      setDryRunning(true);
+    } else {
+      setTicking(true);
+    }
     setFeedback(null);
     try {
       const res = await campaignService.triggerSchedulerTick({
         forceIgnoreWindow: forceBypassWindow,
+        dryRun,
       });
+
+      setLastTickDetails(res);
 
       if (res.skipped) {
         setFeedback({
           type: 'warn',
           text: `Tick Skipped: ${res.message || res.reason}`,
+        });
+      } else if (dryRun) {
+        setFeedback({
+          type: 'success',
+          text: `✓ ${res.message}`,
         });
       } else {
         setFeedback({
@@ -72,7 +86,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
       }
 
       await fetchSchedulerStatus(true);
-      if (onDispatched) onDispatched();
+      if (!dryRun && onDispatched) onDispatched();
     } catch (err: any) {
       setFeedback({
         type: 'error',
@@ -80,6 +94,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
       });
     } finally {
       setTicking(false);
+      setDryRunning(false);
     }
   };
 
@@ -139,7 +154,18 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
 
             <Button
               size="sm"
-              onClick={handleTriggerTick}
+              variant="outline"
+              onClick={() => handleTriggerTick(true)}
+              isLoading={dryRunning}
+              leftIcon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />}
+              className="border-emerald-400/30 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/25 text-xs font-semibold rounded-full"
+            >
+              Sanity Test (Dry Run)
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => handleTriggerTick(false)}
               isLoading={ticking}
               leftIcon={<Zap className="h-3.5 w-3.5" />}
               className="bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold text-xs shadow-md rounded-full"
@@ -163,7 +189,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
                 : `Calling Window Paused • ${windowInfo?.currentISTTime || 'Outside Hours'} (${windowInfo?.dayOfWeek})`}
             </span>
             <span className="text-blue-200/60 font-mono text-[11px]">
-              • Rules: {windowInfo?.windowRules || '10:00 AM - 7:30 PM IST'}
+              • Rules: {windowInfo?.windowRules || '10:00 AM - 8:30 PM IST'}
             </span>
           </div>
 
@@ -179,7 +205,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
       {/* Real-time Feedback Banner */}
       {feedback && (
         <div
-          className={`px-6 py-3 text-xs font-semibold flex items-center justify-between border-b ${
+          className={`px-6 py-3 text-xs border-b space-y-2 ${
             feedback.type === 'success'
               ? 'bg-emerald-50 text-emerald-900 border-emerald-100'
               : feedback.type === 'warn'
@@ -187,8 +213,26 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
               : 'bg-rose-50 text-rose-900 border-rose-100'
           }`}
         >
-          <span>{feedback.text}</span>
-          <button type="button" onClick={() => setFeedback(null)} className="opacity-60 hover:opacity-100 font-bold">✕</button>
+          <div className="flex items-center justify-between font-semibold">
+            <span>{feedback.text}</span>
+            <button type="button" onClick={() => { setFeedback(null); setLastTickDetails(null); }} className="opacity-60 hover:opacity-100 font-bold">✕</button>
+          </div>
+          {lastTickDetails && ((lastTickDetails.dispatches?.length > 0) || (lastTickDetails.skippedLeads?.length > 0)) && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {lastTickDetails.dispatches?.map((d: any, idx: number) => (
+                <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/90 border border-emerald-200 text-[11px] font-mono text-emerald-900">
+                  <span>✓ {d.leadName} ({d.phone})</span>
+                  {d.intervalSlot && <span className="text-slate-500">[{d.intervalSlot}]</span>}
+                  <span className="font-bold uppercase text-[10px]">{d.status}</span>
+                </span>
+              ))}
+              {lastTickDetails.skippedLeads?.map((s: any, idx: number) => (
+                <span key={`skip_${idx}`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/90 border border-amber-200 text-[11px] font-mono text-amber-900">
+                  <span>⏭ {s.leadName}: {s.detail}</span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -287,15 +331,20 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
                     <span className="text-[10px] text-slate-500 font-mono">Attempt {item.attemptCount} of {item.maxAttempts}</span>
                   </td>
 
-                  <td className="px-6 py-4 font-mono text-[11px]">
-                    {item.isDue ? (
+                  <td className="px-6 py-4 font-mono text-[11px] space-y-1">
+                    {item.intervalSlot && (
+                      <div className="font-sans font-semibold text-indigo-900 text-xs">
+                        {item.intervalSlot}
+                      </div>
+                    )}
+                    {item.isWindowActive ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-bold bg-emerald-600/10 text-emerald-800 border border-emerald-600/25">
                         <Clock className="h-3 w-3" />
                         <span>DUE NOW</span>
                       </span>
                     ) : item.nextAttemptAt ? (
-                      <span className="text-slate-900 font-medium">
-                        {formatDate(item.nextAttemptAt)}
+                      <span className="text-slate-900 font-medium block">
+                        Starts: {formatDate(item.nextAttemptAt)}
                       </span>
                     ) : (
                       <span className="text-slate-500">Scheduled on campaign start</span>
@@ -303,8 +352,8 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
                   </td>
 
                   <td className="px-6 py-4 text-right">
-                    <Badge variant={item.isDue ? 'success' : 'neutral'} size="sm" dot>
-                      {item.isDue ? 'Ready to Dial' : 'Waiting for Window'}
+                    <Badge variant={item.isWindowActive ? 'success' : item.isDue ? 'warning' : 'neutral'} size="sm" dot>
+                      {item.isWindowActive ? 'Ready to Dial' : item.isDue ? 'Window Elapsed (Roll Forward)' : 'Waiting for Window'}
                     </Badge>
                   </td>
                 </tr>

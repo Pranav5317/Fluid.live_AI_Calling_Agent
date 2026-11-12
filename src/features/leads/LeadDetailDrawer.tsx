@@ -26,7 +26,7 @@ import {
   Edit3,
 } from 'lucide-react';
 import { Lead, Call } from '../../types';
-import { formatDate, formatDuration, formatPhoneNumber } from '../../lib/formatters';
+import { formatDate, formatDuration, formatPhoneNumber, getIstDateKey, isLeadScheduleActive } from '../../lib/formatters';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { leadService } from '../../services/leadService';
@@ -36,6 +36,7 @@ import { phoneService } from '../../services/phoneService';
 
 export interface LeadDetailDrawerProps {
   leadId: string | null;
+  refreshKey?: number;
   onClose: () => void;
   onCallInitiated?: () => void;
   onEditLead?: (lead: Lead) => void;
@@ -43,6 +44,7 @@ export interface LeadDetailDrawerProps {
 
 export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
   leadId,
+  refreshKey = 0,
   onClose,
   onCallInitiated,
   onEditLead,
@@ -84,7 +86,7 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
       }
       setPlayingCallId(null);
     };
-  }, [leadId]);
+  }, [leadId, refreshKey]);
 
   if (!leadId) return null;
 
@@ -230,40 +232,54 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
           ) : (
             <>
               {/* Scheduled Call Highlight Banner (If scheduled) */}
-              {(lead.metadata?.scheduledCallTime || lead.metadata?.scheduledAt) && (
-                <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/80 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 font-bold">
-                      <CalendarClock className="h-4 w-4" />
+              {(lead.metadata?.scheduledSlotLabel || lead.metadata?.scheduledCallTime || lead.metadata?.scheduledAt) && (() => {
+                const isToday = lead.metadata?.scheduledSlotDate === getIstDateKey(0);
+                const isWindowActive = isLeadScheduleActive(lead.metadata);
+                const slotText = lead.metadata?.scheduledSlotLabel
+                  ? `${isToday ? 'Today' : lead.metadata?.scheduledSlotDate || ''} • ${lead.metadata.scheduledSlotLabel}`
+                  : new Date(lead.metadata.scheduledCallTime || lead.metadata.scheduledAt).toLocaleString('en-IN', {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true,
+                    });
+
+                return (
+                  <div className={`p-3.5 rounded-xl border flex items-center justify-between ${
+                    isWindowActive ? 'border-emerald-300 bg-emerald-50/90' : 'border-indigo-200 bg-indigo-50/60'
+                  }`}>
+                    <div className="flex items-center gap-2.5">
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg font-bold ${
+                        isWindowActive ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'
+                      }`}>
+                        <CalendarClock className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <span className={`text-[11px] font-bold uppercase tracking-wider font-mono block ${
+                          isWindowActive ? 'text-emerald-800' : 'text-indigo-800'
+                        }`}>
+                          {isWindowActive ? '● Calling Interval Active Now' : 'Screening Call Window Scheduled'}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-900">
+                          {slotText}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 font-mono block">
-                        Screening Call Scheduled
-                      </span>
-                      <span className="text-xs font-semibold text-emerald-950">
-                        {new Date(lead.metadata.scheduledCallTime || lead.metadata.scheduledAt).toLocaleString('en-IN', {
-                          weekday: 'short',
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true,
-                        })}
-                      </span>
-                    </div>
+                    {onEditLead && (
+                      <button
+                        type="button"
+                        onClick={() => onEditLead(lead)}
+                        className="text-[11px] font-bold text-indigo-700 hover:text-indigo-900 underline underline-offset-2"
+                      >
+                        Reschedule
+                      </button>
+                    )}
                   </div>
-                  {onEditLead && (
-                    <button
-                      type="button"
-                      onClick={() => onEditLead(lead)}
-                      className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 underline underline-offset-2"
-                    >
-                      Reschedule
-                    </button>
-                  )}
-                </div>
-              )}
+                );
+              })()}
 
               {/* Quick Actions & Instant Triggers Bar */}
               <div className="p-4 rounded-xl border border-indigo-100 bg-gradient-to-br from-indigo-50/60 via-white to-purple-50/30 space-y-3">

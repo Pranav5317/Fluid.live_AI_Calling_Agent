@@ -12,7 +12,7 @@ import { LoadingState } from '../../components/common/LoadingState';
 import { leadService, LeadPaginatedResult, LeadWithCampaignState } from '../../services/leadService';
 import { campaignService } from '../../services/campaignService';
 import { Campaign, CampaignLeadStatus, Lead } from '../../types';
-import { formatDate, formatPhoneNumber } from '../../lib/formatters';
+import { formatDate, formatPhoneNumber, getIstDateKey, isLeadScheduleActive } from '../../lib/formatters';
 import {
   Users,
   Search,
@@ -43,6 +43,7 @@ export const LeadsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [callingLeadId, setCallingLeadId] = useState<string | null>(null);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [drawerRefreshKey, setDrawerRefreshKey] = useState(0);
 
   // Edit & Schedule Modal state
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
@@ -136,6 +137,7 @@ export const LeadsPage: React.FC = () => {
 
   const handleLeadUpdated = (_updated: Lead) => {
     fetchLeads();
+    setDrawerRefreshKey(k => k + 1);
   };
 
   const getStatusBadgeVariant = (status?: CampaignLeadStatus) => {
@@ -174,6 +176,55 @@ export const LeadsPage: React.FC = () => {
     } catch {
       return null;
     }
+  };
+
+  const renderScheduleBadge = (meta: Record<string, any>, lead: Lead) => {
+    if (meta.scheduledSlotLabel || meta.scheduledCallTime) {
+      const label = meta.scheduledSlotLabel || (meta.scheduledCallTime ? formatScheduledTime(meta.scheduledCallTime) : 'Scheduled');
+      const isToday = meta.scheduledSlotDate === getIstDateKey(0);
+      const isWindowActive = isLeadScheduleActive(meta);
+
+      return (
+        <div
+          onClick={() => handleOpenEdit(lead)}
+          className={`inline-flex flex-col cursor-pointer px-2.5 py-1 rounded-xl border transition-all ${
+            isWindowActive
+              ? 'bg-emerald-50 border-emerald-300 text-emerald-950 hover:bg-emerald-100/60'
+              : 'bg-indigo-50/70 border-indigo-200/80 text-indigo-950 hover:bg-indigo-100/60'
+          }`}
+          title="Click to edit or adjust schedule"
+        >
+          <div className="flex items-center gap-1.5 text-[11px] font-bold">
+            {isWindowActive ? (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+              </span>
+            ) : (
+              <CalendarClock className="h-3.5 w-3.5 text-indigo-600" />
+            )}
+            <span>{isToday ? 'Today' : meta.scheduledSlotDate || ''}</span>
+            <span className="font-semibold text-[10px] text-slate-600">({label})</span>
+          </div>
+          {isWindowActive && (
+            <span className="text-[9px] text-emerald-700 font-bold uppercase tracking-wider font-mono">
+              ● Interval Active Now
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        onClick={() => handleOpenEdit(lead)}
+        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/60 border border-dashed border-slate-300 transition-colors"
+      >
+        <CalendarClock className="h-3 w-3" />
+        <span>+ Set Schedule</span>
+      </button>
+    );
   };
 
   return (
@@ -312,7 +363,6 @@ export const LeadsPage: React.FC = () => {
                   const meta = (lead.metadata || {}) as Record<string, any>;
                   const appliedRole = meta.role || meta.applied_role || 'Candidate';
                   const company = meta.company || 'FluidLive';
-                  const scheduledTimeStr = formatScheduledTime(meta.scheduledCallTime || meta.scheduledAt);
 
                   return (
                     <tr
@@ -358,21 +408,7 @@ export const LeadsPage: React.FC = () => {
 
                       {/* Scheduled Call */}
                       <td className="px-5 py-3.5" onClick={e => e.stopPropagation()}>
-                        {scheduledTimeStr ? (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/60 text-emerald-800 text-[11px] font-semibold">
-                            <CalendarClock className="h-3.5 w-3.5 text-emerald-600" />
-                            <span>{scheduledTimeStr}</span>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEdit(lead)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/60 border border-dashed border-slate-300 transition-colors"
-                          >
-                            <CalendarClock className="h-3 w-3" />
-                            <span>+ Set Schedule</span>
-                          </button>
-                        )}
+                        {renderScheduleBadge(meta, lead)}
                       </td>
 
                       {/* Campaign & Status */}
@@ -541,6 +577,7 @@ export const LeadsPage: React.FC = () => {
       {/* Lead 360° Profile & Call Timeline Drawer */}
       <LeadDetailDrawer
         leadId={selectedLeadId}
+        refreshKey={drawerRefreshKey}
         onClose={() => setSelectedLeadId(null)}
         onCallInitiated={fetchLeads}
         onEditLead={lead => {

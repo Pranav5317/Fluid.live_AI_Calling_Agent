@@ -5,6 +5,7 @@ import { Button } from '../../components/common/Button';
 import { Select } from '../../components/common/Select';
 import { Lead } from '../../types';
 import { leadService } from '../../services/leadService';
+import { getIstDateKey, formatTime12h, isLeadScheduleActive } from '../../lib/formatters';
 import {
   User,
   Phone,
@@ -18,6 +19,7 @@ import {
   IndianRupee,
   CalendarClock,
   X,
+  CheckCircle2,
 } from 'lucide-react';
 
 export interface LeadEditModalProps {
@@ -26,6 +28,69 @@ export interface LeadEditModalProps {
   lead: Lead | null;
   onLeadUpdated: (updatedLead: Lead) => void;
 }
+
+export const CALLING_SLOT_PRESETS = [
+  {
+    id: 'evening_6_8',
+    label: 'Between 6:00 PM – 8:00 PM',
+    shortLabel: '6:00 PM – 8:00 PM',
+    startTime: '18:00',
+    endTime: '20:00',
+    badge: 'Recommended',
+    tag: 'Evening Prime',
+    icon: '🌙',
+  },
+  {
+    id: 'morning_10_12',
+    label: 'Between 10:00 AM – 12:00 PM',
+    shortLabel: '10:00 AM – 12:00 PM',
+    startTime: '10:00',
+    endTime: '12:00',
+    badge: 'Morning Slot',
+    tag: 'Start of Day',
+    icon: '🌅',
+  },
+  {
+    id: 'midday_12_2',
+    label: 'Between 12:00 PM – 2:00 PM',
+    shortLabel: '12:00 PM – 2:00 PM',
+    startTime: '12:00',
+    endTime: '14:00',
+    badge: 'Midday Slot',
+    tag: 'Pre-Lunch',
+    icon: '☀️',
+  },
+  {
+    id: 'afternoon_2_4',
+    label: 'Between 2:00 PM – 4:00 PM',
+    shortLabel: '2:00 PM – 4:00 PM',
+    startTime: '14:00',
+    endTime: '16:00',
+    badge: 'Afternoon Slot',
+    tag: 'Post-Lunch',
+    icon: '☕',
+  },
+  {
+    id: 'late_afternoon_4_6',
+    label: 'Between 4:00 PM – 6:00 PM',
+    shortLabel: '4:00 PM – 6:00 PM',
+    startTime: '16:00',
+    endTime: '18:00',
+    badge: 'Late Afternoon',
+    tag: 'Tea Break',
+    icon: '🌇',
+  },
+  {
+    id: 'custom',
+    label: 'Custom Calling Interval',
+    shortLabel: 'Custom',
+    startTime: '',
+    endTime: '',
+    badge: 'Custom Hours',
+    tag: 'User Defined',
+    icon: '⏱️',
+  },
+] as const;
 
 export const LeadEditModal: React.FC<LeadEditModalProps> = ({
   isOpen,
@@ -42,7 +107,14 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
   const [notice, setNotice] = useState('');
   const [workMode, setWorkMode] = useState('');
   const [compensation, setCompensation] = useState('');
-  const [scheduledCallTime, setScheduledCallTime] = useState('');
+
+  // Interval-Based Scheduling State
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [slotDate, setSlotDate] = useState(() => getIstDateKey(0));
+  const [selectedSlotPreset, setSelectedSlotPreset] = useState<string>('evening_6_8');
+  const [customStartTime, setCustomStartTime] = useState('18:00');
+  const [customEndTime, setCustomEndTime] = useState('20:00');
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,46 +132,88 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
       setWorkMode(meta.workMode || meta.portal_work_mode || 'On Site, Pune');
       setCompensation(meta.compensation || meta.portal_expected_ctc || '');
 
-      // Parse scheduled time if already set
-      const existingSchedule = meta.scheduledCallTime || meta.scheduledAt;
-      if (existingSchedule) {
+      // Parse interval schedule if already set
+      if (meta.scheduledSlotStart && meta.scheduledSlotEnd) {
+        setIsScheduled(true);
+        setSlotDate(meta.scheduledSlotDate || getIstDateKey(0));
+        const matched = CALLING_SLOT_PRESETS.find(
+          p => p.startTime === meta.scheduledSlotStart && p.endTime === meta.scheduledSlotEnd
+        );
+        if (matched) {
+          setSelectedSlotPreset(matched.id);
+        } else {
+          setSelectedSlotPreset('custom');
+          setCustomStartTime(meta.scheduledSlotStart);
+          setCustomEndTime(meta.scheduledSlotEnd);
+        }
+      } else if (meta.scheduledCallTime || meta.scheduledAt) {
+        setIsScheduled(true);
+        const iso = meta.scheduledCallTime || meta.scheduledAt;
         try {
-          const dateObj = new Date(existingSchedule);
-          if (!isNaN(dateObj.getTime())) {
-            // Format to YYYY-MM-DDTHH:mm for datetime-local input
-            const localIso = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000)
-              .toISOString()
-              .slice(0, 16);
-            setScheduledCallTime(localIso);
+          const d = new Date(iso);
+          if (!isNaN(d.getTime())) {
+            setSlotDate(getIstDateKey(0, d));
+            const ist = new Date(d.getTime() + 5.5 * 3600000);
+            const hh = String(ist.getUTCHours()).padStart(2, '0');
+            const mm = String(ist.getUTCMinutes()).padStart(2, '0');
+            const endIst = new Date(ist.getTime() + 2 * 3600000);
+            const endHh = String(endIst.getUTCHours()).padStart(2, '0');
+            const endMm = String(endIst.getUTCMinutes()).padStart(2, '0');
+            const matched = CALLING_SLOT_PRESETS.find(p => p.startTime === `${hh}:${mm}`);
+            if (matched) {
+              setSelectedSlotPreset(matched.id);
+            } else {
+              setSelectedSlotPreset('custom');
+              setCustomStartTime(`${hh}:${mm}`);
+              setCustomEndTime(`${endHh}:${endMm}`);
+            }
           } else {
-            setScheduledCallTime('');
+            setSlotDate(getIstDateKey(0));
+            setSelectedSlotPreset('evening_6_8');
           }
         } catch {
-          setScheduledCallTime('');
+          setSlotDate(getIstDateKey(0));
+          setSelectedSlotPreset('evening_6_8');
         }
       } else {
-        setScheduledCallTime('');
+        setIsScheduled(false);
+        setSlotDate(getIstDateKey(0));
+        setSelectedSlotPreset('evening_6_8');
       }
       setError(null);
     }
   }, [lead, isOpen]);
 
-  const setPresetSchedule = (minutesFromNow: number) => {
-    const target = new Date(Date.now() + minutesFromNow * 60 * 1000);
-    const localIso = new Date(target.getTime() - target.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16);
-    setScheduledCallTime(localIso);
-  };
+  // Determine current active start and end time
+  const activeStartTime =
+    selectedSlotPreset === 'custom'
+      ? customStartTime
+      : CALLING_SLOT_PRESETS.find(p => p.id === selectedSlotPreset)?.startTime || '18:00';
 
-  const setTomorrowSlot = (hours: number, minutes: number) => {
-    const target = new Date();
-    target.setDate(target.getDate() + 1);
-    target.setHours(hours, minutes, 0, 0);
-    const localIso = new Date(target.getTime() - target.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16);
-    setScheduledCallTime(localIso);
+  const activeEndTime =
+    selectedSlotPreset === 'custom'
+      ? customEndTime
+      : CALLING_SLOT_PRESETS.find(p => p.id === selectedSlotPreset)?.endTime || '20:00';
+
+  const activeSlotLabel =
+    selectedSlotPreset === 'custom'
+      ? `Between ${formatTime12h(activeStartTime)} – ${formatTime12h(activeEndTime)}`
+      : CALLING_SLOT_PRESETS.find(p => p.id === selectedSlotPreset)?.label || 'Between 6:00 PM – 8:00 PM';
+
+  const slotStartIsoPreview = isScheduled && activeStartTime
+    ? new Date(`${slotDate}T${activeStartTime}:00+05:30`).toISOString()
+    : undefined;
+  const slotEndIsoPreview = isScheduled && activeEndTime
+    ? new Date(`${slotDate}T${activeEndTime}:00+05:30`).toISOString()
+    : undefined;
+
+  const isCustomIntervalInvalid =
+    isScheduled &&
+    (!activeStartTime || !activeEndTime || activeEndTime <= activeStartTime);
+
+  const setDatePreset = (daysFromToday: number) => {
+    setSlotDate(getIstDateKey(daysFromToday));
+    setIsScheduled(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -113,26 +227,66 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
       setError('Phone Number is required.');
       return;
     }
+    if (isCustomIntervalInvalid) {
+      setError('Calling interval End Time must be later than Start Time.');
+      return;
+    }
 
     setSaving(true);
     setError(null);
 
     try {
-      const updatedMetadata = {
-        ...((lead.metadata as Record<string, any>) || {}),
-        role: role.trim(),
-        applied_role: role.trim(),
-        company: company.trim(),
-        experience: experience.trim(),
-        portal_experience: experience.trim(),
-        notice: notice.trim(),
-        portal_notice_period: notice.trim(),
-        workMode: workMode.trim(),
-        portal_work_mode: workMode.trim(),
-        compensation: compensation.trim(),
-        scheduledCallTime: scheduledCallTime ? new Date(scheduledCallTime).toISOString() : null,
-        scheduledAt: scheduledCallTime ? new Date(scheduledCallTime).toISOString() : null,
-      };
+      let updatedMetadata: Record<string, any>;
+
+      if (isScheduled) {
+        // Construct ISO timestamps in IST timezone (+05:30)
+        // e.g. slotDate = "2026-11-05", startTime = "18:00" -> "2026-11-05T18:00:00+05:30"
+        const slotStartIso = new Date(`${slotDate}T${activeStartTime}:00+05:30`).toISOString();
+        const slotEndIso = new Date(`${slotDate}T${activeEndTime}:00+05:30`).toISOString();
+
+        updatedMetadata = {
+          ...((lead.metadata as Record<string, any>) || {}),
+          role: role.trim(),
+          applied_role: role.trim(),
+          company: company.trim(),
+          experience: experience.trim(),
+          portal_experience: experience.trim(),
+          notice: notice.trim(),
+          portal_notice_period: notice.trim(),
+          workMode: workMode.trim(),
+          portal_work_mode: workMode.trim(),
+          compensation: compensation.trim(),
+          scheduledSlotDate: slotDate,
+          scheduledSlotStart: activeStartTime,
+          scheduledSlotEnd: activeEndTime,
+          scheduledSlotLabel: activeSlotLabel,
+          scheduledCallTime: slotStartIso,
+          scheduledWindowEnd: slotEndIso,
+          scheduledAt: slotStartIso,
+        };
+      } else {
+        // Schedule cleared
+        updatedMetadata = {
+          ...((lead.metadata as Record<string, any>) || {}),
+          role: role.trim(),
+          applied_role: role.trim(),
+          company: company.trim(),
+          experience: experience.trim(),
+          portal_experience: experience.trim(),
+          notice: notice.trim(),
+          portal_notice_period: notice.trim(),
+          workMode: workMode.trim(),
+          portal_work_mode: workMode.trim(),
+          compensation: compensation.trim(),
+          scheduledSlotDate: null,
+          scheduledSlotStart: null,
+          scheduledSlotEnd: null,
+          scheduledSlotLabel: null,
+          scheduledCallTime: null,
+          scheduledWindowEnd: null,
+          scheduledAt: null,
+        };
+      }
 
       const result = await leadService.updateLead(lead.id, {
         name: name.trim(),
@@ -152,11 +306,18 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
 
   if (!lead) return null;
 
+  const todayIstKey = getIstDateKey(0);
+  const tomorrowIstKey = getIstDateKey(1);
+  const inActiveSlotNow = isLeadScheduleActive({
+    scheduledCallTime: slotStartIsoPreview,
+    scheduledWindowEnd: slotEndIsoPreview,
+  });
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Edit Candidate Profile & Call Schedule"
+      title="Edit Candidate Profile & Interval Calling Schedule"
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -205,10 +366,10 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
           </div>
         </div>
 
-        {/* Section 2: Application Facts (Metadata) */}
+        {/* Section 2: Portal Stated Facts */}
         <div className="space-y-3 pt-2 border-t border-slate-100">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono block">
-            2. Application Portal Facts (Fed to AI Agent)
+            2. Candidate Application Details
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -272,80 +433,199 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
           </div>
         </div>
 
-        {/* Section 3: Call Scheduling */}
-        <div className="space-y-3 pt-2 border-t border-slate-100 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+        {/* Section 3: Interval-Based Call Scheduling */}
+        <div className="space-y-4 pt-3 border-t border-slate-100 bg-gradient-to-br from-indigo-50/60 via-white to-blue-50/40 p-4 rounded-xl border border-indigo-100/80">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-blue-900 flex items-center gap-1.5 font-mono uppercase tracking-wide">
-                <CalendarClock className="h-4 w-4 text-blue-600" />
-                3. Automated Call Scheduling
+              <span className="text-xs font-bold text-indigo-950 flex items-center gap-1.5 font-mono uppercase tracking-wide">
+                <CalendarClock className="h-4 w-4 text-indigo-600" />
+                3. Interval Calling Window
               </span>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                Set a particular time for the AI Calling Agent to initiate the screening call.
+                Set a preferred calling window (e.g. between 6:00 PM to 8:00 PM) for autonomous dispatch.
               </p>
             </div>
-            {scheduledCallTime && (
+            {isScheduled && (
               <button
                 type="button"
-                onClick={() => setScheduledCallTime('')}
+                onClick={() => setIsScheduled(false)}
                 className="text-[10px] text-slate-500 hover:text-rose-600 font-semibold underline flex items-center gap-1"
               >
-                <X className="h-3 w-3" /> Clear Time
+                <X className="h-3 w-3" /> Clear Schedule
               </button>
             )}
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Select Call Date & Time (IST)
+          {/* Date Selector */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-700">
+              Target Outreach Date
             </label>
-            <input
-              type="datetime-local"
-              value={scheduledCallTime}
-              onChange={e => setScheduledCallTime(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setDatePreset(0)}
+                className={`text-xs px-3 py-1.5 rounded-lg border font-semibold transition-all ${
+                  slotDate === todayIstKey && isScheduled
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-white border-slate-200 text-slate-700 hover:border-indigo-300'
+                }`}
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                onClick={() => setDatePreset(1)}
+                className={`text-xs px-3 py-1.5 rounded-lg border font-semibold transition-all ${
+                  slotDate === tomorrowIstKey && isScheduled
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-white border-slate-200 text-slate-700 hover:border-indigo-300'
+                }`}
+              >
+                Tomorrow
+              </button>
+              <input
+                type="date"
+                value={slotDate}
+                onChange={e => {
+                  setSlotDate(e.target.value);
+                  setIsScheduled(true);
+                }}
+                className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
           </div>
 
-          {/* Quick Schedule Shortcuts */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            <span className="text-[10px] text-slate-400 font-mono">Quick Set:</span>
-            <button
-              type="button"
-              onClick={() => setPresetSchedule(15)}
-              className="text-[11px] px-2.5 py-1 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-colors font-medium"
-            >
-              +15 Mins
-            </button>
-            <button
-              type="button"
-              onClick={() => setPresetSchedule(60)}
-              className="text-[11px] px-2.5 py-1 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-colors font-medium"
-            >
-              +1 Hour
-            </button>
-            <button
-              type="button"
-              onClick={() => setTomorrowSlot(11, 0)}
-              className="text-[11px] px-2.5 py-1 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-colors font-medium"
-            >
-              Tomorrow 11:00 AM
-            </button>
-            <button
-              type="button"
-              onClick={() => setTomorrowSlot(15, 30)}
-              className="text-[11px] px-2.5 py-1 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-colors font-medium"
-            >
-              Tomorrow 3:30 PM
-            </button>
+          {/* Time Slot Intervals Grid */}
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-slate-700">
+              Select Preferred Time Interval
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {CALLING_SLOT_PRESETS.map(slot => {
+                const isSelected = isScheduled && selectedSlotPreset === slot.id;
+                return (
+                  <button
+                    key={slot.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSlotPreset(slot.id);
+                      setIsScheduled(true);
+                    }}
+                    className={`flex items-start justify-between p-3 rounded-xl border text-left transition-all ${
+                      isSelected
+                        ? 'border-indigo-600 bg-indigo-50/70 shadow-xs ring-1 ring-indigo-500'
+                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm">{slot.icon}</span>
+                        <span className={`text-xs font-bold ${isSelected ? 'text-indigo-950' : 'text-slate-900'}`}>
+                          {slot.shortLabel}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 block mt-0.5 font-medium">
+                        {slot.tag}
+                      </span>
+                    </div>
+                    {slot.badge && (
+                      <span
+                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {slot.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {scheduledCallTime && (
-            <div className="p-2.5 bg-blue-100/60 rounded-lg text-[11px] text-blue-900 flex items-center gap-2 border border-blue-200/60">
-              <Sparkles className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-              <span>
-                Call queued for: <strong>{new Date(scheduledCallTime).toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'short' })}</strong>
-              </span>
+          {/* Custom Interval Picker */}
+          {selectedSlotPreset === 'custom' && isScheduled && (
+            <div className="space-y-2 p-3 bg-white rounded-xl border border-indigo-200">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                    Start Time (IST)
+                  </label>
+                  <input
+                    type="time"
+                    value={customStartTime}
+                    onChange={e => setCustomStartTime(e.target.value)}
+                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                    End Time (IST)
+                  </label>
+                  <input
+                    type="time"
+                    value={customEndTime}
+                    onChange={e => setCustomEndTime(e.target.value)}
+                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
+              </div>
+              {isCustomIntervalInvalid && (
+                <p className="text-[11px] font-semibold text-rose-600">
+                  End Time must be later than Start Time.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Live Schedule Confirmation & Interval Status Banner */}
+          {isScheduled ? (
+            <div
+              className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
+                inActiveSlotNow
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+                  : 'bg-blue-50 border-blue-200 text-blue-950'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                    inActiveSlotNow ? 'bg-emerald-200 text-emerald-800' : 'bg-blue-200 text-blue-800'
+                  }`}
+                >
+                  {inActiveSlotNow ? (
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-600"></span>
+                    </span>
+                  ) : (
+                    <Clock className="h-4 w-4" />
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs font-bold">
+                    {slotDate === todayIstKey ? 'Today' : slotDate === tomorrowIstKey ? 'Tomorrow' : slotDate} ({activeSlotLabel})
+                  </div>
+                  <div className="text-[11px] mt-0.5">
+                    {inActiveSlotNow ? (
+                      <span className="font-semibold text-emerald-700">
+                        🟢 Active Calling Window Right Now • Eligible for immediate dispatch
+                      </span>
+                    ) : (
+                      <span className="text-slate-600">
+                        Scheduled for automated dispatch during this interval.
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center p-3 rounded-lg border border-dashed border-slate-300 bg-white/60 text-xs text-slate-500">
+              No calling window set. Candidate will remain in regular outbound queue. Click any slot above to schedule.
             </div>
           )}
         </div>
