@@ -1138,7 +1138,7 @@ var LeadRepository = class {
       });
     }
     const scheduledTime = updates.metadata?.scheduledCallTime || updates.metadata?.scheduledAt;
-    if (scheduledTime) {
+    if (!nextDnc && scheduledTime) {
       try {
         const parsedDate = new Date(scheduledTime);
         if (!isNaN(parsedDate.getTime())) {
@@ -1170,7 +1170,7 @@ var LeadRepository = class {
       } catch (err) {
         console.warn("Failed to sync scheduledCallTime to CampaignLead:", err?.message);
       }
-    } else if (updates.metadata && (updates.metadata.scheduledCallTime === null || updates.metadata.scheduledAt === null)) {
+    } else if (!nextDnc && updates.metadata && (updates.metadata.scheduledCallTime === null || updates.metadata.scheduledAt === null)) {
       try {
         await prisma_default.campaignLead.updateMany({
           where: { leadId: id },
@@ -3311,6 +3311,18 @@ var callSchedulerService = new CallSchedulerService();
 
 // backend/src/services/campaignService.ts
 var ServerCampaignService = class {
+  async assertBudgetAvailable() {
+    const guardrailRow = await prisma_default.systemSetting.findUnique({ where: { key: "billing_guardrails" } });
+    const guardrails = guardrailRow?.value;
+    if (guardrails?.enforceHardCap && typeof guardrails.monthlyBudgetCapUsd === "number") {
+      const currentPeriod = await prisma_default.billingPeriod.findFirst({ where: { status: "current" } });
+      if (currentPeriod && currentPeriod.estimatedTotalCost >= guardrails.monthlyBudgetCapUsd) {
+        throw new Error(
+          `Monthly budget cap ($${guardrails.monthlyBudgetCapUsd}) reached ($${currentPeriod.estimatedTotalCost.toFixed(2)} used). Manual and autonomous dials are paused.`
+        );
+      }
+    }
+  }
   async getCampaigns(search = "", status = "all") {
     return campaignRepository.getCampaigns(search, status);
   }
@@ -3323,6 +3335,7 @@ var ServerCampaignService = class {
   async startCampaign(id) {
     const campaign = await campaignRepository.getCampaignById(id);
     if (!campaign) throw new Error(`Campaign not found: ${id}`);
+    await this.assertBudgetAvailable();
     const runningCampaign = await campaignRepository.updateCampaignStatus(id, "running");
     const campaignLeads = await prisma_default.campaignLead.findMany({
       where: { campaignId: id },
@@ -3411,6 +3424,7 @@ var ServerCampaignService = class {
   async dialBatch(campaignId, options) {
     const campaign = await campaignRepository.getCampaignById(campaignId);
     if (!campaign) throw new Error(`Campaign not found: ${campaignId}`);
+    await this.assertBudgetAvailable();
     const phoneNumberObj = await prisma_default.phoneNumber.findUnique({
       where: { id: campaign.phoneNumberId }
     });
@@ -5690,6 +5704,35 @@ var WebhookRepository = class {
     }
   }
   async reprocessEvent(eventId) {
+    const existing = await prisma_default.webhookEvent.findUnique({ where: { id: eventId } });
+    if (!existing) {
+      throw new Error(`Webhook event not found: ${eventId}`);
+    }
+    if (existing.externalId?.startsWith("dlq_")) {
+      const targetUrlMap = {
+        ats_outbound: process.env.ATS_WEBHOOK_URL,
+        whatsapp_callback: process.env.WHATSAPP_WEBHOOK_URL,
+        calendar_booking: process.env.CALENDAR_BOOKING_WEBHOOK_URL
+      };
+      const targetUrl = targetUrlMap[existing.eventType];
+      if (!targetUrl) {
+        const msg = `Target webhook URL for '${existing.eventType}' is not configured in environment variables`;
+        await prisma_default.webhookEvent.update({ where: { id: eventId }, data: { status: "failed", error: msg } });
+        throw new Error(msg);
+      }
+      const resp = await fetch(targetUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(existing.payload || {})
+      });
+      if (!resp.ok) {
+        const msg = `Retry failed with HTTP ${resp.status}`;
+        await prisma_default.webhookEvent.update({ where: { id: eventId }, data: { status: "failed", error: msg } });
+        throw new Error(msg);
+      }
+    } else if (existing.provider === "sarvam") {
+      await this.processSarvamWebhook(existing.payload || {});
+    }
     const updated = await prisma_default.webhookEvent.update({
       where: { id: eventId },
       data: {
@@ -5890,16 +5933,29 @@ function getTodayIstDate() {
   return ist.toISOString().slice(0, 10);
 }
 function buildIntervalMetadata(dateKey, startTime, endTime, label) {
-  const startIso = (/* @__PURE__ */ new Date(`${dateKey}T${startTime}:00+05:30`)).toISOString();
-  const endIso = (/* @__PURE__ */ new Date(`${dateKey}T${endTime}:00+05:30`)).toISOString();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+    throw new Error("Invalid date format: expected YYYY-MM-DD");
+  }
+  const timeRe = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  if (!timeRe.test(startTime) || !timeRe.test(endTime)) {
+    throw new Error("Invalid time format: startTime and endTime must be HH:mm (00:00\u201323:59)");
+  }
+  const startDate = /* @__PURE__ */ new Date(`${dateKey}T${startTime}:00+05:30`);
+  const endDate = /* @__PURE__ */ new Date(`${dateKey}T${endTime}:00+05:30`);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    throw new Error("Invalid date or time value for calling interval");
+  }
+  if (endDate.getTime() <= startDate.getTime()) {
+    throw new Error("Invalid calling interval: endTime must be strictly after startTime");
+  }
   return {
     scheduledSlotDate: dateKey,
     scheduledSlotStart: startTime,
     scheduledSlotEnd: endTime,
     scheduledSlotLabel: label || `Between ${startTime} \u2013 ${endTime}`,
-    scheduledCallTime: startIso,
-    scheduledWindowEnd: endIso,
-    scheduledAt: startIso,
+    scheduledCallTime: startDate.toISOString(),
+    scheduledWindowEnd: endDate.toISOString(),
+    scheduledAt: startDate.toISOString(),
     scheduledTimezone: "Asia/Kolkata"
   };
 }
@@ -6013,11 +6069,25 @@ integrationRoutes.post("/ats/leads", verifyIntegrationApiKey, async (req, res) =
       source: "ats_webhook"
     };
     const dateKey = preferredDate || getTodayIstDate();
-    if (preferredSlotPreset && SLOT_PRESET_MAP[preferredSlotPreset]) {
+    if (preferredSlotPreset) {
       const preset = SLOT_PRESET_MAP[preferredSlotPreset];
+      if (!preset) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid preferredSlotPreset. Valid options: ${Object.keys(SLOT_PRESET_MAP).join(", ")}`,
+          timestamp: (/* @__PURE__ */ new Date()).toISOString()
+        });
+      }
       Object.assign(baseMeta, buildIntervalMetadata(dateKey, preset.startTime, preset.endTime, preset.label));
-    } else if (startTime && endTime) {
-      Object.assign(baseMeta, buildIntervalMetadata(dateKey, startTime, endTime));
+    } else if (startTime !== void 0 || endTime !== void 0) {
+      if (!startTime || !endTime) {
+        return res.status(400).json({
+          success: false,
+          error: "Both startTime and endTime (HH:mm) are required when specifying a custom interval",
+          timestamp: (/* @__PURE__ */ new Date()).toISOString()
+        });
+      }
+      Object.assign(baseMeta, buildIntervalMetadata(dateKey, String(startTime), String(endTime)));
     }
     const existing = await prisma_default.lead.findFirst({ where: { phone: String(phone).trim() } });
     const lead = existing ? await leadRepository.updateLead(existing.id, {
@@ -6061,11 +6131,25 @@ integrationRoutes.post("/callback-slot", verifyIntegrationApiKey, async (req, re
     }
     const dateKey = date || getTodayIstDate();
     let intervalMeta;
-    if (slotPreset && SLOT_PRESET_MAP[slotPreset]) {
+    if (slotPreset) {
       const preset = SLOT_PRESET_MAP[slotPreset];
+      if (!preset) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid slotPreset. Valid options: ${Object.keys(SLOT_PRESET_MAP).join(", ")}`,
+          timestamp: (/* @__PURE__ */ new Date()).toISOString()
+        });
+      }
       intervalMeta = buildIntervalMetadata(dateKey, preset.startTime, preset.endTime, preset.label);
-    } else if (startTime && endTime) {
-      intervalMeta = buildIntervalMetadata(dateKey, startTime, endTime);
+    } else if (startTime !== void 0 || endTime !== void 0) {
+      if (!startTime || !endTime) {
+        return res.status(400).json({
+          success: false,
+          error: "Both startTime and endTime (HH:mm) are required when specifying a custom interval",
+          timestamp: (/* @__PURE__ */ new Date()).toISOString()
+        });
+      }
+      intervalMeta = buildIntervalMetadata(dateKey, String(startTime), String(endTime));
     } else {
       const defaultPreset = SLOT_PRESET_MAP.evening_6_8;
       intervalMeta = buildIntervalMetadata(dateKey, defaultPreset.startTime, defaultPreset.endTime, defaultPreset.label);

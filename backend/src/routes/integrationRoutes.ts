@@ -18,16 +18,30 @@ function getTodayIstDate(): string {
 }
 
 function buildIntervalMetadata(dateKey: string, startTime: string, endTime: string, label?: string) {
-  const startIso = new Date(`${dateKey}T${startTime}:00+05:30`).toISOString();
-  const endIso = new Date(`${dateKey}T${endTime}:00+05:30`).toISOString();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+    throw new Error('Invalid date format: expected YYYY-MM-DD');
+  }
+  const timeRe = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  if (!timeRe.test(startTime) || !timeRe.test(endTime)) {
+    throw new Error('Invalid time format: startTime and endTime must be HH:mm (00:00–23:59)');
+  }
+  const startDate = new Date(`${dateKey}T${startTime}:00+05:30`);
+  const endDate = new Date(`${dateKey}T${endTime}:00+05:30`);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    throw new Error('Invalid date or time value for calling interval');
+  }
+  if (endDate.getTime() <= startDate.getTime()) {
+    throw new Error('Invalid calling interval: endTime must be strictly after startTime');
+  }
+
   return {
     scheduledSlotDate: dateKey,
     scheduledSlotStart: startTime,
     scheduledSlotEnd: endTime,
     scheduledSlotLabel: label || `Between ${startTime} – ${endTime}`,
-    scheduledCallTime: startIso,
-    scheduledWindowEnd: endIso,
-    scheduledAt: startIso,
+    scheduledCallTime: startDate.toISOString(),
+    scheduledWindowEnd: endDate.toISOString(),
+    scheduledAt: startDate.toISOString(),
     scheduledTimezone: 'Asia/Kolkata',
   };
 }
@@ -152,11 +166,25 @@ integrationRoutes.post('/ats/leads', verifyIntegrationApiKey, async (req, res) =
     };
 
     const dateKey = preferredDate || getTodayIstDate();
-    if (preferredSlotPreset && SLOT_PRESET_MAP[preferredSlotPreset]) {
+    if (preferredSlotPreset) {
       const preset = SLOT_PRESET_MAP[preferredSlotPreset];
+      if (!preset) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid preferredSlotPreset. Valid options: ${Object.keys(SLOT_PRESET_MAP).join(', ')}`,
+          timestamp: new Date().toISOString(),
+        });
+      }
       Object.assign(baseMeta, buildIntervalMetadata(dateKey, preset.startTime, preset.endTime, preset.label));
-    } else if (startTime && endTime) {
-      Object.assign(baseMeta, buildIntervalMetadata(dateKey, startTime, endTime));
+    } else if (startTime !== undefined || endTime !== undefined) {
+      if (!startTime || !endTime) {
+        return res.status(400).json({
+          success: false,
+          error: 'Both startTime and endTime (HH:mm) are required when specifying a custom interval',
+          timestamp: new Date().toISOString(),
+        });
+      }
+      Object.assign(baseMeta, buildIntervalMetadata(dateKey, String(startTime), String(endTime)));
     }
 
     const existing = await prisma.lead.findFirst({ where: { phone: String(phone).trim() } });
@@ -212,11 +240,25 @@ integrationRoutes.post('/callback-slot', verifyIntegrationApiKey, async (req, re
 
     const dateKey = date || getTodayIstDate();
     let intervalMeta: Record<string, any>;
-    if (slotPreset && SLOT_PRESET_MAP[slotPreset]) {
+    if (slotPreset) {
       const preset = SLOT_PRESET_MAP[slotPreset];
+      if (!preset) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid slotPreset. Valid options: ${Object.keys(SLOT_PRESET_MAP).join(', ')}`,
+          timestamp: new Date().toISOString(),
+        });
+      }
       intervalMeta = buildIntervalMetadata(dateKey, preset.startTime, preset.endTime, preset.label);
-    } else if (startTime && endTime) {
-      intervalMeta = buildIntervalMetadata(dateKey, startTime, endTime);
+    } else if (startTime !== undefined || endTime !== undefined) {
+      if (!startTime || !endTime) {
+        return res.status(400).json({
+          success: false,
+          error: 'Both startTime and endTime (HH:mm) are required when specifying a custom interval',
+          timestamp: new Date().toISOString(),
+        });
+      }
+      intervalMeta = buildIntervalMetadata(dateKey, String(startTime), String(endTime));
     } else {
       const defaultPreset = SLOT_PRESET_MAP.evening_6_8;
       intervalMeta = buildIntervalMetadata(dateKey, defaultPreset.startTime, defaultPreset.endTime, defaultPreset.label);

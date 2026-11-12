@@ -15,10 +15,9 @@ function escapeCSV(value: any): string {
 /**
  * Generates and triggers browser download of a comprehensive enterprise Call Audit CSV.
  */
-export function exportCallsToCSV(calls: Call[], filenamePrefix: string = 'fluid_live_call_audit') {
+export function exportCallsToCSV(calls: Call[], filenamePrefix: string = 'fluid_live_call_audit'): boolean {
   if (!calls || calls.length === 0) {
-    alert('No call records available to export.');
-    return;
+    return false;
   }
 
   const headers = [
@@ -97,5 +96,6 @@ export function exportCallsToCSV(calls: Call[], filenamePrefix: string = 'fluid_
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+  return true;
 }
 

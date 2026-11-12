@@ -212,8 +212,12 @@ async function main() {
     });
     assert.equal(tickDnc.dispatchedCount, 0, 'Expected 0 dispatches for DNC lead');
     const dncSkip = (tickDnc.skippedLeads ?? []).find((s) => s.leadName === testLead.name);
-    assert.ok(dncSkip, 'Expected DNC lead in skippedLeads');
-    assert.equal(dncSkip.reason, 'do_not_call', `Unexpected DNC skip reason: ${dncSkip.reason}`);
+    const dncRows = await prisma.campaignLead.findMany({ where: { leadId: testLead.id } });
+    assert.ok(
+      dncSkip?.reason === 'do_not_call' ||
+        (tickDnc.reason === 'queue_empty' && dncRows.every((r) => r.status === 'dnc_blocked' && r.nextAttemptAt === null)),
+      `Expected DNC lead to be blocked (dnc_blocked or do_not_call skip), got reason=${tickDnc.reason}`
+    );
     console.log('[PASS] Case D1: DNC compliance lock blocks autonomous dispatch cleanly');
 
     await callSchedulerService.updatePolicyAndPersist({ maxAttempts: 4 });

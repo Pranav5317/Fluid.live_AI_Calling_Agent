@@ -168,9 +168,9 @@ export class LeadRepository {
       });
     }
 
-    // If scheduledCallTime or scheduledAt was provided, sync to campaignLead queue
+    // If scheduledCallTime or scheduledAt was provided, sync to campaignLead queue (never override DNC)
     const scheduledTime = updates.metadata?.scheduledCallTime || updates.metadata?.scheduledAt;
-    if (scheduledTime) {
+    if (!nextDnc && scheduledTime) {
       try {
         const parsedDate = new Date(scheduledTime);
         if (!isNaN(parsedDate.getTime())) {
@@ -205,7 +205,7 @@ export class LeadRepository {
       } catch (err: any) {
         console.warn('Failed to sync scheduledCallTime to CampaignLead:', err?.message);
       }
-    } else if (updates.metadata && (updates.metadata.scheduledCallTime === null || updates.metadata.scheduledAt === null)) {
+    } else if (!nextDnc && updates.metadata && (updates.metadata.scheduledCallTime === null || updates.metadata.scheduledAt === null)) {
       try {
         await prisma.campaignLead.updateMany({
           where: { leadId: id },

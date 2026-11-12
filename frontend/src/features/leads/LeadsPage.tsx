@@ -87,8 +87,14 @@ export const LeadsPage: React.FC = () => {
         agentService.getAgents(),
         phoneService.getPhoneNumbers(),
       ]);
-      const agVerId = agList[0]?.currentVersionId || 'agv_sarvam_prod_v1';
-      const phoneId = numList[0]?.id || 'phone_sarvam_prod_01';
+      const agVerId = agList[0]?.currentVersionId;
+      const phoneId = numList[0]?.id;
+      if (!agVerId) {
+        throw new Error('No active agent version configured. Please create or publish an agent first.');
+      }
+      if (!phoneId) {
+        throw new Error('No outbound phone line configured. Please configure a phone number first.');
+      }
 
       await callService.initiateTestCall({
         agentVersionId: agVerId,

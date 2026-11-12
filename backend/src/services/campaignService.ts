@@ -6,6 +6,19 @@ import { backendSarvamProvider } from './sarvamProvider';
 import { callSchedulerService, buildLeadAgentVariables } from './callSchedulerService';
 
 export class ServerCampaignService {
+  async assertBudgetAvailable(): Promise<void> {
+    const guardrailRow = await prisma.systemSetting.findUnique({ where: { key: 'billing_guardrails' } });
+    const guardrails = guardrailRow?.value as { monthlyBudgetCapUsd?: number; enforceHardCap?: boolean } | undefined;
+    if (guardrails?.enforceHardCap && typeof guardrails.monthlyBudgetCapUsd === 'number') {
+      const currentPeriod = await prisma.billingPeriod.findFirst({ where: { status: 'current' } });
+      if (currentPeriod && currentPeriod.estimatedTotalCost >= guardrails.monthlyBudgetCapUsd) {
+        throw new Error(
+          `Monthly budget cap ($${guardrails.monthlyBudgetCapUsd}) reached ($${currentPeriod.estimatedTotalCost.toFixed(2)} used). Manual and autonomous dials are paused.`
+        );
+      }
+    }
+  }
+
   async getCampaigns(search = '', status = 'all'): Promise<Campaign[]> {
     return campaignRepository.getCampaigns(search, status);
   }
@@ -21,6 +34,8 @@ export class ServerCampaignService {
   async startCampaign(id: string): Promise<Campaign> {
     const campaign = await campaignRepository.getCampaignById(id);
     if (!campaign) throw new Error(`Campaign not found: ${id}`);
+
+    await this.assertBudgetAvailable();
 
     // 1. Update campaign status to running
     const runningCampaign = await campaignRepository.updateCampaignStatus(id, 'running');
@@ -133,6 +148,8 @@ export class ServerCampaignService {
   async dialBatch(campaignId: string, options?: { leadIds?: string[]; maxBatch?: number }) {
     const campaign = await campaignRepository.getCampaignById(campaignId);
     if (!campaign) throw new Error(`Campaign not found: ${campaignId}`);
+
+    await this.assertBudgetAvailable();
 
     const phoneNumberObj = await prisma.phoneNumber.findUnique({
       where: { id: campaign.phoneNumberId },

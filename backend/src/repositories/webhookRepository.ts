@@ -342,6 +342,38 @@ export class WebhookRepository {
   }
 
   async reprocessEvent(eventId: string): Promise<WebhookEvent> {
+    const existing = await prisma.webhookEvent.findUnique({ where: { id: eventId } });
+    if (!existing) {
+      throw new Error(`Webhook event not found: ${eventId}`);
+    }
+
+    if (existing.externalId?.startsWith('dlq_')) {
+      const targetUrlMap: Record<string, string | undefined> = {
+        ats_outbound: process.env.ATS_WEBHOOK_URL,
+        whatsapp_callback: process.env.WHATSAPP_WEBHOOK_URL,
+        calendar_booking: process.env.CALENDAR_BOOKING_WEBHOOK_URL,
+      };
+      const targetUrl = targetUrlMap[existing.eventType];
+      if (!targetUrl) {
+        const msg = `Target webhook URL for '${existing.eventType}' is not configured in environment variables`;
+        await prisma.webhookEvent.update({ where: { id: eventId }, data: { status: 'failed', error: msg } });
+        throw new Error(msg);
+      }
+
+      const resp = await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(existing.payload || {}),
+      });
+      if (!resp.ok) {
+        const msg = `Retry failed with HTTP ${resp.status}`;
+        await prisma.webhookEvent.update({ where: { id: eventId }, data: { status: 'failed', error: msg } });
+        throw new Error(msg);
+      }
+    } else if (existing.provider === 'sarvam') {
+      await this.processSarvamWebhook((existing.payload as Record<string, any>) || {});
+    }
+
     const updated = await prisma.webhookEvent.update({
       where: { id: eventId },
       data: {

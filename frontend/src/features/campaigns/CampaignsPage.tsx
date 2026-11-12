@@ -73,6 +73,7 @@ export const CampaignsPage: React.FC = () => {
   const [targetCampaign, setTargetCampaign] = useState<Campaign | null>(null);
   const [actionType, setActionType] = useState<'start' | 'pause' | 'stop' | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Feature 2: Live Execution Monitor Modal
   const [executionModalCampaignId, setExecutionModalCampaignId] = useState<string | null>(null);
@@ -216,14 +217,15 @@ export const CampaignsPage: React.FC = () => {
   const handleExecuteAction = async () => {
     if (!targetCampaign || !actionType) return;
     setActionLoading(true);
+    setActionError(null);
     try {
       if (actionType === 'start') await campaignService.startCampaign(targetCampaign.id);
       else if (actionType === 'pause') await campaignService.pauseCampaign(targetCampaign.id);
       else if (actionType === 'stop') await campaignService.stopCampaign(targetCampaign.id);
 
       fetchCampaigns();
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      setActionError(err?.message || `Failed to ${actionType} campaign.`);
     } finally {
       setActionLoading(false);
       setTargetCampaign(null);
@@ -281,6 +283,19 @@ export const CampaignsPage: React.FC = () => {
           </div>
         }
       />
+
+      {actionError && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-medium text-rose-800">
+          <span>{actionError}</span>
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            className="text-rose-600 hover:text-rose-900 font-bold"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Executive Floating Pill Segmented Navigation */}
       <div className="flex items-center">
