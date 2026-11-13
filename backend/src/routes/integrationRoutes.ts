@@ -21,12 +21,14 @@ function buildIntervalMetadata(dateKey: string, startTime: string, endTime: stri
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
     throw new Error('Invalid date format: expected YYYY-MM-DD');
   }
-  const timeRe = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  const timeRe = /^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/;
   if (!timeRe.test(startTime) || !timeRe.test(endTime)) {
-    throw new Error('Invalid time format: startTime and endTime must be HH:mm (00:00–23:59)');
+    throw new Error('Invalid time format: startTime and endTime must be HH:mm or HH:mm:ss (00:00–23:59)');
   }
-  const startDate = new Date(`${dateKey}T${startTime}:00+05:30`);
-  const endDate = new Date(`${dateKey}T${endTime}:00+05:30`);
+  const normStart = startTime.length === 5 ? `${startTime}:00` : startTime;
+  const normEnd = endTime.length === 5 ? `${endTime}:00` : endTime;
+  const startDate = new Date(`${dateKey}T${normStart}+05:30`);
+  const endDate = new Date(`${dateKey}T${normEnd}+05:30`);
   if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
     throw new Error('Invalid date or time value for calling interval');
   }
@@ -36,8 +38,8 @@ function buildIntervalMetadata(dateKey: string, startTime: string, endTime: stri
 
   return {
     scheduledSlotDate: dateKey,
-    scheduledSlotStart: startTime,
-    scheduledSlotEnd: endTime,
+    scheduledSlotStart: startTime.slice(0, 5),
+    scheduledSlotEnd: endTime.slice(0, 5),
     scheduledSlotLabel: label || `Between ${startTime} – ${endTime}`,
     scheduledCallTime: startDate.toISOString(),
     scheduledWindowEnd: endDate.toISOString(),

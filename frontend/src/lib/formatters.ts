@@ -77,13 +77,14 @@ export function getIstDateKey(daysOffset = 0, baseDate = new Date()): string {
  */
 export function formatTime12h(hhmm: string): string {
   if (!hhmm || !hhmm.includes(':')) return hhmm;
-  const [hStr, mStr] = hhmm.split(':');
+  const [hStr, mStr, sStr] = hhmm.split(':');
   const h = Number(hStr);
   const m = Number(mStr);
   if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
   const period = h >= 12 ? 'PM' : 'AM';
   const hour12 = h % 12 === 0 ? 12 : h % 12;
-  return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
+  const secPart = sStr !== undefined && sStr !== '' ? `:${String(Number(sStr) || 0).padStart(2, '0')}` : '';
+  return `${hour12}:${String(m).padStart(2, '0')}${secPart} ${period}`;
 }
 
 /**
