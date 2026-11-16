@@ -50,10 +50,10 @@ export const themeTokens = {
     },
   },
   fontFamily: {
-    display: ['"Armany"', '"Cormorant Garamond"', 'Georgia', 'serif'],
+    display: ['"Playfair Display"', 'Georgia', 'serif'],
     sans: [
-      '"DM Sans"',
       '"Plus Jakarta Sans"',
+      '"DM Sans"',
       'Inter',
       '-apple-system',
       'BlinkMacSystemFont',
@@ -61,7 +61,7 @@ export const themeTokens = {
       'Roboto',
       'sans-serif',
     ],
-    body: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+    body: ['"Plus Jakarta Sans"', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
     mono: [
       '"JetBrains Mono"',
       'ui-monospace',
