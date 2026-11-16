@@ -14,6 +14,7 @@ export interface IAgentService {
   updateAgent(id: string, updates: Partial<Pick<Agent, 'name' | 'useCase'>> & { config?: AgentConfig; versionNotes?: string }): Promise<Agent>;
   toggleAgentStatus(id: string): Promise<Agent>;
   duplicateAgent(id: string): Promise<Agent>;
+  deleteAgent(id: string): Promise<{ success: boolean; message: string }>;
   syncWithSarvam(id: string): Promise<any>;
 }
 
@@ -61,6 +62,10 @@ class AgentService implements IAgentService {
 
   async syncWithSarvam(id: string): Promise<any> {
     return await apiClient.post<any>(`/agents/${id}/sync-sarvam`);
+  }
+
+  async deleteAgent(id: string): Promise<{ success: boolean; message: string }> {
+    return await apiClient.delete<{ success: boolean; message: string }>(`/agents/${id}`);
   }
 
   async previewVoice(params: { text?: string; speaker: string; languageCode?: string }): Promise<string | null> {

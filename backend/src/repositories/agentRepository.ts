@@ -158,6 +158,26 @@ export class AgentRepository {
       updatedAt: updated.updatedAt.toISOString(),
     };
   }
+
+  async deleteAgent(id: string): Promise<boolean> {
+    const existing = await prisma.agent.findUnique({
+      where: { id },
+      include: { campaigns: true, calls: true },
+    });
+    if (!existing) throw new Error(`Agent not found: ${id}`);
+    if (existing.campaigns.length > 0) {
+      throw new Error(`Cannot delete agent with ${existing.campaigns.length} linked campaign(s). Please archive or reassign campaigns first.`);
+    }
+    if (existing.calls.length > 0) {
+      throw new Error(`Cannot delete agent with ${existing.calls.length} historical call log(s). Please deactivate the agent instead.`);
+    }
+
+    await prisma.$transaction([
+      prisma.agentVersion.deleteMany({ where: { agentId: id } }),
+      prisma.agent.delete({ where: { id } }),
+    ]);
+    return true;
+  }
 }
 
 export const agentRepository = new AgentRepository();

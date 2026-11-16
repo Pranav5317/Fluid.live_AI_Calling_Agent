@@ -31,6 +31,10 @@ export class ServerAgentService {
     return agentRepository.toggleAgentStatus(id);
   }
 
+  async deleteAgent(id: string): Promise<boolean> {
+    return agentRepository.deleteAgent(id);
+  }
+
   async syncWithSarvam(agentId: string): Promise<SarvamAgentMapping> {
     const agentDetails = await agentRepository.getAgentById(agentId);
     if (!agentDetails) throw new Error(`Agent not found: ${agentId}`);

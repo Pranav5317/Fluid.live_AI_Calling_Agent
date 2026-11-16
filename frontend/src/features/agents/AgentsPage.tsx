@@ -3,6 +3,7 @@ import { PageHeader } from '../../components/common/PageHeader';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
+import { Modal } from '../../components/common/Modal';
 import { LoadingState } from '../../components/common/LoadingState';
 import { EmptyState } from '../../components/common/EmptyState';
 import { agentService } from '../../services/agentService';
@@ -21,6 +22,7 @@ import {
   Mic,
   Languages,
   PhoneCall,
+  Trash2,
 } from 'lucide-react';
 
 export const AgentsPage: React.FC = () => {
@@ -32,6 +34,12 @@ export const AgentsPage: React.FC = () => {
   const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
   const [editingInitialData, setEditingInitialData] = useState<any>(undefined);
   const [testCallAgent, setTestCallAgent] = useState<Agent | null>(null);
+
+  // Delete & Duplicate State
+  const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
   const fetchAgents = async () => {
     setLoading(true);
@@ -87,8 +95,31 @@ export const AgentsPage: React.FC = () => {
   };
 
   const handleDuplicate = async (id: string) => {
-    await agentService.duplicateAgent(id);
-    fetchAgents();
+    if (duplicatingId) return;
+    setDuplicatingId(id);
+    try {
+      await agentService.duplicateAgent(id);
+      await fetchAgents();
+    } catch (err: any) {
+      console.error('Failed to duplicate agent:', err);
+    } finally {
+      setDuplicatingId(null);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!agentToDelete) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await agentService.deleteAgent(agentToDelete.id);
+      setAgentToDelete(null);
+      await fetchAgents();
+    } catch (err: any) {
+      setDeleteError(err?.message || 'Failed to delete agent. Please check active campaigns.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -158,10 +189,22 @@ export const AgentsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleDuplicate(ag.id)}
-                    className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded"
+                    disabled={duplicatingId === ag.id}
+                    className="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded disabled:opacity-50"
                     title="Duplicate Agent"
                   >
                     <Copy className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteError(null);
+                      setAgentToDelete(ag);
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                    title="Delete Agent"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </button>
                   <Button
                     variant="outline"
@@ -204,6 +247,51 @@ export const AgentsPage: React.FC = () => {
           isOpen={!!testCallAgent}
           onClose={() => setTestCallAgent(null)}
         />
+      )}
+
+      {/* Delete Agent Confirmation Modal */}
+      {agentToDelete && (
+        <Modal
+          isOpen={!!agentToDelete}
+          onClose={() => !deleting && setAgentToDelete(null)}
+          title="Delete Calling Agent"
+          size="sm"
+          footer={
+            <div className="flex justify-end gap-2 w-full">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAgentToDelete(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+                onClick={handleConfirmDelete}
+                isLoading={deleting}
+              >
+                Delete Agent
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-3">
+            <p className="text-sm text-slate-700">
+              Are you sure you want to delete <strong className="text-slate-900">{agentToDelete.name}</strong>?
+            </p>
+            {deleteError && (
+              <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700">
+                {deleteError}
+              </div>
+            )}
+            <p className="text-xs text-slate-500">
+              This action permanently removes this agent and its version history. Active campaigns linked to this agent must be archived or reassigned first.
+            </p>
+          </div>
+        </Modal>
       )}
     </div>
   );

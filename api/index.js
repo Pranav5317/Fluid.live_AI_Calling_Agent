@@ -1646,6 +1646,24 @@ var AgentRepository = class {
       updatedAt: updated.updatedAt.toISOString()
     };
   }
+  async deleteAgent(id) {
+    const existing = await prisma_default.agent.findUnique({
+      where: { id },
+      include: { campaigns: true, calls: true }
+    });
+    if (!existing) throw new Error(`Agent not found: ${id}`);
+    if (existing.campaigns.length > 0) {
+      throw new Error(`Cannot delete agent with ${existing.campaigns.length} linked campaign(s). Please archive or reassign campaigns first.`);
+    }
+    if (existing.calls.length > 0) {
+      throw new Error(`Cannot delete agent with ${existing.calls.length} historical call log(s). Please deactivate the agent instead.`);
+    }
+    await prisma_default.$transaction([
+      prisma_default.agentVersion.deleteMany({ where: { agentId: id } }),
+      prisma_default.agent.delete({ where: { id } })
+    ]);
+    return true;
+  }
 };
 var agentRepository = new AgentRepository();
 
@@ -2250,6 +2268,9 @@ var ServerAgentService = class {
   async toggleAgentStatus(id) {
     return agentRepository.toggleAgentStatus(id);
   }
+  async deleteAgent(id) {
+    return agentRepository.deleteAgent(id);
+  }
   async syncWithSarvam(agentId) {
     const agentDetails = await agentRepository.getAgentById(agentId);
     if (!agentDetails) throw new Error(`Agent not found: ${agentId}`);
@@ -2313,6 +2334,14 @@ agentRoutes.post("/:id/activate", async (req, res) => {
   try {
     const agent = await serverAgentService.toggleAgentStatus(req.params.id);
     res.json({ success: true, data: agent, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
+  }
+});
+agentRoutes.delete("/:id", async (req, res) => {
+  try {
+    await serverAgentService.deleteAgent(req.params.id);
+    res.json({ success: true, message: "Agent deleted successfully", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   } catch (err) {
     res.status(400).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   }

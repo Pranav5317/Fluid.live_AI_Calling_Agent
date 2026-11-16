@@ -68,6 +68,16 @@ agentRoutes.post('/:id/activate', async (req, res) => {
   }
 });
 
+// DELETE /api/agents/:id
+agentRoutes.delete('/:id', async (req, res) => {
+  try {
+    await serverAgentService.deleteAgent(req.params.id);
+    res.json({ success: true, message: 'Agent deleted successfully', timestamp: new Date().toISOString() });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
+  }
+});
+
 // POST /api/agents/:id/sync-sarvam
 agentRoutes.post('/:id/sync-sarvam', async (req, res) => {
   try {
