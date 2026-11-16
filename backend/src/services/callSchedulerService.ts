@@ -312,7 +312,7 @@ export class CallSchedulerService {
   /**
    * Main Dynamic Scheduler Engine Tick.
    * Can be invoked via Vercel Cron, background setInterval, or Manual Trigger.
-   * Supports `dryRun: true` for full sanity testing without consuming telephony credits.
+   * Supports `dryRun: true` for full simulation runs without consuming telephony credits.
    */
   async runSchedulerTick(options?: { forceIgnoreWindow?: boolean; maxConcurrency?: number; dryRun?: boolean; leadId?: string }) {
     const isDryRun = !!options?.dryRun;
@@ -584,7 +584,7 @@ export class CallSchedulerService {
             scheduledWindowEnd: meta.scheduledWindowEnd || null,
             agentVariables,
             status: 'simulated_dispatched',
-            note: 'Sanity test passed: Lead is eligible and within valid calling interval.',
+            note: 'Simulation verified: Lead is eligible and within active calling interval.',
           });
           continue;
         }
@@ -677,7 +677,7 @@ export class CallSchedulerService {
       return {
         success: true,
         message: isDryRun
-          ? `Sanity Test / Dry Run Complete: ${dispatches.length} eligible lead(s), ${skippedLeads.length} skipped.`
+          ? `Simulation Run Complete: ${dispatches.length} eligible lead(s), ${skippedLeads.length} deferred.`
           : `Dynamic Scheduler dispatched ${dispatches.filter(d => d.status === 'dispatched').length} call(s) autonomously.`,
         durationMs: Date.now() - startTime,
         windowInfo,

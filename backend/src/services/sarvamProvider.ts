@@ -93,7 +93,7 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
       defaultAppId: this.defaultAppId,
       connectionId: this.connectionId,
       agentPhoneNumber: this.agentPhoneNumber,
-      maskedApiKey: key ? (key.length > 18 ? `${key.substring(0, 14)}â€¢â€¢â€¢â€¢${key.substring(key.length - 4)}` : 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢') : null,
+      maskedApiKey: key ? (key.length > 18 ? `${key.substring(0, 14)}••••${key.substring(key.length - 4)}` : '••••••••') : null,
       lastVerifiedAt: this.lastVerifiedAt,
       latencyMs: this.lastLatencyMs,
     };

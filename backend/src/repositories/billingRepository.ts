@@ -58,7 +58,7 @@ export class BillingRepository {
     const totalSeconds = calls.reduce((acc, c) => acc + (c.durationSeconds || 0), 0);
     const totalMinutesUsed = Number((totalSeconds / 60).toFixed(1));
 
-    // Rates: Direct Sarvam Telephony & Voice stream rate â‚¹1.00/min, Fluid.live platform rate â‚¹0.50/min
+    // Rates: Direct Sarvam Telephony & Voice stream rate ₹1.00/min, Fluid.live platform rate ₹0.50/min
     const providerCostTotal = Number((totalMinutesUsed * 1.00).toFixed(2));
     const platformCostTotal = Number((totalMinutesUsed * 0.50).toFixed(2));
     const estimatedTotalCost = Number((providerCostTotal + platformCostTotal).toFixed(2));
@@ -87,7 +87,7 @@ export class BillingRepository {
           id: 'li_srv_1',
           name: 'Outbound SIP Trunk Telephony & Audio Streaming',
           category: 'telephony' as const,
-          unitRate: 'â‚¹0.60 / min',
+          unitRate: '₹0.60 / min',
           quantity: `${totalMinutesUsed.toFixed(1)} mins`,
           amount: Number((totalMinutesUsed * 0.60).toFixed(2)),
         },
@@ -95,7 +95,7 @@ export class BillingRepository {
           id: 'li_srv_2',
           name: 'Sarvam Saaras Real-Time Speech-to-Text (Indic ASR)',
           category: 'telephony' as const,
-          unitRate: 'â‚¹0.30 / min',
+          unitRate: '₹0.30 / min',
           quantity: `${totalMinutesUsed.toFixed(1)} mins`,
           amount: Number((totalMinutesUsed * 0.30).toFixed(2)),
         },
@@ -103,7 +103,7 @@ export class BillingRepository {
           id: 'li_srv_3',
           name: 'Sarvam Bulbul Speech Synthesis (Natural Indic TTS)',
           category: 'telephony' as const,
-          unitRate: 'â‚¹0.10 / min',
+          unitRate: '₹0.10 / min',
           quantity: `${totalMinutesUsed.toFixed(1)} mins`,
           amount: Number((totalMinutesUsed * 0.10).toFixed(2)),
         },
@@ -128,7 +128,7 @@ export class BillingRepository {
           id: 'li_fld_1',
           name: 'Dashboard Campaign Orchestration & State Machine',
           category: 'platform' as const,
-          unitRate: 'â‚¹0.50 / min',
+          unitRate: '₹0.50 / min',
           quantity: `${totalMinutesUsed.toFixed(1)} mins`,
           amount: platformCostTotal,
         },

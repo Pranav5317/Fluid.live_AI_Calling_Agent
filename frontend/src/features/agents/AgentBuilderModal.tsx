@@ -231,7 +231,7 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
                   Agent Operating Environment
                 </span>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  This calling agent handles automated outbound phone outreach for campaigns and single test calls. Telephony execution and voice synthesis run on Fluid Voice Engine, with recordings archived to Cloudflare R2.
+                  This calling agent handles automated outbound phone outreach for campaigns and single on-demand calls. Telephony execution and voice synthesis run on Fluid Voice Engine, with recordings archived to Cloudflare R2.
                 </p>
               </div>
             </div>

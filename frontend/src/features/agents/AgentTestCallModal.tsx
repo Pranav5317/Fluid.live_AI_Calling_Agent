@@ -21,8 +21,8 @@ export const AgentTestCallModal: React.FC<AgentTestCallModalProps> = ({
   onClose,
   onCallInitiated,
 }) => {
-  const [phoneNumber, setPhoneNumber] = useState('+919922935920');
-  const [leadName, setLeadName] = useState('Pranav');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [leadName, setLeadName] = useState('');
   const [calling, setCalling] = useState(false);
   const [callResult, setCallResult] = useState<{ success: boolean; message: string; callId?: string } | null>(null);
 
@@ -67,7 +67,7 @@ export const AgentTestCallModal: React.FC<AgentTestCallModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Live Agent Telephony Test Sandbox"
+      title="Direct Agent Telephony Preview"
       size="md"
       footer={
         <div className="flex justify-end gap-2 w-full">
@@ -118,12 +118,12 @@ export const AgentTestCallModal: React.FC<AgentTestCallModalProps> = ({
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Test Contact Name (Persona variable: user_name)
+              Recipient Contact Name (Persona variable: user_name)
             </label>
             <Input
               value={leadName}
               onChange={e => setLeadName(e.target.value)}
-              placeholder="Pranav"
+              placeholder="e.g. Rahul Sharma"
             />
           </div>
         </div>

@@ -821,7 +821,7 @@ export class CallAnalyticsService {
       return {
         overallScore: 0,
         tier: 'Cold / Disqualified',
-        summaryBadge: 'â„ï¸ Disqualified',
+        summaryBadge: 'Disqualified',
         bant: {
           budget: { score: 0, max: 25, status: 'unqualified', note: 'No contact established' },
           authority: { score: 0, max: 25, status: 'gatekeeper', note: 'Unreachable' },
@@ -911,14 +911,14 @@ export class CallAnalyticsService {
 
     const overallScore = Math.min(100, Math.max(0, budgetScore + authorityScore + needScore + timingScore));
     let tier: 'Hot Lead' | 'Warm Prospect' | 'Cold / Disqualified' = 'Warm Prospect';
-    let summaryBadge = 'âš¡ Warm Prospect';
+    let summaryBadge = 'Warm Prospect';
 
     if (overallScore >= 75) {
       tier = 'Hot Lead';
-      summaryBadge = 'ðŸ”¥ Hot Lead';
+      summaryBadge = 'Hot Lead';
     } else if (overallScore < 45) {
       tier = 'Cold / Disqualified';
-      summaryBadge = 'â„ï¸ Disqualified';
+      summaryBadge = 'Disqualified';
     }
 
     return {
@@ -983,24 +983,24 @@ export class CallAnalyticsService {
     extractedVars: Record<string, any>
   ): FollowUpRecommendations {
     const leadName = extractedVars.user_name || call.leadName || 'there';
-    const cleanPhone = (call.leadPhone || '').replace(/\D/g, '') || '919922935920';
+    const cleanPhone = (call.leadPhone || '').replace(/\D/g, '');
 
-    let whatsappMsg = `Hi ${leadName}! ðŸ‘‹ Thank you for speaking with our AI team at Fluid.live today. `;
+    let whatsappMsg = `Hi ${leadName}! Thank you for speaking with our AI team at Fluid.live today. `;
     if (leadScore.tier === 'Hot Lead') {
-      whatsappMsg += `As discussed, here is the executive overview and demo deck on how our autonomous voice agents streamline customer calling: https://fluid.live/demo. Let us know when is best for a quick 10-minute setup walkthrough! ðŸš€`;
+      whatsappMsg += `As discussed, here is the executive overview and demo deck on how our autonomous voice agents streamline customer calling: https://fluid.live/demo. Let us know when is best for a quick 10-minute setup walkthrough!`;
     } else {
-      whatsappMsg += `Sharing our 1-minute platform overview on enterprise voice AI automation: https://fluid.live/overview. Feel free to reply here whenever convenient! ðŸ˜Š`;
+      whatsappMsg += `Sharing our 1-minute platform overview on enterprise voice AI automation: https://fluid.live/overview. Feel free to reply here whenever convenient!`;
     }
 
-    const emailSubject = `Fluid.live Voice AI â€” Next Steps & Executive Summary for ${leadName}`;
+    const emailSubject = `Fluid.live Voice AI - Next Steps & Executive Summary for ${leadName}`;
     const emailBody = `Hi ${leadName},
 
 Thank you for your time on our call today.
 
 Summary of Our Discussion:
-â€¢ Explored how Fluid.live deploys low-latency voice AI agents for high-volume customer calling.
-â€¢ Identified key requirements around automated outbound workflows and qualification.
-â€¢ Next milestone: Solution architect walkthrough and live pilot trial.
+• Explored how Fluid.live deploys low-latency voice AI agents for high-volume customer calling.
+• Identified key requirements around automated outbound workflows and qualification.
+• Next milestone: Solution architect walkthrough and live pilot trial.
 
 You can explore our interactive calling platform anytime at:
 https://fluid.live
@@ -1036,18 +1036,18 @@ https://fluid.live`;
     const actions: string[] = [];
 
     if (leadScore.tier === 'Hot Lead') {
-      actions.push('âš¡ High Priority: Trigger one-click WhatsApp follow-up with executive one-pager.');
-      actions.push('ðŸ“… Book 15-minute Solution Architecture demonstration with enterprise AE.');
+      actions.push('High Priority: Trigger one-click WhatsApp follow-up with executive one-pager.');
+      actions.push('Schedule: Book 15-minute Solution Architecture demonstration with enterprise AE.');
     } else if (leadScore.tier === 'Warm Prospect') {
-      actions.push('ðŸ’¬ Dispatch product collateral and case studies via digital channel.');
-      actions.push('â° Schedule follow-up outreach in automated cadence within 48 hours.');
+      actions.push('Outreach: Dispatch product collateral and case studies via digital channel.');
+      actions.push('Cadence: Schedule follow-up outreach in automated cadence within 48 hours.');
     } else {
-      actions.push('ðŸ›‘ Suppress dialer from immediate outbound rotation.');
-      actions.push('ðŸ“¥ Enroll lead into quarterly newsletter / nurture drip.');
+      actions.push('Suppression: Suppress dialer from immediate outbound rotation.');
+      actions.push('Nurture: Enroll lead into quarterly newsletter / nurture drip.');
     }
 
     if (objections.some(o => o.category === 'pricing')) {
-      actions.push('ðŸ“Š Prepare custom ROI comparison vs legacy BPO call center costs.');
+      actions.push('Financial: Prepare custom ROI comparison vs legacy BPO call center costs.');
     }
 
     return actions;

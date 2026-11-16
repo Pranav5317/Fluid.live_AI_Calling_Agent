@@ -184,7 +184,7 @@ export class DashboardRepository {
         id: `act_${call.id}`,
         type: 'call_completed',
         title: `Outbound Call ${call.status === 'completed' ? 'Completed' : 'Initiated'} (${leadName})`,
-        description: `Duration: ${call.durationSeconds}s â€¢ Outcome: ${outcomeText} â€¢ Provider ID: ${call.externalCallId.slice(0, 18)}...`,
+        description: `Duration: ${call.durationSeconds}s • Outcome: ${outcomeText} • Provider ID: ${call.externalCallId.slice(0, 18)}...`,
         timestamp: call.startedAt.toISOString(),
         entityId: call.id,
       });
@@ -195,7 +195,7 @@ export class DashboardRepository {
         id: `act_${cmp.id}`,
         type: 'campaign_started',
         title: `Campaign: ${cmp.name}`,
-        description: `Agent: ${cmp.agent?.name || cmp.agentId} â€¢ Target Audience: ${cmp.totalLeads} lead(s) â€¢ Status: ${cmp.status}`,
+        description: `Agent: ${cmp.agent?.name || cmp.agentId} • Target Audience: ${cmp.totalLeads} lead(s) • Status: ${cmp.status}`,
         timestamp: cmp.createdAt.toISOString(),
         entityId: cmp.id,
       });

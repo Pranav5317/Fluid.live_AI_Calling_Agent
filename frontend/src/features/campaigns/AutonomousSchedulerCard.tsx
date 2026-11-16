@@ -141,7 +141,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
                 onChange={e => setForceBypassWindow(e.target.checked)}
                 className="rounded border-white/20 text-[#1D4ED8] focus:ring-0 cursor-pointer"
               />
-              <span className="text-[11px] font-medium">Bypass Calling Window (Dev Test)</span>
+              <span className="text-[11px] font-medium">Override Window Restrictions</span>
             </label>
 
             <Button
@@ -162,7 +162,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
               leftIcon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />}
               className="border-emerald-400/30 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/25 text-xs font-semibold rounded-full"
             >
-              Sanity Test (Dry Run)
+              Simulate Run (Dry Run)
             </Button>
 
             <Button
@@ -172,7 +172,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
               leftIcon={<Zap className="h-3.5 w-3.5" />}
               className="bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold text-xs shadow-md rounded-full"
             >
-              Trigger Scheduler Tick Now
+              Execute Dispatch Cycle Now
             </Button>
           </div>
         </div>

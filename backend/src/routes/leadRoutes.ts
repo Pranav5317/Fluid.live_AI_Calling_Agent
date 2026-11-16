@@ -94,7 +94,7 @@ leadRoutes.post('/cleanup-placeholders', async (req, res) => {
     res.json({
       success: true,
       data: result,
-      message: 'All placeholder leads and accidental test calls successfully removed. Only 9922935920 remains.',
+      message: 'Lead database records synchronized and sanitized successfully.',
       timestamp: new Date().toISOString(),
     });
   } catch (err: any) {

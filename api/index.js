@@ -678,7 +678,7 @@ var CallAnalyticsService = class {
       return {
         overallScore: 0,
         tier: "Cold / Disqualified",
-        summaryBadge: "\xE2\x9D\u201E\xEF\xB8\x8F Disqualified",
+        summaryBadge: "Disqualified",
         bant: {
           budget: { score: 0, max: 25, status: "unqualified", note: "No contact established" },
           authority: { score: 0, max: 25, status: "gatekeeper", note: "Unreachable" },
@@ -754,13 +754,13 @@ var CallAnalyticsService = class {
     }
     const overallScore = Math.min(100, Math.max(0, budgetScore + authorityScore + needScore + timingScore));
     let tier = "Warm Prospect";
-    let summaryBadge = "\xE2\u0161\xA1 Warm Prospect";
+    let summaryBadge = "Warm Prospect";
     if (overallScore >= 75) {
       tier = "Hot Lead";
-      summaryBadge = "\xF0\u0178\u201D\xA5 Hot Lead";
+      summaryBadge = "Hot Lead";
     } else if (overallScore < 45) {
       tier = "Cold / Disqualified";
-      summaryBadge = "\xE2\x9D\u201E\xEF\xB8\x8F Disqualified";
+      summaryBadge = "Disqualified";
     }
     return {
       overallScore,
@@ -809,22 +809,22 @@ var CallAnalyticsService = class {
    */
   generateFollowUpRecommendations(call, leadScore, buyingSignals, extractedVars) {
     const leadName = extractedVars.user_name || call.leadName || "there";
-    const cleanPhone = (call.leadPhone || "").replace(/\D/g, "") || "919922935920";
-    let whatsappMsg = `Hi ${leadName}! \xF0\u0178\u2018\u2039 Thank you for speaking with our AI team at Fluid.live today. `;
+    const cleanPhone = (call.leadPhone || "").replace(/\D/g, "");
+    let whatsappMsg = `Hi ${leadName}! Thank you for speaking with our AI team at Fluid.live today. `;
     if (leadScore.tier === "Hot Lead") {
-      whatsappMsg += `As discussed, here is the executive overview and demo deck on how our autonomous voice agents streamline customer calling: https://fluid.live/demo. Let us know when is best for a quick 10-minute setup walkthrough! \xF0\u0178\u0161\u20AC`;
+      whatsappMsg += `As discussed, here is the executive overview and demo deck on how our autonomous voice agents streamline customer calling: https://fluid.live/demo. Let us know when is best for a quick 10-minute setup walkthrough!`;
     } else {
-      whatsappMsg += `Sharing our 1-minute platform overview on enterprise voice AI automation: https://fluid.live/overview. Feel free to reply here whenever convenient! \xF0\u0178\u02DC\u0160`;
+      whatsappMsg += `Sharing our 1-minute platform overview on enterprise voice AI automation: https://fluid.live/overview. Feel free to reply here whenever convenient!`;
     }
-    const emailSubject = `Fluid.live Voice AI \xE2\u20AC\u201D Next Steps & Executive Summary for ${leadName}`;
+    const emailSubject = `Fluid.live Voice AI - Next Steps & Executive Summary for ${leadName}`;
     const emailBody = `Hi ${leadName},
 
 Thank you for your time on our call today.
 
 Summary of Our Discussion:
-\xE2\u20AC\xA2 Explored how Fluid.live deploys low-latency voice AI agents for high-volume customer calling.
-\xE2\u20AC\xA2 Identified key requirements around automated outbound workflows and qualification.
-\xE2\u20AC\xA2 Next milestone: Solution architect walkthrough and live pilot trial.
+\u2022 Explored how Fluid.live deploys low-latency voice AI agents for high-volume customer calling.
+\u2022 Identified key requirements around automated outbound workflows and qualification.
+\u2022 Next milestone: Solution architect walkthrough and live pilot trial.
 
 You can explore our interactive calling platform anytime at:
 https://fluid.live
@@ -852,17 +852,17 @@ https://fluid.live`;
   extractDealActionItems(call, leadScore, nextBestAction, objections) {
     const actions = [];
     if (leadScore.tier === "Hot Lead") {
-      actions.push("\xE2\u0161\xA1 High Priority: Trigger one-click WhatsApp follow-up with executive one-pager.");
-      actions.push("\xF0\u0178\u201C\u2026 Book 15-minute Solution Architecture demonstration with enterprise AE.");
+      actions.push("High Priority: Trigger one-click WhatsApp follow-up with executive one-pager.");
+      actions.push("Schedule: Book 15-minute Solution Architecture demonstration with enterprise AE.");
     } else if (leadScore.tier === "Warm Prospect") {
-      actions.push("\xF0\u0178\u2019\xAC Dispatch product collateral and case studies via digital channel.");
-      actions.push("\xE2\x8F\xB0 Schedule follow-up outreach in automated cadence within 48 hours.");
+      actions.push("Outreach: Dispatch product collateral and case studies via digital channel.");
+      actions.push("Cadence: Schedule follow-up outreach in automated cadence within 48 hours.");
     } else {
-      actions.push("\xF0\u0178\u203A\u2018 Suppress dialer from immediate outbound rotation.");
-      actions.push("\xF0\u0178\u201C\xA5 Enroll lead into quarterly newsletter / nurture drip.");
+      actions.push("Suppression: Suppress dialer from immediate outbound rotation.");
+      actions.push("Nurture: Enroll lead into quarterly newsletter / nurture drip.");
     }
     if (objections.some((o) => o.category === "pricing")) {
-      actions.push("\xF0\u0178\u201C\u0160 Prepare custom ROI comparison vs legacy BPO call center costs.");
+      actions.push("Financial: Prepare custom ROI comparison vs legacy BPO call center costs.");
     }
     return actions;
   }
@@ -1485,7 +1485,7 @@ leadRoutes.post("/cleanup-placeholders", async (req, res) => {
     res.json({
       success: true,
       data: result,
-      message: "All placeholder leads and accidental test calls successfully removed. Only 9922935920 remains.",
+      message: "Lead database records synchronized and sanitized successfully.",
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
     });
   } catch (err) {
@@ -1730,7 +1730,7 @@ var BackendSarvamProvider = class {
       defaultAppId: this.defaultAppId,
       connectionId: this.connectionId,
       agentPhoneNumber: this.agentPhoneNumber,
-      maskedApiKey: key ? key.length > 18 ? `${key.substring(0, 14)}\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2${key.substring(key.length - 4)}` : "\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2\xE2\u20AC\xA2" : null,
+      maskedApiKey: key ? key.length > 18 ? `${key.substring(0, 14)}\u2022\u2022\u2022\u2022${key.substring(key.length - 4)}` : "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" : null,
       lastVerifiedAt: this.lastVerifiedAt,
       latencyMs: this.lastLatencyMs
     };
@@ -2852,7 +2852,7 @@ var CallSchedulerService = class {
   /**
    * Main Dynamic Scheduler Engine Tick.
    * Can be invoked via Vercel Cron, background setInterval, or Manual Trigger.
-   * Supports `dryRun: true` for full sanity testing without consuming telephony credits.
+   * Supports `dryRun: true` for full simulation runs without consuming telephony credits.
    */
   async runSchedulerTick(options) {
     const isDryRun = !!options?.dryRun;
@@ -3090,7 +3090,7 @@ var CallSchedulerService = class {
             scheduledWindowEnd: meta.scheduledWindowEnd || null,
             agentVariables,
             status: "simulated_dispatched",
-            note: "Sanity test passed: Lead is eligible and within valid calling interval."
+            note: "Simulation verified: Lead is eligible and within active calling interval."
           });
           continue;
         }
@@ -3170,7 +3170,7 @@ var CallSchedulerService = class {
       }
       return {
         success: true,
-        message: isDryRun ? `Sanity Test / Dry Run Complete: ${dispatches.length} eligible lead(s), ${skippedLeads.length} skipped.` : `Dynamic Scheduler dispatched ${dispatches.filter((d) => d.status === "dispatched").length} call(s) autonomously.`,
+        message: isDryRun ? `Simulation Run Complete: ${dispatches.length} eligible lead(s), ${skippedLeads.length} deferred.` : `Dynamic Scheduler dispatched ${dispatches.filter((d) => d.status === "dispatched").length} call(s) autonomously.`,
         durationMs: Date.now() - startTime,
         windowInfo,
         activeCallsCount: activeCallsCount + dispatches.filter((d) => d.status === "dispatched").length,
@@ -4994,7 +4994,7 @@ var BillingRepository = class {
           id: "li_srv_1",
           name: "Outbound SIP Trunk Telephony & Audio Streaming",
           category: "telephony",
-          unitRate: "\xE2\u201A\xB90.60 / min",
+          unitRate: "\u20B90.60 / min",
           quantity: `${totalMinutesUsed.toFixed(1)} mins`,
           amount: Number((totalMinutesUsed * 0.6).toFixed(2))
         },
@@ -5002,7 +5002,7 @@ var BillingRepository = class {
           id: "li_srv_2",
           name: "Sarvam Saaras Real-Time Speech-to-Text (Indic ASR)",
           category: "telephony",
-          unitRate: "\xE2\u201A\xB90.30 / min",
+          unitRate: "\u20B90.30 / min",
           quantity: `${totalMinutesUsed.toFixed(1)} mins`,
           amount: Number((totalMinutesUsed * 0.3).toFixed(2))
         },
@@ -5010,7 +5010,7 @@ var BillingRepository = class {
           id: "li_srv_3",
           name: "Sarvam Bulbul Speech Synthesis (Natural Indic TTS)",
           category: "telephony",
-          unitRate: "\xE2\u201A\xB90.10 / min",
+          unitRate: "\u20B90.10 / min",
           quantity: `${totalMinutesUsed.toFixed(1)} mins`,
           amount: Number((totalMinutesUsed * 0.1).toFixed(2))
         }
@@ -5033,7 +5033,7 @@ var BillingRepository = class {
           id: "li_fld_1",
           name: "Dashboard Campaign Orchestration & State Machine",
           category: "platform",
-          unitRate: "\xE2\u201A\xB90.50 / min",
+          unitRate: "\u20B90.50 / min",
           quantity: `${totalMinutesUsed.toFixed(1)} mins`,
           amount: platformCostTotal
         }
@@ -5307,7 +5307,7 @@ var DashboardRepository = class {
         id: `act_${call.id}`,
         type: "call_completed",
         title: `Outbound Call ${call.status === "completed" ? "Completed" : "Initiated"} (${leadName})`,
-        description: `Duration: ${call.durationSeconds}s \xE2\u20AC\xA2 Outcome: ${outcomeText} \xE2\u20AC\xA2 Provider ID: ${call.externalCallId.slice(0, 18)}...`,
+        description: `Duration: ${call.durationSeconds}s \u2022 Outcome: ${outcomeText} \u2022 Provider ID: ${call.externalCallId.slice(0, 18)}...`,
         timestamp: call.startedAt.toISOString(),
         entityId: call.id
       });
@@ -5317,7 +5317,7 @@ var DashboardRepository = class {
         id: `act_${cmp.id}`,
         type: "campaign_started",
         title: `Campaign: ${cmp.name}`,
-        description: `Agent: ${cmp.agent?.name || cmp.agentId} \xE2\u20AC\xA2 Target Audience: ${cmp.totalLeads} lead(s) \xE2\u20AC\xA2 Status: ${cmp.status}`,
+        description: `Agent: ${cmp.agent?.name || cmp.agentId} \u2022 Target Audience: ${cmp.totalLeads} lead(s) \u2022 Status: ${cmp.status}`,
         timestamp: cmp.createdAt.toISOString(),
         entityId: cmp.id
       });

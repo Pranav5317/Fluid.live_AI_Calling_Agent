@@ -129,7 +129,7 @@ export const CALLING_SLOT_PRESETS = [
     startTime: '10:00',
     endTime: '12:00',
     badge: 'Morning Slot',
-    tag: 'Start of Day',
+    tag: 'Morning Window',
     iconName: 'Sunrise',
   },
   {
@@ -139,7 +139,7 @@ export const CALLING_SLOT_PRESETS = [
     startTime: '12:00',
     endTime: '14:00',
     badge: 'Midday Slot',
-    tag: 'Pre-Lunch',
+    tag: 'Midday Window',
     iconName: 'Sun',
   },
   {
@@ -149,7 +149,7 @@ export const CALLING_SLOT_PRESETS = [
     startTime: '14:00',
     endTime: '16:00',
     badge: 'Afternoon Slot',
-    tag: 'Post-Lunch',
+    tag: 'Early Afternoon',
     iconName: 'Coffee',
   },
   {
@@ -159,7 +159,7 @@ export const CALLING_SLOT_PRESETS = [
     startTime: '16:00',
     endTime: '18:00',
     badge: 'Late Afternoon',
-    tag: 'Tea Break',
+    tag: 'Late Afternoon',
     iconName: 'Sunset',
   },
   {
@@ -169,7 +169,7 @@ export const CALLING_SLOT_PRESETS = [
     startTime: '',
     endTime: '',
     badge: 'Custom Hours',
-    tag: 'User Defined',
+    tag: 'Custom Time Window',
     iconName: 'Timer',
   },
 ] as const;
@@ -1282,7 +1282,7 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
               <div>
                 <div className="text-xs font-bold text-slate-800">Do Not Call (DNC) Compliance Lock</div>
                 <div className="text-[11px] text-slate-500">
-                  Blocks all autonomous scheduler dispatches, campaign dials, and manual test calls.
+                  Blocks all autonomous scheduler dispatches, campaign dials, and on-demand calls.
                 </div>
               </div>
             </div>
