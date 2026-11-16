@@ -11,7 +11,7 @@ import { apiFetch } from '../../services/apiClient';
 import { SarvamConnectModal } from '../../components/sarvam/SarvamConnectModal';
 import { WebhookEvent, SarvamAccountStatus, Business } from '../../types';
 import { formatDate } from '../../lib/formatters';
-import { Building2, Users, Zap, RefreshCw, Activity, Phone, KeyRound, ExternalLink, CheckCircle, ShieldCheck, Webhook } from 'lucide-react';
+import { Building2, Users, Zap, RefreshCw, Activity, Phone, KeyRound, ExternalLink, CheckCircle, ShieldCheck, Webhook, AlertCircle } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   const [webhooks, setWebhooks] = useState<WebhookEvent[]>([]);
@@ -194,7 +194,7 @@ export const SettingsPage: React.FC = () => {
             {pingMessage.success ? (
               <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
             ) : (
-              <Zap className="h-4 w-4 text-rose-600 shrink-0" />
+              <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
             )}
             <span>{pingMessage.text}</span>
           </div>
@@ -387,36 +387,44 @@ export const SettingsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
-              {webhooks.map(evt => (
-                <tr key={evt.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="px-5 py-3.5 font-mono font-bold text-slate-900">{evt.id}</td>
-                  <td className="px-5 py-3.5">
-                    <span className="rounded bg-slate-100 px-2 py-0.5 font-mono font-semibold text-slate-800">
-                      {evt.eventType}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5 font-mono text-slate-700">{evt.externalId}</td>
-                  <td className="px-5 py-3.5">
-                    <Badge variant={evt.status === 'processed' ? 'success' : 'danger'} dot>
-                      {evt.status}
-                    </Badge>
-                  </td>
-                  <td className="px-5 py-3.5 font-mono text-[11px] text-slate-500">
-                    {formatDate(evt.receivedAt)}
-                  </td>
-                  <td className="px-5 py-3.5 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
-                      isLoading={reprocessingId === evt.id}
-                      onClick={() => handleReprocess(evt.id)}
-                    >
-                      Reprocess Event
-                    </Button>
+              {webhooks.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-8 text-center text-slate-500">
+                    No webhook events recorded yet. Inbound Sarvam telephony and external HR/ATS webhooks will be logged here with full audit traces.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                webhooks.map(evt => (
+                  <tr key={evt.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="px-5 py-3.5 font-mono font-bold text-slate-900">{evt.id}</td>
+                    <td className="px-5 py-3.5">
+                      <span className="rounded bg-slate-100 px-2 py-0.5 font-mono font-semibold text-slate-800">
+                        {evt.eventType}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 font-mono text-slate-700">{evt.externalId}</td>
+                    <td className="px-5 py-3.5">
+                      <Badge variant={evt.status === 'processed' ? 'success' : 'danger'} dot>
+                        {evt.status}
+                      </Badge>
+                    </td>
+                    <td className="px-5 py-3.5 font-mono text-[11px] text-slate-500">
+                      {formatDate(evt.receivedAt)}
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        leftIcon={<RefreshCw className="h-3.5 w-3.5" />}
+                        isLoading={reprocessingId === evt.id}
+                        onClick={() => handleReprocess(evt.id)}
+                      >
+                        Reprocess Event
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

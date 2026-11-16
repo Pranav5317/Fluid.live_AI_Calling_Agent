@@ -42,7 +42,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
   const [loading, setLoading] = useState(false);
   const [executingId, setExecutingId] = useState<string | null>(null);
   const [processingDue, setProcessingDue] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Cadence Policy Studio State
   const [policy, setPolicy] = useState<RetryPolicyConfig | null>(null);
@@ -97,10 +97,10 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
     try {
       const res = await campaignService.updateCadencePolicy(policy);
       setPolicy(res.policy);
-      setFeedbackMessage(`✓ Cadence retry policy updated successfully! New timings will govern subsequent outreach attempts.`);
+      setFeedbackMessage({ type: 'success', text: 'Cadence retry policy updated successfully! New timings will govern subsequent outreach attempts.' });
       await fetchQueue();
     } catch (err: any) {
-      setFeedbackMessage(`✕ Failed to save cadence policy: ${err?.message}`);
+      setFeedbackMessage({ type: 'error', text: `Failed to save cadence policy: ${err?.message}` });
     } finally {
       setPolicySaving(false);
     }
@@ -111,11 +111,11 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
     setFeedbackMessage(null);
     try {
       const res = await campaignService.executeRetryNow(campaignLeadId);
-      setFeedbackMessage(`✓ Outbound retry successfully launched for ${leadName} (Attempt #${res.attemptNumber}) via Fluid Voice Engine!`);
+      setFeedbackMessage({ type: 'success', text: `Outbound retry successfully launched for ${leadName} (Attempt #${res.attemptNumber}) via Fluid Voice Engine!` });
       await fetchQueue();
       if (onRetryExecuted) onRetryExecuted();
     } catch (err: any) {
-      setFeedbackMessage(`✕ Retry failed for ${leadName}: ${err?.message}`);
+      setFeedbackMessage({ type: 'error', text: `Retry failed for ${leadName}: ${err?.message}` });
     } finally {
       setExecutingId(null);
     }
@@ -126,11 +126,11 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
     setFeedbackMessage(null);
     try {
       const res = await campaignService.processDueRetries(campaignId);
-      setFeedbackMessage(`✓ Cadence engine executed ${res.processedCount} due retry call(s) immediately.`);
+      setFeedbackMessage({ type: 'success', text: `Cadence engine executed ${res.processedCount} due retry call(s) immediately.` });
       await fetchQueue();
       if (onRetryExecuted) onRetryExecuted();
     } catch (err: any) {
-      setFeedbackMessage(`✕ Cadence batch process failed: ${err?.message}`);
+      setFeedbackMessage({ type: 'error', text: `Cadence batch process failed: ${err?.message}` });
     } finally {
       setProcessingDue(false);
     }
@@ -156,11 +156,11 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
     setIsRescheduling(true);
     try {
       const res = await campaignService.rescheduleLead(reschedulingLead.campaignLeadId, rescheduleTargetTime);
-      setFeedbackMessage(`✓ Rescheduled ${res.leadName} to ${formatDate(res.newNextAttemptAt)} (snapped to compliant calling hours).`);
+      setFeedbackMessage({ type: 'success', text: `Rescheduled ${res.leadName} to ${formatDate(res.newNextAttemptAt)} (snapped to compliant calling hours).` });
       setReschedulingLead(null);
       await fetchQueue();
     } catch (err: any) {
-      setFeedbackMessage(`✕ Failed to reschedule: ${err?.message}`);
+      setFeedbackMessage({ type: 'error', text: `Failed to reschedule: ${err?.message}` });
     } finally {
       setIsRescheduling(false);
     }
@@ -294,7 +294,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
                 }`}
               >
                 <Zap className="h-3.5 w-3.5" />
-                <span>⚡ High-Velocity (1h/6h)</span>
+                <span>High-Velocity (1h/6h)</span>
               </button>
 
               <button
@@ -307,7 +307,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
                 }`}
               >
                 <Layers className="h-3.5 w-3.5" />
-                <span>⚖️ Standard (4h/24h)</span>
+                <span>Standard (4h/24h)</span>
               </button>
 
               <button
@@ -320,7 +320,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
                 }`}
               >
                 <Shield className="h-3.5 w-3.5" />
-                <span>🛡️ Gentle Nudge (24h/48h)</span>
+                <span>Gentle Nudge (24h/48h)</span>
               </button>
             </div>
           </div>
@@ -477,9 +477,28 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
 
       {/* Real-time Feedback Alert */}
       {feedbackMessage && (
-        <div className="px-6 py-3 text-xs font-semibold bg-blue-50 text-blue-900 border-b border-blue-100 flex items-center justify-between">
-          <span>{feedbackMessage}</span>
-          <button type="button" onClick={() => setFeedbackMessage(null)} className="text-blue-600 hover:text-blue-900 font-bold">✕</button>
+        <div
+          className={`px-6 py-3 text-xs font-semibold flex items-center justify-between border-b ${
+            feedbackMessage.type === 'error'
+              ? 'bg-rose-50 text-rose-900 border-rose-200'
+              : 'bg-emerald-50 text-emerald-900 border-emerald-200'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {feedbackMessage.type === 'error' ? (
+              <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+            )}
+            <span>{feedbackMessage.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFeedbackMessage(null)}
+            className="text-slate-400 hover:text-slate-700 transition-colors p-1"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
       )}
 

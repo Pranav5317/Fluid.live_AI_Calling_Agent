@@ -220,8 +220,9 @@ export const LeadsPage: React.FC = () => {
             <span className="font-semibold text-[10px] text-slate-600">({label})</span>
           </div>
           {isWindowActive && (
-            <span className="text-[9px] text-emerald-700 font-bold uppercase tracking-wider font-mono">
-              ● Interval Active Now
+            <span className="text-[9px] text-emerald-700 font-bold uppercase tracking-wider font-mono flex items-center gap-1">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span>Interval Active Now</span>
             </span>
           )}
         </div>

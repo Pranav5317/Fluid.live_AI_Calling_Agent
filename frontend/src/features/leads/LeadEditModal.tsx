@@ -27,6 +27,11 @@ import {
   ListFilter,
   AlertTriangle,
   RotateCcw,
+  Moon,
+  Sunrise,
+  Sun,
+  Coffee,
+  Sunset,
 } from 'lucide-react';
 
 export interface LeadEditModalProps {
@@ -115,7 +120,7 @@ export const CALLING_SLOT_PRESETS = [
     endTime: '20:00',
     badge: 'Recommended',
     tag: 'Evening Prime',
-    icon: '🌙',
+    iconName: 'Moon',
   },
   {
     id: 'morning_10_12',
@@ -125,7 +130,7 @@ export const CALLING_SLOT_PRESETS = [
     endTime: '12:00',
     badge: 'Morning Slot',
     tag: 'Start of Day',
-    icon: '🌅',
+    iconName: 'Sunrise',
   },
   {
     id: 'midday_12_2',
@@ -135,7 +140,7 @@ export const CALLING_SLOT_PRESETS = [
     endTime: '14:00',
     badge: 'Midday Slot',
     tag: 'Pre-Lunch',
-    icon: '☀️',
+    iconName: 'Sun',
   },
   {
     id: 'afternoon_2_4',
@@ -145,7 +150,7 @@ export const CALLING_SLOT_PRESETS = [
     endTime: '16:00',
     badge: 'Afternoon Slot',
     tag: 'Post-Lunch',
-    icon: '☕',
+    iconName: 'Coffee',
   },
   {
     id: 'late_afternoon_4_6',
@@ -155,7 +160,7 @@ export const CALLING_SLOT_PRESETS = [
     endTime: '18:00',
     badge: 'Late Afternoon',
     tag: 'Tea Break',
-    icon: '🌇',
+    iconName: 'Sunset',
   },
   {
     id: 'custom',
@@ -165,9 +170,27 @@ export const CALLING_SLOT_PRESETS = [
     endTime: '',
     badge: 'Custom Hours',
     tag: 'User Defined',
-    icon: '⏱️',
+    iconName: 'Timer',
   },
 ] as const;
+
+export function renderSlotIcon(iconName: string, className = "h-4 w-4") {
+  switch (iconName) {
+    case 'Moon':
+      return <Moon className={`${className} text-indigo-500`} />;
+    case 'Sunrise':
+      return <Sunrise className={`${className} text-amber-500`} />;
+    case 'Sun':
+      return <Sun className={`${className} text-amber-500`} />;
+    case 'Coffee':
+      return <Coffee className={`${className} text-amber-600`} />;
+    case 'Sunset':
+      return <Sunset className={`${className} text-rose-500`} />;
+    case 'Timer':
+    default:
+      return <Timer className={`${className} text-indigo-600`} />;
+  }
+}
 
 export const LeadEditModal: React.FC<LeadEditModalProps> = ({
   isOpen,
@@ -1131,13 +1154,15 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
                     }`}
                   >
                     <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm">{slot.icon}</span>
+                      <div className="flex items-center gap-2">
+                        <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>
+                          {renderSlotIcon(slot.iconName, "h-4 w-4")}
+                        </div>
                         <span className={`text-xs font-bold ${isSelected ? 'text-indigo-950' : 'text-slate-900'}`}>
                           {slot.shortLabel}
                         </span>
                       </div>
-                      <span className="text-[10px] text-slate-500 block mt-0.5 font-medium">
+                      <span className="text-[10px] text-slate-500 block mt-1 font-medium">
                         {slot.tag}
                       </span>
                     </div>
@@ -1211,8 +1236,9 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
                         End Time must be strictly later than Start Time.
                       </span>
                     ) : inActiveSlotNow ? (
-                      <span className="font-semibold text-emerald-700">
-                        🟢 Active Calling Window Right Now • Eligible for immediate autonomous dispatch
+                      <span className="font-semibold text-emerald-700 flex items-center gap-1.5">
+                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                        <span>Active Calling Window Right Now • Eligible for immediate autonomous dispatch</span>
                       </span>
                     ) : slotDate === todayIstKey && endMins < ((new Date(Date.now() + 5.5 * 3600000).getUTCHours()) * 60 + (new Date(Date.now() + 5.5 * 3600000).getUTCMinutes())) ? (
                       <span className="text-amber-800 font-medium">

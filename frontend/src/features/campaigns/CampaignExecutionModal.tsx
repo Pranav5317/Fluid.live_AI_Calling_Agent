@@ -14,6 +14,9 @@ import {
   PhoneForwarded,
   Volume2,
   Users,
+  XCircle,
+  AlertTriangle,
+  Info,
 } from 'lucide-react';
 import { campaignService } from '../../services/campaignService';
 import { Button } from '../../components/common/Button';
@@ -106,9 +109,9 @@ export const CampaignExecutionModal: React.FC<CampaignExecutionModalProps> = ({
 
       res.results.forEach((r: any) => {
         if (r.status === 'initiated') {
-          addLog(`✓ Handshake connected for ${r.leadName} (${r.phone}) -> Call ID: ${r.externalCallId || r.callId}`, 'success');
+          addLog(`Handshake connected for ${r.leadName} (${r.phone}) -> Call ID: ${r.externalCallId || r.callId}`, 'success');
         } else {
-          addLog(`✕ Failed to dial ${r.leadName} (${r.phone}): ${r.error}`, 'error');
+          addLog(`Failed to dial ${r.leadName} (${r.phone}): ${r.error}`, 'error');
         }
       });
 
@@ -314,6 +317,10 @@ export const CampaignExecutionModal: React.FC<CampaignExecutionModalProps> = ({
                 logs.map(log => (
                   <div key={log.id} className="flex items-start gap-2 text-[11px] leading-relaxed">
                     <span className="text-slate-500 select-none">[{log.time}]</span>
+                    {log.type === 'success' && <CheckCircle2 className="h-3 w-3 text-emerald-400 mt-0.5 shrink-0" />}
+                    {log.type === 'error' && <XCircle className="h-3 w-3 text-rose-400 mt-0.5 shrink-0" />}
+                    {log.type === 'warn' && <AlertTriangle className="h-3 w-3 text-amber-300 mt-0.5 shrink-0" />}
+                    {log.type === 'info' && <Info className="h-3 w-3 text-slate-400 mt-0.5 shrink-0" />}
                     <span
                       className={
                         log.type === 'success'

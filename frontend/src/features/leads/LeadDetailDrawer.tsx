@@ -298,10 +298,17 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
                         <CalendarClock className="h-4 w-4" />
                       </div>
                       <div>
-                        <span className={`text-[11px] font-bold uppercase tracking-wider font-mono block ${
+                        <span className={`text-[11px] font-bold uppercase tracking-wider font-mono flex items-center gap-1.5 ${
                           isWindowActive ? 'text-emerald-800' : 'text-indigo-800'
                         }`}>
-                          {isWindowActive ? '● Calling Interval Active Now' : 'Screening Call Window Scheduled'}
+                          {isWindowActive ? (
+                            <>
+                              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                              <span>Calling Interval Active Now</span>
+                            </>
+                          ) : (
+                            'Screening Call Window Scheduled'
+                          )}
                         </span>
                         <span className="text-xs font-semibold text-slate-900">
                           {slotText}

@@ -36,6 +36,9 @@ import {
   PhoneForwarded,
   CalendarClock,
   RotateCw,
+  ArrowRight,
+  AlertTriangle,
+  X,
 } from 'lucide-react';
 import { CampaignExecutionModal } from './CampaignExecutionModal';
 import { CampaignRetryQueueCard } from './CampaignRetryQueueCard';
@@ -376,9 +379,10 @@ export const CampaignsPage: React.FC = () => {
               size="sm"
               variant="outline"
               onClick={() => setActiveTab('scheduler')}
+              rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
               className="border-white/20 bg-white/10 text-white hover:bg-white/20 text-xs shrink-0 font-semibold rounded-full"
             >
-              Configure Scheduler →
+              Configure Scheduler
             </Button>
           </div>
 
@@ -606,9 +610,18 @@ export const CampaignsPage: React.FC = () => {
       >
         <div className="space-y-4">
           {wizardError && (
-            <div className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center justify-between">
-              <span>⚠️ {wizardError}</span>
-              <button type="button" onClick={() => setWizardError(null)} className="text-rose-400 hover:text-rose-600">✕</button>
+            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+                <span>{wizardError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWizardError(null)}
+                className="text-slate-400 hover:text-slate-700 p-0.5"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
           )}
 

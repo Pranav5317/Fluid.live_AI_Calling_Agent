@@ -13,6 +13,8 @@ import {
   Sparkles,
   Radio,
   Sliders,
+  X,
+  FastForward,
 } from 'lucide-react';
 import { campaignService } from '../../services/campaignService';
 import { Card } from '../../components/common/Card';
@@ -76,12 +78,12 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
       } else if (dryRun) {
         setFeedback({
           type: 'success',
-          text: `✓ ${res.message}`,
+          text: res.message,
         });
       } else {
         setFeedback({
           type: 'success',
-          text: `✓ ${res.message} (${res.dispatches?.length || 0} calls placed via Fluid Voice Engine)`,
+          text: `${res.message} (${res.dispatches?.length || 0} calls placed via Fluid Voice Engine)`,
         });
       }
 
@@ -214,21 +216,34 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
           }`}
         >
           <div className="flex items-center justify-between font-semibold">
-            <span>{feedback.text}</span>
-            <button type="button" onClick={() => { setFeedback(null); setLastTickDetails(null); }} className="opacity-60 hover:opacity-100 font-bold">✕</button>
+            <div className="flex items-center gap-2">
+              {feedback.type === 'success' && <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />}
+              {feedback.type === 'warn' && <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />}
+              {feedback.type === 'error' && <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />}
+              <span>{feedback.text}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setFeedback(null); setLastTickDetails(null); }}
+              className="text-slate-400 hover:text-slate-700 p-0.5"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
           {lastTickDetails && ((lastTickDetails.dispatches?.length > 0) || (lastTickDetails.skippedLeads?.length > 0)) && (
             <div className="flex flex-wrap gap-2 pt-1">
               {lastTickDetails.dispatches?.map((d: any, idx: number) => (
                 <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/90 border border-emerald-200 text-[11px] font-mono text-emerald-900">
-                  <span>✓ {d.leadName} ({d.phone})</span>
+                  <CheckCircle2 className="h-3 w-3 text-emerald-600 shrink-0" />
+                  <span>{d.leadName} ({d.phone})</span>
                   {d.intervalSlot && <span className="text-slate-500">[{d.intervalSlot}]</span>}
                   <span className="font-bold uppercase text-[10px]">{d.status}</span>
                 </span>
               ))}
               {lastTickDetails.skippedLeads?.map((s: any, idx: number) => (
                 <span key={`skip_${idx}`} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/90 border border-amber-200 text-[11px] font-mono text-amber-900">
-                  <span>⏭ {s.leadName}: {s.detail}</span>
+                  <FastForward className="h-3 w-3 text-amber-600 shrink-0" />
+                  <span>{s.leadName}: {s.detail}</span>
                 </span>
               ))}
             </div>
