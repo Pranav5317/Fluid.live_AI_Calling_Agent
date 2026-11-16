@@ -42,6 +42,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         <Header
           onMobileSidebarToggle={() => setMobileSidebarOpen(!mobileSidebarOpen)}
           onNotificationToggle={() => setNotificationOpen(!notificationOpen)}
+          onRouteChange={onRouteChange}
         />
 
         {/* Dynamic Page Content */}

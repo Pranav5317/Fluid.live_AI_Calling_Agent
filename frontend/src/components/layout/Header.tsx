@@ -13,21 +13,33 @@ import {
 } from 'lucide-react';
 import { businessService } from '../../services/businessService';
 import { Business } from '../../types';
+import { NavRoute } from './Sidebar';
+import { WorkspaceSecurityModal } from './WorkspaceSecurityModal';
+import { DocumentationModal } from './DocumentationModal';
+import { Modal } from '../common/Modal';
+import { Button } from '../common/Button';
 
 export interface HeaderProps {
   onMobileSidebarToggle: () => void;
   onNotificationToggle: () => void;
+  onRouteChange?: (route: NavRoute) => void;
   unreadCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onMobileSidebarToggle,
   onNotificationToggle,
+  onRouteChange,
   unreadCount = 2,
 }) => {
   const [business, setBusiness] = useState<Business | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [bizMenuOpen, setBizMenuOpen] = useState(false);
+
+  // Modals state
+  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
+  const [isDocsModalOpen, setIsDocsModalOpen] = useState(false);
+  const [isSignOutModalOpen, setIsSignOutModalOpen] = useState(false);
 
   useEffect(() => {
     businessService.getBusinessProfile().then(setBusiness);
@@ -81,16 +93,22 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="py-1">
                 <button
                   type="button"
-                  onClick={() => setBizMenuOpen(false)}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                  onClick={() => {
+                    setBizMenuOpen(false);
+                    setIsSecurityModalOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
                 >
-                  <Shield className="h-3.5 w-3.5 text-slate-400" />
-                  <span>Workspace Security</span>
+                  <Shield className="h-3.5 w-3.5 text-blue-600" />
+                  <span className="font-medium">Workspace Security</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setBizMenuOpen(false)}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                  onClick={() => {
+                    setBizMenuOpen(false);
+                    setIsDocsModalOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
                 >
                   <HelpCircle className="h-3.5 w-3.5 text-slate-400" />
                   <span>Documentation</span>
@@ -138,16 +156,22 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="py-1">
                 <button
                   type="button"
-                  onClick={() => setUserMenuOpen(false)}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    if (onRouteChange) onRouteChange('settings');
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
                 >
                   <User className="h-3.5 w-3.5 text-slate-400" />
                   <span>Profile Settings</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setUserMenuOpen(false)}
-                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-rose-700 hover:bg-rose-50 transition-colors"
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    setIsSignOutModalOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
                 >
                   <LogOut className="h-3.5 w-3.5" />
                   <span>Sign out</span>
@@ -157,6 +181,47 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
       </div>
+
+      {/* Workspace Security Modal */}
+      <WorkspaceSecurityModal
+        isOpen={isSecurityModalOpen}
+        onClose={() => setIsSecurityModalOpen(false)}
+      />
+
+      {/* Documentation Modal */}
+      <DocumentationModal
+        isOpen={isDocsModalOpen}
+        onClose={() => setIsDocsModalOpen(false)}
+      />
+
+      {/* Sign Out Confirmation Modal */}
+      <Modal
+        isOpen={isSignOutModalOpen}
+        onClose={() => setIsSignOutModalOpen(false)}
+        title="Sign Out of Fluid.live"
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-2 w-full">
+            <Button variant="outline" size="sm" onClick={() => setIsSignOutModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => {
+                setIsSignOutModalOpen(false);
+                window.location.reload();
+              }}
+            >
+              Confirm Sign Out
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-xs text-slate-600 leading-relaxed">
+          Are you sure you want to sign out of your workspace? Any unsaved calling campaign drafts will be discarded.
+        </p>
+      </Modal>
     </header>
   );
 };
