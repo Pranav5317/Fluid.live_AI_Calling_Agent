@@ -18,19 +18,17 @@ export class ServerCallService {
   async getCalls(options: CallFilterParams = {}): Promise<Call[]> {
     const calls = await callRepository.getCalls(options);
     return calls.map(call => {
-      if (!call.extractedVariables?.intelligence || !call.extractedVariables.intelligence.leadScore) {
-        call.extractedVariables = {
-          ...(call.extractedVariables || {}),
-          intelligence: callAnalyticsService.analyzeCall(call),
-        };
-      }
+      call.extractedVariables = {
+        ...(call.extractedVariables || {}),
+        intelligence: callAnalyticsService.analyzeCall(call),
+      };
       return call;
     });
   }
 
   async getCallById(id: string): Promise<Call | null> {
     const call = await callRepository.getCallById(id);
-    if (call && (!call.extractedVariables?.intelligence || !call.extractedVariables.intelligence.leadScore)) {
+    if (call) {
       call.extractedVariables = {
         ...(call.extractedVariables || {}),
         intelligence: callAnalyticsService.analyzeCall(call),

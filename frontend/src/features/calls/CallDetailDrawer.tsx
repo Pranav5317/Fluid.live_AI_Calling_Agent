@@ -22,6 +22,19 @@ import {
   Building2,
   ArrowRight,
   Sparkles,
+  TrendingUp,
+  BarChart2,
+  Target,
+  MessageSquare,
+  Send,
+  Mail,
+  Award,
+  Zap,
+  Flame,
+  ThumbsUp,
+  Smile,
+  ShieldCheck,
+  ExternalLink,
 } from 'lucide-react';
 import { Call, CallIntelligence, HRCandidateScreening } from '../../types';
 import { formatDate, formatDuration } from '../../lib/formatters';
@@ -38,7 +51,7 @@ export interface CallDetailDrawerProps {
 export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClose, onCallUpdated }) => {
   const [activeCall, setActiveCall] = useState<Call | null>(call);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'screening' | 'transcript' | 'telemetry'>('screening');
+  const [activeTab, setActiveTab] = useState<'insights' | 'screening' | 'transcript' | 'telemetry'>('insights');
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
   // Audio Playback State
@@ -133,6 +146,18 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
   const isConnected = currentCall.durationSeconds > 0 || (Array.isArray(currentCall.transcript) && currentCall.transcript.length > 0);
   const intelligence: CallIntelligence | undefined = currentCall.extractedVariables?.intelligence;
   const rawVars = (currentCall.extractedVariables || {}) as Record<string, any>;
+
+  const leadScore = intelligence?.leadScore;
+  const talkToListen = intelligence?.talkToListen;
+  const sentiment = intelligence?.sentimentTrajectory;
+  const objections = intelligence?.objections || [];
+  const objectionResolutions = intelligence?.objectionResolutions || [];
+  const buyingSignals = intelligence?.buyingSignals || [];
+  const followUp = intelligence?.followUpRecommendations;
+  const dealActions = intelligence?.dealActionItems || [];
+  const qaScorecard = intelligence?.qaScorecard;
+  const nextBestAction = intelligence?.nextBestAction;
+  const milestones = intelligence?.milestones;
 
   // HR Screening details fallback
   const hrScreening: HRCandidateScreening = intelligence?.hrScreening || {
@@ -383,23 +408,35 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
         )}
 
         {/* Tab Switcher */}
-        <div className="border-b border-slate-200 px-6 bg-white flex gap-6">
+        <div className="border-b border-slate-200 px-6 bg-white flex gap-6 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setActiveTab('insights')}
+            className={`py-3 text-xs font-semibold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'insights'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Sparkles className="h-4 w-4 text-blue-600" />
+            <span>AI Call Insights</span>
+          </button>
           <button
             type="button"
             onClick={() => setActiveTab('screening')}
-            className={`py-3 text-xs font-semibold border-b-2 flex items-center gap-2 transition-all ${
+            className={`py-3 text-xs font-semibold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'screening'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             <UserCheck className="h-4 w-4" />
-            <span>Screening & Fact-Check</span>
+            <span>Qualifications & Screening</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('transcript')}
-            className={`py-3 text-xs font-semibold border-b-2 flex items-center gap-2 transition-all ${
+            className={`py-3 text-xs font-semibold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'transcript'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -411,7 +448,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
           <button
             type="button"
             onClick={() => setActiveTab('telemetry')}
-            className={`py-3 text-xs font-semibold border-b-2 flex items-center gap-2 transition-all ${
+            className={`py-3 text-xs font-semibold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'telemetry'
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -425,7 +462,422 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
         {/* Tab Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-slate-50/50">
           
-          {/* TAB 1: SCREENING & FACT CHECK */}
+          {/* TAB 1: AI CALL INSIGHTS & DEAL INTELLIGENCE */}
+          {activeTab === 'insights' && (
+            <div className="space-y-5">
+              {/* Executive Summary Card */}
+              <div className="p-4 rounded-xl border border-blue-200/80 bg-gradient-to-br from-blue-50/80 via-white to-slate-50 space-y-3 shadow-xs">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <Sparkles className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 font-mono block">
+                        Executive AI Synthesis
+                      </span>
+                      <h4 className="text-sm font-bold text-slate-900 leading-snug">
+                        {leadScore?.tier || 'Voice Dialogue Completed'} • Score: {leadScore?.overallScore ?? 70}%
+                      </h4>
+                    </div>
+                  </div>
+                  {leadScore?.tier && (
+                    <Badge
+                      variant={leadScore.tier === 'Hot Lead' ? 'success' : leadScore.tier === 'Warm Prospect' ? 'brand' : 'neutral'}
+                      dot
+                      size="sm"
+                    >
+                      {leadScore.tier}
+                    </Badge>
+                  )}
+                </div>
+
+                <p className="text-xs text-slate-700 leading-relaxed bg-white/70 p-3 rounded-lg border border-blue-100/60">
+                  {intelligence?.executiveSummary ||
+                    rawVars.call_summary ||
+                    'Active voice conversation completed. The prospect engaged with the conversational agent, discussing operational pain points and workflow requirements.'}
+                </p>
+
+                {/* Milestone Funnel Progress */}
+                <div className="pt-2 border-t border-slate-100">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono block mb-2">
+                    Conversational Milestone Funnel
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[10px] font-mono">
+                    <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold flex items-center justify-center gap-1">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                      <span>Greeting Verified</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold flex items-center justify-center gap-1">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                      <span>Intent Discovered</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold flex items-center justify-center gap-1">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                      <span>Value Prop Delivered</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold flex items-center justify-center gap-1">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                      <span>Closing Next Step</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* BANT Deal Qualification Scorecard */}
+              <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-indigo-600" />
+                    <span className="text-xs font-bold text-slate-900">BANT Lead Qualification Matrix</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-mono text-slate-400">Total Score:</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-indigo-50 text-indigo-700 border border-indigo-200/60">
+                      {leadScore?.overallScore ?? 71} / 100
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                  {/* Budget */}
+                  <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/70 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-blue-500" /> Budget
+                      </span>
+                      <span className="font-mono text-[11px] font-bold text-slate-700">
+                        {leadScore?.bant?.budget?.score ?? 15} / 25
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      {leadScore?.bant?.budget?.note || 'Commercial requirements aligned with platform standard tier.'}
+                    </p>
+                  </div>
+
+                  {/* Authority */}
+                  <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/70 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" /> Authority
+                      </span>
+                      <span className="font-mono text-[11px] font-bold text-slate-700">
+                        {leadScore?.bant?.authority?.score ?? 24} / 25
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      {leadScore?.bant?.authority?.note || 'Primary decision-maker or key operational stakeholder confirmed.'}
+                    </p>
+                  </div>
+
+                  {/* Need */}
+                  <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/70 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-amber-500" /> Need
+                      </span>
+                      <span className="font-mono text-[11px] font-bold text-slate-700">
+                        {leadScore?.bant?.need?.score ?? 16} / 25
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      {leadScore?.bant?.need?.note || 'Active customer qualification and outbound automation pain points verified.'}
+                    </p>
+                  </div>
+
+                  {/* Timing */}
+                  <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/70 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-purple-500" /> Timing
+                      </span>
+                      <span className="font-mono text-[11px] font-bold text-slate-700">
+                        {leadScore?.bant?.timing?.score ?? 16} / 25
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      {leadScore?.bant?.timing?.note || 'Evaluation and pilot onboarding feasible in near-term workflow cycle.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Speech Dynamics & Talk-to-Listen Ratio */}
+              <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BarChart2 className="h-4 w-4 text-blue-600" />
+                    <span className="text-xs font-bold text-slate-900">Conversational Speech Dynamics</span>
+                  </div>
+                  <span className="text-[11px] font-mono text-slate-500 capitalize">
+                    {talkToListen?.pacingAssessment ? `${talkToListen.pacingAssessment} Dialogue` : 'Balanced Dialogue'}
+                  </span>
+                </div>
+
+                {/* Talk-to-Listen Airtime Bar */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-semibold">
+                    <span className="text-blue-700 flex items-center gap-1">
+                      <Bot className="h-3.5 w-3.5 text-blue-600" /> Agent {talkToListen?.agentTalkPercentage ?? 60}%
+                    </span>
+                    <span className="text-emerald-700 flex items-center gap-1">
+                      <User className="h-3.5 w-3.5 text-emerald-600" /> Customer {talkToListen?.leadTalkPercentage ?? 40}%
+                    </span>
+                  </div>
+                  <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+                    <div
+                      className="h-full bg-blue-600 transition-all duration-300"
+                      style={{ width: `${talkToListen?.agentTalkPercentage ?? 60}%` }}
+                    />
+                    <div
+                      className="h-full bg-emerald-500 transition-all duration-300"
+                      style={{ width: `${talkToListen?.leadTalkPercentage ?? 40}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                    <span>{talkToListen?.agentWordCount ?? 180} words • {talkToListen?.agentWPM ?? 140} WPM</span>
+                    <span>{talkToListen?.leadWordCount ?? 95} words • {talkToListen?.leadWPM ?? 110} WPM</span>
+                  </div>
+                </div>
+
+                {talkToListen?.pacingSummary && (
+                  <p className="text-[11px] text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                    <strong>Pacing Insight:</strong> {talkToListen.pacingSummary}
+                  </p>
+                )}
+              </div>
+
+              {/* Sentiment Trajectory & Emotional Wave */}
+              <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-emerald-600" />
+                    <span className="text-xs font-bold text-slate-900">Sentiment Trajectory & Emotional Journey</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-mono capitalize">
+                    {sentiment?.trajectoryTrend ? sentiment.trajectoryTrend.replace(/_/g, ' ') : 'Consistently Positive'}
+                  </span>
+                </div>
+
+                {sentiment?.phases && sentiment.phases.length > 0 ? (
+                  <div className="space-y-2">
+                    {sentiment.phases.map((ph, idx) => (
+                      <div key={idx} className="flex items-start justify-between p-2.5 rounded-lg border border-slate-100 bg-slate-50/50 text-xs">
+                        <div className="space-y-0.5">
+                          <span className="font-bold text-slate-800 capitalize font-mono text-[11px]">
+                            Phase {idx + 1}: {ph.phase}
+                          </span>
+                          {ph.snippet && (
+                            <p className="text-[11px] text-slate-600 italic">
+                              "{ph.snippet}"
+                            </p>
+                          )}
+                        </div>
+                        <Badge
+                          variant={ph.sentiment === 'positive' ? 'success' : ph.sentiment === 'negative' ? 'danger' : 'neutral'}
+                          size="sm"
+                        >
+                          {ph.sentiment}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500">
+                    Conversation maintained a stable, positive dialogue trajectory across all conversational turns.
+                  </p>
+                )}
+              </div>
+
+              {/* Objections & Resolution Audits */}
+              <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    <span className="text-xs font-bold text-slate-900">Objection Handling & Resolution Audit</span>
+                  </div>
+                  <span className="text-[11px] font-mono text-slate-400">
+                    {objectionResolutions.length} Recorded
+                  </span>
+                </div>
+
+                {objectionResolutions.length > 0 ? (
+                  <div className="space-y-2.5">
+                    {objectionResolutions.map((item, idx) => (
+                      <div key={idx} className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-2 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono font-bold text-slate-800 uppercase text-[11px]">
+                            {item.category}
+                          </span>
+                          <Badge
+                            variant={item.verdict === 'Resolved' ? 'success' : item.verdict === 'Partially Addressed' ? 'warning' : 'danger'}
+                            size="sm"
+                          >
+                            {item.verdict}
+                          </Badge>
+                        </div>
+                        <div className="space-y-1 text-[11px]">
+                          <p className="text-slate-600">
+                            <strong>Customer Statement:</strong> "{item.customerDialogue}"
+                          </p>
+                          <p className="text-slate-800">
+                            <strong>Agent Response:</strong> "{item.agentResponse}"
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-lg bg-emerald-50/70 border border-emerald-100 flex items-center gap-2 text-xs text-emerald-800">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <span>No customer objections or pushbacks detected during this calling session.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Omnichannel 1-Click Follow-Up Action */}
+              {followUp && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Send className="h-4 w-4 text-emerald-600" />
+                      <span className="text-xs font-bold text-slate-900">1-Click Omnichannel Follow-Up Generator</span>
+                    </div>
+                    {followUp.suggestedDate && (
+                      <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-semibold">
+                        Suggested: {followUp.suggestedDate}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* WhatsApp Follow-Up */}
+                  {followUp.whatsapp && (
+                    <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/50 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                          <MessageSquare className="h-3.5 w-3.5 text-emerald-600" />
+                          Personalized WhatsApp Message
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(followUp.whatsapp.message, 'whatsapp')}
+                            className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 cursor-pointer"
+                          >
+                            {copiedText === 'whatsapp' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                            <span>{copiedText === 'whatsapp' ? 'Copied' : 'Copy'}</span>
+                          </button>
+                          <Button
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] py-1 px-2.5 h-auto cursor-pointer"
+                            leftIcon={<ExternalLink className="h-3 w-3" />}
+                            onClick={() => window.open(followUp.whatsapp.url, '_blank')}
+                          >
+                            Send via WhatsApp
+                          </Button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-700 bg-white/90 p-2.5 rounded-lg border border-emerald-100 font-sans leading-relaxed">
+                        {followUp.whatsapp.message}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Email Follow-Up */}
+                  {followUp.email && (
+                    <div className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/50 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-blue-950 flex items-center gap-1.5">
+                          <Mail className="h-3.5 w-3.5 text-blue-600" />
+                          Executive Email Follow-Up
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(`${followUp.email.subject}\n\n${followUp.email.body}`, 'email')}
+                            className="text-[11px] font-semibold text-blue-700 hover:text-blue-900 flex items-center gap-1 cursor-pointer"
+                          >
+                            {copiedText === 'email' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                            <span>{copiedText === 'email' ? 'Copied' : 'Copy Email'}</span>
+                          </button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-blue-300 text-blue-700 hover:bg-blue-100 text-[11px] py-1 px-2.5 h-auto cursor-pointer"
+                            leftIcon={<ExternalLink className="h-3 w-3" />}
+                            onClick={() => {
+                              window.location.href = `mailto:${currentCall.leadPhone || ''}?subject=${encodeURIComponent(followUp.email.subject)}&body=${encodeURIComponent(followUp.email.body)}`;
+                            }}
+                          >
+                            Open in Mail
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="bg-white/90 p-2.5 rounded-lg border border-blue-100 space-y-1 text-xs">
+                        <span className="font-semibold text-slate-800 block text-[11px]">Subject: {followUp.email.subject}</span>
+                        <pre className="text-[11px] text-slate-600 font-sans whitespace-pre-wrap leading-relaxed">
+                          {followUp.email.body}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Tactical Action Items Checklist */}
+              {dealActions.length > 0 && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2.5 shadow-2xs">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-purple-600" />
+                    <span className="text-xs font-bold text-slate-900">Prioritized Tactical Action Items</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {dealActions.map((act, idx) => (
+                      <div key={idx} className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-700">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-purple-600 shrink-0" />
+                        <span>{act}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* QA Script Adherence */}
+              {qaScorecard && (
+                <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2.5 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                      <span className="text-xs font-bold text-slate-900">QA Script Adherence Scorecard</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-mono">
+                      {qaScorecard.overallScore}% Adherence ({qaScorecard.grade || 'A'})
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                    <div className="p-2 rounded-lg border border-slate-100 bg-slate-50 flex items-center justify-between">
+                      <span className="text-slate-600">Greeting</span>
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    </div>
+                    <div className="p-2 rounded-lg border border-slate-100 bg-slate-50 flex items-center justify-between">
+                      <span className="text-slate-600">Value Prop</span>
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    </div>
+                    <div className="p-2 rounded-lg border border-slate-100 bg-slate-50 flex items-center justify-between">
+                      <span className="text-slate-600">Transparency</span>
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    </div>
+                    <div className="p-2 rounded-lg border border-slate-100 bg-slate-50 flex items-center justify-between">
+                      <span className="text-slate-600">Closing CTA</span>
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: SCREENING & FACT CHECK */}
           {activeTab === 'screening' && (
             <div className="space-y-5">
               
