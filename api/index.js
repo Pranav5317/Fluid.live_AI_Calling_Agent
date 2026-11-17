@@ -1970,18 +1970,20 @@ var BackendSarvamProvider = class {
           }
         }
         const appVersion = Number(process.env.SARVAM_APP_VERSION) || 3;
+        const rawDigits = (params.toPhoneNumber || "").replace(/\D/g, "");
+        const normalizedToPhoneNumber = rawDigits.length === 10 ? `+91${rawDigits}` : rawDigits.startsWith("91") && rawDigits.length === 12 ? `+${rawDigits}` : params.toPhoneNumber.startsWith("+") ? `+${rawDigits}` : `+91${rawDigits}`;
         const payload = {
           app_config: {
             app_id: appId,
             app_version: appVersion,
             connection_config: {
               connection_id: connectionId,
-              agent_phone_number: agentPhoneNumber
+              agent_phone_number: agentPhoneNumber.replace(/\s+/g, "")
             },
             agent_variables: sarvamAgentVars
           },
           user_config: {
-            user_phone_number: params.toPhoneNumber
+            user_phone_number: normalizedToPhoneNumber
           }
         };
         if (params.initialBotMessage || params.systemPrompt) {

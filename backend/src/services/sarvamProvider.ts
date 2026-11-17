@@ -324,18 +324,28 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
 
         const appVersion = Number(process.env.SARVAM_APP_VERSION) || 3;
 
+        // Ensure E.164 phone formatting without spaces or dashes for carrier gateway
+        const rawDigits = (params.toPhoneNumber || '').replace(/\D/g, '');
+        const normalizedToPhoneNumber = rawDigits.length === 10
+          ? `+91${rawDigits}`
+          : rawDigits.startsWith('91') && rawDigits.length === 12
+          ? `+${rawDigits}`
+          : params.toPhoneNumber.startsWith('+')
+          ? `+${rawDigits}`
+          : `+91${rawDigits}`;
+
         const payload: any = {
           app_config: {
             app_id: appId,
             app_version: appVersion,
             connection_config: {
               connection_id: connectionId,
-              agent_phone_number: agentPhoneNumber,
+              agent_phone_number: agentPhoneNumber.replace(/\s+/g, ''),
             },
             agent_variables: sarvamAgentVars,
           },
           user_config: {
-            user_phone_number: params.toPhoneNumber,
+            user_phone_number: normalizedToPhoneNumber,
           },
         };
 

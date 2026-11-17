@@ -32,6 +32,7 @@ import {
 import { LeadDetailDrawer } from './LeadDetailDrawer';
 import { LeadCsvImportModal } from './LeadCsvImportModal';
 import { LeadEditModal } from './LeadEditModal';
+import { LeadDirectCallModal } from './LeadDirectCallModal';
 
 import { callService } from '../../services/callService';
 import { agentService } from '../../services/agentService';
@@ -49,6 +50,7 @@ export const LeadsPage: React.FC = () => {
   // Edit & Schedule Modal state
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [directCallLead, setDirectCallLead] = useState<Lead | null>(null);
 
   // Filters state
   const [search, setSearch] = useState('');
@@ -521,9 +523,8 @@ export const LeadsPage: React.FC = () => {
                             size="sm"
                             variant="outline"
                             disabled={Boolean(lead.doNotCall)}
-                            isLoading={callingLeadId === lead.id}
                             leftIcon={<Phone className={`h-3.5 w-3.5 ${lead.doNotCall ? 'text-slate-400' : 'text-emerald-600'}`} />}
-                            onClick={() => handleCallLead(lead.id, lead.phone, lead.name)}
+                            onClick={() => setDirectCallLead(lead)}
                             title={lead.doNotCall ? 'Blocked by Do Not Call (DNC)' : 'Call candidate now'}
                             className={`rounded-lg text-xs px-2.5 font-semibold ${
                               lead.doNotCall
@@ -633,6 +634,14 @@ export const LeadsPage: React.FC = () => {
         onClose={() => setIsImportModalOpen(false)}
         campaigns={campaigns}
         onImportComplete={fetchLeads}
+      />
+
+      {/* Direct Outbound Phone Call Modal */}
+      <LeadDirectCallModal
+        lead={directCallLead}
+        isOpen={Boolean(directCallLead)}
+        onClose={() => setDirectCallLead(null)}
+        onCallInitiated={fetchLeads}
       />
 
       {/* Lead 360° Profile & Call Timeline Drawer */}
