@@ -45,7 +45,7 @@ Conversational Objectives:
    - Ask: "Could you briefly share your key responsibilities in your most recent project?" Listen attentively to their explanation.
 4. Professional Wrap-up:
    - Thank the candidate courteously and inform them that the Fluid.live HR team will follow up via email with the next steps.`,
-      sarvamAppId: 'Conversatio-b063cf10-e735',
+      sarvamAppId: 'Fluid-Live--4408a194-967d',
       flowNodes: [
         { id: 'fn_1', type: 'start', title: 'Call Connected', content: 'Establish line connection' },
         { id: 'fn_2', type: 'opening', title: 'Greeting & Purpose', content: 'Identify as calling from Fluid.live and request 2 minutes' },
@@ -88,7 +88,7 @@ Rules:
 4. If customer says they already paid, politely note down the transaction reference and assure them no further reminder will be sent.
 5. If customer requests a callback or extension, record their promised date and conclude politely.
 6. Maximum 25 words per conversational turn. Always address the customer with respect ("ji", "Sir", "Madam").`,
-      sarvamAppId: 'Conversatio-b063cf10-e735',
+      sarvamAppId: 'Fluid-Live--4408a194-967d',
       flowNodes: [
         { id: 'fn_1', type: 'start', title: 'Call Connected', content: 'Establish line connection' },
         { id: 'fn_2', type: 'opening', title: 'Identity & Due Date', content: 'Confirm customer identity and remind of upcoming EMI due' },
@@ -129,7 +129,7 @@ Objectives:
 4. If customer wants to cancel, politely capture the cancellation reason without pressuring them.
 5. If customer is unavailable, offer to reschedule delivery to a preferred day.
 6. Keep turns short, engaging, and friendly.`,
-      sarvamAppId: 'Conversatio-b063cf10-e735',
+      sarvamAppId: 'Fluid-Live--4408a194-967d',
       flowNodes: [
         { id: 'fn_1', type: 'start', title: 'Call Connected', content: 'Connect telephony line' },
         { id: 'fn_2', type: 'opening', title: 'Order Confirmation', content: 'Mention item and total COD amount' },
@@ -168,7 +168,7 @@ Objectives:
 3. Check if patient requires any special assistance (elderly care, wheelchair access).
 4. If rescheduling is needed, provide immediate options for morning slots.
 5. Conclude with encouraging and caring remarks.`,
-      sarvamAppId: 'Conversatio-b063cf10-e735',
+      sarvamAppId: 'Fluid-Live--4408a194-967d',
       flowNodes: [
         { id: 'fn_1', type: 'start', title: 'Call Connected', content: 'Connect with patient' },
         { id: 'fn_2', type: 'opening', title: 'Appointment Verification', content: 'State appointment details and patient name' },
@@ -207,7 +207,7 @@ Objectives:
 3. Identify their primary use case (EMI collections, lead verification, customer support, or telemarketing).
 4. Propose a specific 20-minute slot tomorrow afternoon for an interactive demo.
 5. Keep conversational cadence fast, sharp, and value-driven.`,
-      sarvamAppId: 'Conversatio-b063cf10-e735',
+      sarvamAppId: 'Fluid-Live--4408a194-967d',
       flowNodes: [
         { id: 'fn_1', type: 'start', title: 'Speed-to-Lead Connect', content: 'Connect inbound lead' },
         { id: 'fn_2', type: 'opening', title: 'Website Demo Hook', content: 'Acknowledge recent demo request submission' },
@@ -246,7 +246,7 @@ Objectives:
 3. Inquire if they are facing any specific issues (e.g. AC cooling, brake noise, mileage).
 4. Confirm their pickup location and time window.
 5. Provide a transparent estimate of service turnaround time.`,
-      sarvamAppId: 'Conversatio-b063cf10-e735',
+      sarvamAppId: 'Fluid-Live--4408a194-967d',
       flowNodes: [
         { id: 'fn_1', type: 'start', title: 'Call Connected', content: 'Connect with car owner' },
         { id: 'fn_2', type: 'opening', title: 'Maintenance Due Alert', content: 'State mileage interval and free pickup offer' },

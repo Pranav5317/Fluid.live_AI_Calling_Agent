@@ -53,7 +53,7 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
   private baseUrl = process.env.SARVAM_BASE_URL || 'https://apps.sarvam.ai/api';
   private orgId = process.env.SARVAM_ORG_ID || '019e9100-606e-790c-92e0-0bcfbf8523a6';
   private workspaceId = process.env.SARVAM_WORKSPACE_ID || '019e9100-60a1-7bd7-bdb5-3b118f090be9';
-  private defaultAppId = process.env.SARVAM_APP_ID || 'Conversatio-b063cf10-e735';
+  private defaultAppId = process.env.SARVAM_APP_ID || 'Fluid-Live--4408a194-967d';
   private connectionId = process.env.SARVAM_CONNECTION_ID || '7efd8897-87-220da5aa-1d5e';
   private agentPhoneNumber = process.env.SARVAM_AGENT_PHONE_NUMBER || '+917965480599';
   private apiKey = process.env.SARVAM_API_KEY;
@@ -322,7 +322,7 @@ export class BackendSarvamProvider implements IBackendSarvamProvider {
           }
         }
 
-        const appVersion = Number(process.env.SARVAM_APP_VERSION) || 3;
+        const appVersion = Number(process.env.SARVAM_APP_VERSION) || 1;
 
         // Ensure E.164 phone formatting without spaces or dashes for carrier gateway
         const rawDigits = (params.toPhoneNumber || '').replace(/\D/g, '');

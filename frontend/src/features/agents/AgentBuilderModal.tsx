@@ -50,7 +50,7 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
     systemPrompt: cfg?.systemPrompt || '',
     openingLine: cfg?.openingLine || 'नमस्ते! मैं Fluid.live से बात कर रहा हूँ।',
     closingBehavior: cfg?.closingBehavior || 'धन्यवाद, आपका दिन शुभ हो!',
-    sarvamAppId: cfg?.sarvamAppId || 'Conversatio-b063cf10-e735',
+    sarvamAppId: cfg?.sarvamAppId || 'Fluid-Live--4408a194-967d',
     sarvamConnectionId: cfg?.sarvamConnectionId || '7efd8897-87-220da5aa-1d5e',
     flowNodes: cfg?.flowNodes || [],
     knowledgeBaseIds: cfg?.knowledgeBaseIds || [],
@@ -272,7 +272,7 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
                   </div>
                   <Input
                     label="App ID"
-                    value={config.sarvamAppId || 'Conversatio-b063cf10-e735'}
+                    value={config.sarvamAppId || 'Fluid-Live--4408a194-967d'}
                     onChange={e => setConfig({ ...config, sarvamAppId: e.target.value })}
                   />
                   <p className="text-[11px] text-slate-500">

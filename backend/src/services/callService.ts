@@ -130,6 +130,7 @@ export class ServerCallService {
       outroMessage: config.closingBehavior || config.outroMessage,
       systemPrompt: config.systemPrompt,
       agentVariables,
+      webhookUrl: process.env.SARVAM_WEBHOOK_URL || 'https://fluid-live-calling-agent.vercel.app/api/webhooks/sarvam',
     });
 
     // 4. On Provider Initiation Success, persist pending Call record

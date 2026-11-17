@@ -238,7 +238,7 @@ export const SarvamConnectModal: React.FC<SarvamConnectModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Default Voice Agent App ID *"
-              placeholder="Conversatio-b063cf10-e735"
+              placeholder="Fluid-Live--4408a194-967d"
               value={defaultAppId}
               onChange={e => setDefaultAppId(e.target.value)}
             />
