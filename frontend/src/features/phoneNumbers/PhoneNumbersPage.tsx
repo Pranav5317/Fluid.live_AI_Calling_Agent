@@ -189,7 +189,7 @@ export const PhoneNumbersPage: React.FC = () => {
             <span className="font-bold block text-sm">Carrier SIP Trunk & Telephony DID Architecture</span>
             <span className="text-slate-300">
               Outbound calls route through registered Indian DID lines (e.g.{' '}
-              <code className="text-amber-300 font-mono">+917965480599</code>) and Carrier connection ID{' '}
+              <code className="text-amber-300 font-mono">+917965861007</code>) and Carrier connection ID{' '}
               <code className="text-amber-300 font-mono">{sarvamStatus?.connectionId?.slice(0, 16) || '7efd8897...'}...</code>.
             </span>
           </div>
@@ -329,7 +329,7 @@ export const PhoneNumbersPage: React.FC = () => {
 
           <Input
             label="Phone Number (E.164 Format) *"
-            placeholder="+917965480599"
+            placeholder="+917965861007"
             value={phoneNumber}
             onChange={e => setPhoneNumber(e.target.value)}
           />

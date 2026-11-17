@@ -132,7 +132,7 @@ export const AgentTestCallModal: React.FC<AgentTestCallModalProps> = ({
         <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-1.5 text-xs text-slate-600">
           <div className="flex justify-between items-center">
             <span className="text-slate-500">Caller ID Trunk:</span>
-            <span className="font-mono font-semibold text-slate-800">+917965480599 (Direct SIP)</span>
+            <span className="font-mono font-semibold text-slate-800">+917965861007 (Direct SIP)</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-slate-500">Dialogue Protocol:</span>

@@ -291,7 +291,7 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
                     onChange={e => setConfig({ ...config, sarvamConnectionId: e.target.value })}
                   />
                   <p className="text-[11px] text-slate-500">
-                    Trunk ID linked to Caller ID: <span className="font-mono font-semibold">+917965480599</span>.
+                    Trunk ID linked to Caller ID: <span className="font-mono font-semibold">+917965861007</span>.
                   </p>
                 </div>
               </div>

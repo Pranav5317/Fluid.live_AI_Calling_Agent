@@ -49,7 +49,7 @@ export class ServerCampaignService {
     const phoneNumberObj = await prisma.phoneNumber.findUnique({
       where: { id: campaign.phoneNumberId },
     });
-    const fromPhone = phoneNumberObj?.phoneNumber || process.env.SARVAM_AGENT_PHONE_NUMBER || '+917965480599';
+    const fromPhone = phoneNumberObj?.phoneNumber || process.env.SARVAM_AGENT_PHONE_NUMBER || '+917965861007';
     const sarvamAppId = process.env.SARVAM_APP_ID || 'Conversatio-b063cf10-e735';
 
     console.log(`[Campaign Engine] Dispatching calls for campaign "${campaign.name}" (${campaignLeads.length} lead(s))...`);
@@ -157,7 +157,7 @@ export class ServerCampaignService {
     const phoneNumberObj = await prisma.phoneNumber.findUnique({
       where: { id: campaign.phoneNumberId },
     });
-    const fromPhone = phoneNumberObj?.phoneNumber || process.env.SARVAM_AGENT_PHONE_NUMBER || '+917965480599';
+    const fromPhone = phoneNumberObj?.phoneNumber || process.env.SARVAM_AGENT_PHONE_NUMBER || '+917965861007';
     const sarvamAppId = process.env.SARVAM_APP_ID || 'Conversatio-b063cf10-e735';
 
     const agentVersion = await prisma.agentVersion.findUnique({
@@ -460,7 +460,7 @@ export class ServerCampaignService {
     const phoneNumberObj = await prisma.phoneNumber.findUnique({
       where: { id: campaign.phoneNumberId },
     });
-    const fromPhone = phoneNumberObj?.phoneNumber || process.env.SARVAM_AGENT_PHONE_NUMBER || '+917965480599';
+    const fromPhone = phoneNumberObj?.phoneNumber || process.env.SARVAM_AGENT_PHONE_NUMBER || '+917965861007';
     const sarvamAppId = process.env.SARVAM_APP_ID || 'Conversatio-b063cf10-e735';
 
     const agentVersion = await prisma.agentVersion.findUnique({

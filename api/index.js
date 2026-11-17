@@ -1752,7 +1752,7 @@ var BackendSarvamProvider = class {
   workspaceId = process.env.SARVAM_WORKSPACE_ID || "019e9100-60a1-7bd7-bdb5-3b118f090be9";
   defaultAppId = process.env.SARVAM_APP_ID || "Fluid-Live--4408a194-967d";
   connectionId = process.env.SARVAM_CONNECTION_ID || "7efd8897-87-220da5aa-1d5e";
-  agentPhoneNumber = process.env.SARVAM_AGENT_PHONE_NUMBER || "+917965480599";
+  agentPhoneNumber = process.env.SARVAM_AGENT_PHONE_NUMBER || "+917965861007";
   apiKey = process.env.SARVAM_API_KEY;
   lastVerifiedAt = void 0;
   lastLatencyMs = void 0;
@@ -3410,7 +3410,7 @@ var ServerCampaignService = class {
     const phoneNumberObj = await prisma_default.phoneNumber.findUnique({
       where: { id: campaign.phoneNumberId }
     });
-    const fromPhone = phoneNumberObj?.phoneNumber || process.env.SARVAM_AGENT_PHONE_NUMBER || "+917965480599";
+    const fromPhone = phoneNumberObj?.phoneNumber || process.env.SARVAM_AGENT_PHONE_NUMBER || "+917965861007";
     const sarvamAppId = process.env.SARVAM_APP_ID || "Conversatio-b063cf10-e735";
     console.log(`[Campaign Engine] Dispatching calls for campaign "${campaign.name}" (${campaignLeads.length} lead(s))...`);
     const agentVersion = await prisma_default.agentVersion.findUnique({
@@ -3497,7 +3497,7 @@ var ServerCampaignService = class {
     const phoneNumberObj = await prisma_default.phoneNumber.findUnique({
       where: { id: campaign.phoneNumberId }
     });
-    const fromPhone = phoneNumberObj?.phoneNumber || process.env.SARVAM_AGENT_PHONE_NUMBER || "+917965480599";
+    const fromPhone = phoneNumberObj?.phoneNumber || process.env.SARVAM_AGENT_PHONE_NUMBER || "+917965861007";
     const sarvamAppId = process.env.SARVAM_APP_ID || "Conversatio-b063cf10-e735";
     const agentVersion = await prisma_default.agentVersion.findUnique({
       where: { id: campaign.agentVersionId }
@@ -3755,7 +3755,7 @@ var ServerCampaignService = class {
     const phoneNumberObj = await prisma_default.phoneNumber.findUnique({
       where: { id: campaign.phoneNumberId }
     });
-    const fromPhone = phoneNumberObj?.phoneNumber || process.env.SARVAM_AGENT_PHONE_NUMBER || "+917965480599";
+    const fromPhone = phoneNumberObj?.phoneNumber || process.env.SARVAM_AGENT_PHONE_NUMBER || "+917965861007";
     const sarvamAppId = process.env.SARVAM_APP_ID || "Conversatio-b063cf10-e735";
     const agentVersion = await prisma_default.agentVersion.findUnique({
       where: { id: campaign.agentVersionId }

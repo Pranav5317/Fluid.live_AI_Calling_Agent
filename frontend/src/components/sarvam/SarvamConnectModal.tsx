@@ -252,7 +252,7 @@ export const SarvamConnectModal: React.FC<SarvamConnectModalProps> = ({
 
           <Input
             label="Dedicated Agent Caller ID Phone Number *"
-            placeholder="+917965480599"
+            placeholder="+917965861007"
             value={agentPhoneNumber}
             onChange={e => setAgentPhoneNumber(e.target.value)}
           />
