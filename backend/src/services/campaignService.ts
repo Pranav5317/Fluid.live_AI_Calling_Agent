@@ -137,7 +137,10 @@ export class ServerCampaignService {
   }
 
   async resumeCampaign(id: string): Promise<Campaign> {
-    return this.startCampaign(id);
+    const campaign = await campaignRepository.getCampaignById(id);
+    if (!campaign) throw new Error(`Campaign not found: ${id}`);
+    await this.assertBudgetAvailable();
+    return campaignRepository.updateCampaignStatus(id, 'running');
   }
 
   async stopCampaign(id: string): Promise<Campaign> {

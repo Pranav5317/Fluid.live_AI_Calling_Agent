@@ -55,6 +55,17 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
     return () => clearInterval(interval);
   }, []);
 
+  // Background heartbeat: When viewing the dashboard, auto-pulse ticks every 45s if window is open and leads are due
+  useEffect(() => {
+    if (!schedulerData?.windowInfo?.isOpen || !schedulerData?.dueNowForDialing) return;
+    const heartbeat = setInterval(() => {
+      if (!ticking && !dryRunning) {
+        handleTriggerTick(false);
+      }
+    }, 45000);
+    return () => clearInterval(heartbeat);
+  }, [schedulerData?.windowInfo?.isOpen, schedulerData?.dueNowForDialing, ticking, dryRunning]);
+
   const handleTriggerTick = async (dryRun = false) => {
     if (dryRun) {
       setDryRunning(true);
@@ -248,6 +259,37 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Inactive Campaign Warning Banner */}
+      {runningCampaigns === 0 && (
+        <div className="px-6 py-3.5 bg-amber-500/10 border-b border-amber-500/25 text-amber-900 text-xs flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+            <span className="leading-snug">
+              <strong>Outreach Campaign Paused:</strong> Outbound dialing is halted because there are 0 active campaigns running. Scheduled interval leads require an active campaign to place calls.
+            </span>
+          </div>
+          <Button
+            size="sm"
+            onClick={async () => {
+              try {
+                const campaigns = await campaignService.getCampaigns();
+                const latest = campaigns[0];
+                if (latest) {
+                  await campaignService.resumeCampaign(latest.id);
+                  await fetchSchedulerStatus(true);
+                  setFeedback({ type: 'success', text: `Campaign "${latest.name}" resumed to active/running status.` });
+                }
+              } catch (e: any) {
+                setFeedback({ type: 'error', text: `Failed to resume campaign: ${e?.message}` });
+              }
+            }}
+            className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs rounded-full py-1.5 px-4"
+          >
+            Resume Outreach Campaign
+          </Button>
         </div>
       )}
 

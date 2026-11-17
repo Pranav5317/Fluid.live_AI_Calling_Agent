@@ -1150,19 +1150,54 @@ var LeadRepository = class {
             }
           });
           if (syncResult.count === 0) {
-            const activeCampaign = await prisma_default.campaign.findFirst({
+            let targetCampaign = await prisma_default.campaign.findFirst({
               where: { status: "running" },
               orderBy: { createdAt: "desc" }
-            }) || await prisma_default.campaign.findFirst({ orderBy: { createdAt: "desc" } });
-            if (activeCampaign) {
+            });
+            if (!targetCampaign) {
+              const latestCampaign = await prisma_default.campaign.findFirst({ orderBy: { createdAt: "desc" } });
+              if (latestCampaign) {
+                targetCampaign = await prisma_default.campaign.update({
+                  where: { id: latestCampaign.id },
+                  data: { status: "running" }
+                });
+              } else {
+                const primaryAgentVersion = await prisma_default.agentVersion.findFirst({ orderBy: { createdAt: "desc" } });
+                const primaryPhone = await prisma_default.phoneNumber.findFirst({ where: { status: "active" } }) || await prisma_default.phoneNumber.findFirst();
+                if (primaryAgentVersion && primaryPhone) {
+                  targetCampaign = await prisma_default.campaign.create({
+                    data: {
+                      name: "Autonomous Outreach Campaign",
+                      status: "running",
+                      agentId: primaryAgentVersion.agentId,
+                      agentVersionId: primaryAgentVersion.id,
+                      phoneNumberId: primaryPhone.id,
+                      totalLeads: 1
+                    }
+                  });
+                }
+              }
+            }
+            if (targetCampaign) {
               await prisma_default.campaignLead.create({
                 data: {
-                  campaignId: activeCampaign.id,
+                  campaignId: targetCampaign.id,
                   leadId: id,
                   status: "retry_scheduled",
                   attemptCount: 0,
                   nextAttemptAt: parsedDate
                 }
+              });
+            }
+          } else {
+            const existingLinks = await prisma_default.campaignLead.findMany({
+              where: { leadId: id },
+              select: { campaignId: true }
+            });
+            for (const link of existingLinks) {
+              await prisma_default.campaign.updateMany({
+                where: { id: link.campaignId, status: { not: "running" } },
+                data: { status: "running" }
               });
             }
           }
@@ -3444,7 +3479,10 @@ var ServerCampaignService = class {
     return campaignRepository.updateCampaignStatus(id, "paused");
   }
   async resumeCampaign(id) {
-    return this.startCampaign(id);
+    const campaign = await campaignRepository.getCampaignById(id);
+    if (!campaign) throw new Error(`Campaign not found: ${id}`);
+    await this.assertBudgetAvailable();
+    return campaignRepository.updateCampaignStatus(id, "running");
   }
   async stopCampaign(id) {
     return campaignRepository.updateCampaignStatus(id, "cancelled");

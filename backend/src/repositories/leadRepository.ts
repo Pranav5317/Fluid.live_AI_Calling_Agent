@@ -182,22 +182,60 @@ export class LeadRepository {
             },
           });
 
-          // If lead wasn't previously linked to any campaign, link to the active running campaign
+          // If lead wasn't previously linked to any campaign, link to an active running campaign
           if (syncResult.count === 0) {
-            const activeCampaign = await prisma.campaign.findFirst({
+            let targetCampaign = await prisma.campaign.findFirst({
               where: { status: 'running' },
               orderBy: { createdAt: 'desc' },
-            }) || await prisma.campaign.findFirst({ orderBy: { createdAt: 'desc' } });
+            });
 
-            if (activeCampaign) {
+            // If no campaign is running, resume the most recent campaign or create a dedicated outreach campaign
+            if (!targetCampaign) {
+              const latestCampaign = await prisma.campaign.findFirst({ orderBy: { createdAt: 'desc' } });
+              if (latestCampaign) {
+                targetCampaign = await prisma.campaign.update({
+                  where: { id: latestCampaign.id },
+                  data: { status: 'running' },
+                });
+              } else {
+                const primaryAgentVersion = await prisma.agentVersion.findFirst({ orderBy: { createdAt: 'desc' } });
+                const primaryPhone = await prisma.phoneNumber.findFirst({ where: { status: 'active' } }) || await prisma.phoneNumber.findFirst();
+                if (primaryAgentVersion && primaryPhone) {
+                  targetCampaign = await prisma.campaign.create({
+                    data: {
+                      name: 'Autonomous Outreach Campaign',
+                      status: 'running',
+                      agentId: primaryAgentVersion.agentId,
+                      agentVersionId: primaryAgentVersion.id,
+                      phoneNumberId: primaryPhone.id,
+                      totalLeads: 1,
+                    },
+                  });
+                }
+              }
+            }
+
+            if (targetCampaign) {
               await prisma.campaignLead.create({
                 data: {
-                  campaignId: activeCampaign.id,
+                  campaignId: targetCampaign.id,
                   leadId: id,
                   status: 'retry_scheduled',
                   attemptCount: 0,
                   nextAttemptAt: parsedDate,
                 },
+              });
+            }
+          } else {
+            // Lead was already in campaign(s); ensure at least one linked campaign is set to 'running'
+            const existingLinks = await prisma.campaignLead.findMany({
+              where: { leadId: id },
+              select: { campaignId: true },
+            });
+            for (const link of existingLinks) {
+              await prisma.campaign.updateMany({
+                where: { id: link.campaignId, status: { not: 'running' } },
+                data: { status: 'running' },
               });
             }
           }
