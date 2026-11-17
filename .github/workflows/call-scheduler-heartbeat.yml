@@ -24,7 +24,7 @@ jobs:
     steps:
       - name: Send Heartbeat to Calling Engine
         env:
-          APP_BASE_URL: ${{ secrets.APP_BASE_URL || 'https://fluidlive.vercel.app' }}
+          APP_BASE_URL: 'https://fluidlive.vercel.app'
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           DRY_RUN: ${{ inputs.dry_run || false }}
           FORCE_IGNORE: ${{ inputs.force_ignore_window || false }}
