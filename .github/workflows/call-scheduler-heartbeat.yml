@@ -1,0 +1,56 @@
+name: Autonomous Call Scheduler Heartbeat
+
+on:
+  schedule:
+    # Runs every 10 minutes from 04:30 to 15:30 UTC (10:00 AM to 9:00 PM IST), Monday to Saturday (TRAI calling window)
+    - cron: '*/10 4-15 * * 1-6'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run in Dry-Run simulation mode (does not consume credits or place real calls)'
+        required: false
+        type: boolean
+        default: false
+      force_ignore_window:
+        description: 'Bypass consumer calling window restriction'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  scheduler-tick:
+    name: Trigger Telephony Scheduler Tick
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Heartbeat to Calling Engine
+        env:
+          APP_BASE_URL: ${{ secrets.APP_BASE_URL || 'https://fluidlive.vercel.app' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
+          FORCE_IGNORE: ${{ inputs.force_ignore_window || false }}
+        run: |
+          echo "Pinging Autonomous Calling Engine at $APP_BASE_URL..."
+          
+          ENDPOINT="$APP_BASE_URL/api/campaigns/scheduler/tick"
+          
+          if [ -n "$CRON_SECRET" ]; then
+            AUTH_HEADER="Authorization: Bearer $CRON_SECRET"
+          else
+            AUTH_HEADER="x-source: github-actions-cron"
+          fi
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$ENDPOINT?dryRun=$DRY_RUN&forceIgnoreWindow=$FORCE_IGNORE" \
+            -H "$AUTH_HEADER" \
+            -H "Content-Type: application/json")
+
+          HTTP_BODY=$(echo "$RESPONSE" | sed '$d')
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+
+          echo "HTTP Response Status: $HTTP_CODE"
+          echo "Response Body:"
+          echo "$HTTP_BODY" | jq . || echo "$HTTP_BODY"
+
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::error::Scheduler tick endpoint returned error status $HTTP_CODE"
+            exit 1
+          fi

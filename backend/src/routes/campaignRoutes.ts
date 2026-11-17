@@ -15,27 +15,51 @@ campaignRoutes.get('/scheduler/status', async (req, res) => {
   }
 });
 
-// POST & GET /api/campaigns/scheduler/tick (Supports both manual trigger and Vercel Cron)
+// Middleware: Protect scheduler tick endpoint when CRON_SECRET is configured
+const tickAuthMiddleware = (req: any, res: any, next: any) => {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) return next();
+
+  const authHeader = req.headers.authorization;
+  const customHeader = req.headers['x-cron-secret'];
+  const querySecret = req.query?.secret;
+
+  const providedSecret = authHeader?.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : (customHeader || querySecret || authHeader);
+
+  // Allow if provided secret matches CRON_SECRET
+  if (providedSecret === cronSecret) return next();
+
+  // Allow internal requests originating from same host dashboard
+  const host = req.headers.host;
+  const referer = req.headers.referer;
+  if (referer && host && referer.includes(host)) return next();
+
+  return res.status(401).json({
+    success: false,
+    error: 'Unauthorized: Invalid or missing CRON_SECRET. Pass Authorization: Bearer <CRON_SECRET> or ?secret=<CRON_SECRET>',
+    timestamp: new Date().toISOString(),
+  });
+};
+
+// POST & GET /api/campaigns/scheduler/tick (Supports Vercel Cron, GitHub Actions, and Webhooks)
 const handleSchedulerTick = async (req: any, res: any) => {
   try {
-    const options = { ...(req.body || {}), ...(req.query?.forceIgnoreWindow ? { forceIgnoreWindow: req.query.forceIgnoreWindow === 'true' } : {}) };
+    const options = {
+      ...(req.body || {}),
+      ...(req.query?.forceIgnoreWindow ? { forceIgnoreWindow: req.query.forceIgnoreWindow === 'true' } : {}),
+      ...(req.query?.dryRun ? { dryRun: req.query.dryRun === 'true' } : {}),
+    };
     const result = await callSchedulerService.runSchedulerTick(options);
     res.json({ success: true, data: result, timestamp: new Date().toISOString() });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message, timestamp: new Date().toISOString() });
   }
 };
-campaignRoutes.post('/scheduler/tick', handleSchedulerTick);
-campaignRoutes.get('/scheduler/tick', (req, res, next) => {
-  const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const auth = req.headers.authorization;
-    if (auth !== `Bearer ${cronSecret}`) {
-      return res.status(401).json({ success: false, error: 'Unauthorized: Invalid CRON_SECRET', timestamp: new Date().toISOString() });
-    }
-  }
-  return next();
-}, handleSchedulerTick);
+
+campaignRoutes.post('/scheduler/tick', tickAuthMiddleware, handleSchedulerTick);
+campaignRoutes.get('/scheduler/tick', tickAuthMiddleware, handleSchedulerTick);
 
 // --- FEATURE 3: CADENCE & RETRY ENGINE ROUTES (Placed before /:id) ---
 // GET /api/campaigns/cadence/policy

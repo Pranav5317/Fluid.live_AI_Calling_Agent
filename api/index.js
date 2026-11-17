@@ -3891,26 +3891,38 @@ campaignRoutes.get("/scheduler/status", async (req, res) => {
     res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   }
 });
+var tickAuthMiddleware = (req, res, next) => {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) return next();
+  const authHeader = req.headers.authorization;
+  const customHeader = req.headers["x-cron-secret"];
+  const querySecret = req.query?.secret;
+  const providedSecret = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : customHeader || querySecret || authHeader;
+  if (providedSecret === cronSecret) return next();
+  const host = req.headers.host;
+  const referer = req.headers.referer;
+  if (referer && host && referer.includes(host)) return next();
+  return res.status(401).json({
+    success: false,
+    error: "Unauthorized: Invalid or missing CRON_SECRET. Pass Authorization: Bearer <CRON_SECRET> or ?secret=<CRON_SECRET>",
+    timestamp: (/* @__PURE__ */ new Date()).toISOString()
+  });
+};
 var handleSchedulerTick = async (req, res) => {
   try {
-    const options = { ...req.body || {}, ...req.query?.forceIgnoreWindow ? { forceIgnoreWindow: req.query.forceIgnoreWindow === "true" } : {} };
+    const options = {
+      ...req.body || {},
+      ...req.query?.forceIgnoreWindow ? { forceIgnoreWindow: req.query.forceIgnoreWindow === "true" } : {},
+      ...req.query?.dryRun ? { dryRun: req.query.dryRun === "true" } : {}
+    };
     const result = await callSchedulerService.runSchedulerTick(options);
     res.json({ success: true, data: result, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   } catch (err) {
     res.status(500).json({ success: false, error: err?.message, timestamp: (/* @__PURE__ */ new Date()).toISOString() });
   }
 };
-campaignRoutes.post("/scheduler/tick", handleSchedulerTick);
-campaignRoutes.get("/scheduler/tick", (req, res, next) => {
-  const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const auth = req.headers.authorization;
-    if (auth !== `Bearer ${cronSecret}`) {
-      return res.status(401).json({ success: false, error: "Unauthorized: Invalid CRON_SECRET", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
-    }
-  }
-  return next();
-}, handleSchedulerTick);
+campaignRoutes.post("/scheduler/tick", tickAuthMiddleware, handleSchedulerTick);
+campaignRoutes.get("/scheduler/tick", tickAuthMiddleware, handleSchedulerTick);
 campaignRoutes.get("/cadence/policy", async (req, res) => {
   try {
     const policy = await callSchedulerService.loadPolicyFromDb();
