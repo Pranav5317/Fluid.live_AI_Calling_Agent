@@ -118,7 +118,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
   const runningCampaigns = schedulerData?.runningCampaigns || 0;
 
   return (
-    <Card noPadding className="border-[#DFCDB6] shadow-[0_12px_40px_rgba(40,25,10,0.06)] overflow-hidden rounded-[24px]">
+    <Card noPadding className="border-slate-200/90 shadow-xs overflow-hidden rounded-2xl">
       {/* Top Header (Talkaor Deep Royal Navy) */}
       <div className="p-6 border-b border-blue-900/40 bg-[#0C1D4A] text-white">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
@@ -171,7 +171,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
               onClick={() => handleTriggerTick(true)}
               isLoading={dryRunning}
               leftIcon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />}
-              className="border-emerald-400/30 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/25 text-xs font-semibold rounded-full"
+              className="border-emerald-400/30 bg-emerald-500/15 text-emerald-100 hover:bg-emerald-500/25 text-xs font-semibold"
             >
               Simulate Run (Dry Run)
             </Button>
@@ -181,7 +181,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
               onClick={() => handleTriggerTick(false)}
               isLoading={ticking}
               leftIcon={<Zap className="h-3.5 w-3.5" />}
-              className="bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold text-xs shadow-md rounded-full"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm"
             >
               Execute Dispatch Cycle Now
             </Button>
@@ -293,8 +293,8 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
         </div>
       )}
 
-      {/* Metrics Row (Warm Linen Tone) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[#EADCBD] border-b border-[#EADCBD] bg-[#FAF4EB]/70 text-xs">
+      {/* Metrics Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 border-b border-slate-100 bg-slate-50/50 text-xs">
         <div className="p-5">
           <span className="text-slate-500 block text-[11px] uppercase font-bold tracking-wider font-mono">
             Due for Redial Right Now
@@ -310,7 +310,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
             Total Enrolled in Cadence
           </span>
           <div className="flex items-baseline gap-2 mt-1.5">
-            <span className="text-2xl font-extrabold font-mono text-[#1D4ED8]">{totalInCadence}</span>
+            <span className="text-2xl font-extrabold font-mono text-blue-600">{totalInCadence}</span>
             <span className="text-xs text-slate-500 font-medium">in queue</span>
           </div>
         </div>
@@ -330,7 +330,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
             Dispatch Protection
           </span>
           <div className="flex items-baseline gap-2 mt-1.5">
-            <span className="text-xs font-bold font-mono text-slate-800 flex items-center gap-1.5 bg-white/80 px-3 py-1 rounded-full border border-[#DACBB5] shadow-2xs">
+            <span className="text-xs font-bold font-mono text-slate-800 flex items-center gap-1.5 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-2xs">
               <ShieldCheck className="h-4 w-4 text-emerald-600" />
               TRAI + {schedulerData?.cadencePolicy?.maxCallsPer24Hours || 2} Dials/Day Cap
             </span>
@@ -340,7 +340,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
 
       {/* Autonomous Schedule Table */}
       <div className="overflow-x-auto">
-        <div className="px-6 py-4 bg-[#F2E7D7]/70 border-b border-[#EADCBD] flex items-center justify-between">
+        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-800 font-mono">
             Upcoming Dynamic Dispatches ({upcomingSchedule.length})
           </span>
@@ -351,7 +351,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
 
         {loading && upcomingSchedule.length === 0 ? (
           <div className="py-12 text-center text-xs text-slate-500 space-y-2">
-            <RotateCw className="h-5 w-5 animate-spin mx-auto text-[#1D4ED8]" />
+            <RotateCw className="h-5 w-5 animate-spin mx-auto text-blue-600" />
             <p>Evaluating upcoming dynamic telephony schedule...</p>
           </div>
         ) : upcomingSchedule.length === 0 ? (
@@ -362,7 +362,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
           </div>
         ) : (
           <table className="w-full text-left text-xs text-slate-700">
-            <thead className="bg-[#FAF4EB]/60 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-[#EADCBD] font-mono">
+            <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-slate-200 font-mono">
               <tr>
                 <th className="px-6 py-3.5">Consumer Contact</th>
                 <th className="px-6 py-3.5">Campaign</th>
@@ -371,7 +371,7 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
                 <th className="px-6 py-3.5 text-right">Autonomous Engine Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#EADCBD]/60 bg-transparent">
+            <tbody className="divide-y divide-slate-100 bg-white">
               {upcomingSchedule.map(item => (
                 <tr key={item.campaignLeadId} className="hover:bg-white/50 transition-colors">
                   <td className="px-6 py-4">

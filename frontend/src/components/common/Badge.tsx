@@ -24,7 +24,7 @@ export const Badge: React.FC<BadgeProps> = ({
     danger: 'bg-rose-600/10 text-rose-800 border-rose-600/20',
     info: 'bg-sky-600/10 text-sky-800 border-sky-600/20',
     purple: 'bg-indigo-600/10 text-indigo-800 border-indigo-600/20',
-    brand: 'bg-[#1D4ED8]/10 text-[#1D4ED8] border-[#1D4ED8]/25 font-bold',
+    brand: 'bg-blue-600/10 text-blue-700 border-blue-600/20 font-semibold',
   };
 
   const dotColors = {
@@ -34,7 +34,7 @@ export const Badge: React.FC<BadgeProps> = ({
     danger: 'bg-rose-600',
     info: 'bg-sky-600',
     purple: 'bg-indigo-600',
-    brand: 'bg-[#1D4ED8]',
+    brand: 'bg-blue-600',
   };
 
   const sizes = {

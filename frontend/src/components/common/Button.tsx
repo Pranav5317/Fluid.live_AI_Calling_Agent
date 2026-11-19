@@ -27,25 +27,25 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-medium transition-all duration-200 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#F5EADB] focus:ring-[#1D4ED8]/40 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 select-none cursor-pointer';
+      'inline-flex items-center justify-center font-medium transition-all duration-150 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-blue-500/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 select-none cursor-pointer';
 
     const variants = {
       primary:
-        'bg-[#1D4ED8] hover:bg-[#1E40AF] text-white shadow-[0_8px_20px_rgba(29,78,216,0.35)] font-semibold',
+        'bg-blue-600 hover:bg-blue-700 text-white shadow-xs hover:shadow-sm font-semibold active:bg-blue-800',
       secondary:
-        'bg-white/70 text-slate-800 hover:bg-white active:bg-white/90 border border-[#D5C4AC] shadow-xs font-semibold',
+        'bg-white text-slate-800 hover:bg-slate-50 active:bg-slate-100 border border-slate-200 hover:border-slate-300 shadow-2xs font-semibold',
       outline:
-        'bg-white/50 text-slate-800 hover:bg-white border border-[#D5C4AC] shadow-xs font-semibold',
+        'bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 border border-slate-200/90 hover:border-slate-300 shadow-2xs font-semibold',
       danger:
-        'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 shadow-xs font-semibold',
+        'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 shadow-2xs font-semibold',
       ghost:
-        'bg-transparent text-slate-700 hover:bg-black/5 hover:text-slate-950',
+        'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900',
     };
 
     const sizes = {
-      sm: 'px-4 py-1.5 text-xs font-semibold gap-1.5',
-      md: 'px-5 py-2 text-sm font-semibold gap-2',
-      lg: 'px-6 py-2.5 text-base font-semibold gap-2.5',
+      sm: 'px-3 py-1.5 text-xs font-semibold gap-1.5',
+      md: 'px-4 py-2 text-sm font-semibold gap-2',
+      lg: 'px-5 py-2.5 text-base font-semibold gap-2.5',
     };
 
     return (

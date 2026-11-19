@@ -175,7 +175,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
   const currentMaxAttempts = policy?.maxAttempts ?? 3;
 
   return (
-    <Card noPadding className="border-[#DFCDB6] shadow-[0_12px_40px_rgba(40,25,10,0.06)] overflow-hidden rounded-[24px]">
+    <Card noPadding className="border-slate-200/90 shadow-xs overflow-hidden rounded-2xl">
       {/* Header (Talkaor Deep Royal Navy) */}
       <div className="p-6 border-b border-blue-900/40 bg-[#0C1D4A] text-white">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
@@ -215,7 +215,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
               variant="outline"
               onClick={fetchQueue}
               leftIcon={<RotateCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />}
-              className="border-white/20 bg-white/10 text-white hover:bg-white/20 text-xs font-semibold rounded-full"
+              className="border-white/20 bg-white/10 text-white hover:bg-white/20 text-xs font-semibold"
             >
               Sync
             </Button>
@@ -225,7 +225,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
               disabled={dueItems.length === 0}
               isLoading={processingDue}
               leftIcon={<PhoneForwarded className="h-3.5 w-3.5" />}
-              className="bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold text-xs shadow-md border border-blue-400/30 rounded-full"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm border border-blue-400/30"
             >
               Process Due Retries ({dueItems.length})
             </Button>
@@ -457,7 +457,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
                 size="sm"
                 variant="outline"
                 onClick={() => setIsStudioOpen(false)}
-                className="border-white/20 text-white hover:bg-white/15 text-xs rounded-full"
+                className="border-white/20 text-white hover:bg-white/15 text-xs"
               >
                 Cancel
               </Button>
@@ -466,7 +466,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
                 onClick={handleSavePolicy}
                 isLoading={policySaving}
                 leftIcon={<Check className="h-3.5 w-3.5" />}
-                className="bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold text-xs shadow-md rounded-full"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm"
               >
                 Save & Apply Cadence Policy
               </Button>
@@ -503,10 +503,10 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
       )}
 
       {/* Summary Chips */}
-      <div className="px-6 py-3.5 border-b border-[#EADCBD] bg-[#FAF4EB]/70 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="px-6 py-3.5 border-b border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-3">
           <span className="font-bold text-slate-900 font-mono">Active Cadence Queue:</span>
-          <span className="font-mono bg-white/80 px-3 py-1 rounded-full border border-[#DACBB5] font-bold text-slate-900 shadow-2xs">
+          <span className="font-mono bg-white px-3 py-1 rounded-full border border-slate-200 font-bold text-slate-900 shadow-2xs">
             {queue.length} Total Candidates
           </span>
           <span className="font-mono bg-emerald-600/10 px-3 py-1 rounded-full border border-emerald-600/20 font-bold text-emerald-800 shadow-2xs">
@@ -524,7 +524,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
       {/* Queue Table */}
       {loading && queue.length === 0 ? (
         <div className="py-12 text-center text-xs text-slate-500 space-y-2">
-          <RotateCw className="h-5 w-5 animate-spin mx-auto text-[#1D4ED8]" />
+          <RotateCw className="h-5 w-5 animate-spin mx-auto text-blue-600" />
           <p>Evaluating cadence waterfall and retry candidates...</p>
         </div>
       ) : queue.length === 0 ? (
@@ -536,7 +536,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-700">
-            <thead className="bg-[#F2E7D7]/70 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-[#EADCBD] font-mono">
+            <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-slate-200 font-mono">
               <tr>
                 <th className="px-6 py-3.5">Lead Contact</th>
                 <th className="px-6 py-3.5">Campaign</th>
@@ -546,7 +546,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
                 <th className="px-6 py-3.5 text-right">Cadence Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#EADCBD]/60 bg-transparent">
+            <tbody className="divide-y divide-slate-200/80 bg-white">
               {queue.map(item => (
                 <tr key={item.campaignLeadId} className="hover:bg-white/50 transition-colors">
                   <td className="px-6 py-4">
@@ -602,7 +602,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
                         variant="outline"
                         leftIcon={<Calendar className="h-3.5 w-3.5 text-slate-500" />}
                         onClick={() => handleOpenReschedule(item)}
-                        className="text-slate-800 border-[#D5C4AC] hover:bg-white text-xs font-semibold rounded-full"
+                        className="text-slate-700 border-slate-200 hover:bg-slate-50 text-xs font-semibold"
                       >
                         Reschedule
                       </Button>
@@ -610,9 +610,9 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
                         size="sm"
                         variant="outline"
                         isLoading={executingId === item.campaignLeadId}
-                        leftIcon={<PhoneForwarded className="h-3.5 w-3.5 text-[#1D4ED8]" />}
+                        leftIcon={<PhoneForwarded className="h-3.5 w-3.5 text-blue-600" />}
                         onClick={() => handleExecuteRetry(item.campaignLeadId, item.leadName)}
-                        className="text-[#1D4ED8] border-[#1D4ED8]/30 hover:bg-[#1D4ED8]/10 text-xs font-bold rounded-full"
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50 text-xs font-semibold"
                       >
                         Dial Now
                       </Button>
@@ -625,14 +625,14 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
         </div>
       )}
 
-      {/* Reschedule Modal (Warm Linen Theme) */}
+      {/* Reschedule Modal */}
       {reschedulingLead && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-[#FAF4EB] rounded-[24px] shadow-2xl border border-[#DFCDB6] max-w-md w-full overflow-hidden text-slate-900">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 max-w-md w-full overflow-hidden text-slate-900">
             {/* Modal Header */}
-            <div className="p-5 border-b border-[#EADCBD] bg-white/40 flex items-center justify-between">
+            <div className="p-5 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="p-2 rounded-xl bg-[#1D4ED8]/10 text-[#1D4ED8] border border-[#1D4ED8]/20">
+                <span className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100">
                   <Calendar className="h-4 w-4" />
                 </span>
                 <div>
@@ -661,36 +661,36 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
                   <button
                     type="button"
                     onClick={() => setRescheduleTargetTime(new Date(Date.now() + 1 * 3600000).toISOString())}
-                    className="p-3 rounded-2xl border border-[#DACBB5] bg-white/60 text-left hover:border-[#1D4ED8]/50 hover:bg-white transition-all font-medium text-slate-800 shadow-2xs"
+                    className="p-3 rounded-2xl border border-slate-200 bg-white text-left hover:border-blue-500/50 hover:bg-slate-50/50 transition-all font-medium text-slate-800 shadow-2xs"
                   >
-                    <span className="font-bold block text-[#1D4ED8]">+1 Hour</span>
+                    <span className="font-bold block text-blue-600">+1 Hour</span>
                     <span className="text-[11px] text-slate-500">Quick backoff</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setRescheduleTargetTime(new Date(Date.now() + 4 * 3600000).toISOString())}
-                    className="p-3 rounded-2xl border border-[#DACBB5] bg-white/60 text-left hover:border-[#1D4ED8]/50 hover:bg-white transition-all font-medium text-slate-800 shadow-2xs"
+                    className="p-3 rounded-2xl border border-slate-200 bg-white text-left hover:border-blue-500/50 hover:bg-slate-50/50 transition-all font-medium text-slate-800 shadow-2xs"
                   >
-                    <span className="font-bold block text-[#1D4ED8]">+4 Hours</span>
+                    <span className="font-bold block text-blue-600">+4 Hours</span>
                     <span className="text-[11px] text-slate-500">Standard Tier 2</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setRescheduleTargetTime(getTomorrowISTIso(10, 30))}
-                    className="p-3 rounded-2xl border border-[#DACBB5] bg-white/60 text-left hover:border-[#1D4ED8]/50 hover:bg-white transition-all font-medium text-slate-800 shadow-2xs"
+                    className="p-3 rounded-2xl border border-slate-200 bg-white text-left hover:border-blue-500/50 hover:bg-slate-50/50 transition-all font-medium text-slate-800 shadow-2xs"
                   >
-                    <span className="font-bold block text-[#1D4ED8]">Tomorrow 10:30 AM</span>
+                    <span className="font-bold block text-blue-600">Tomorrow 10:30 AM</span>
                     <span className="text-[11px] text-slate-500">Opening business hour</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setRescheduleTargetTime(getTomorrowISTIso(15, 0))}
-                    className="p-3 rounded-2xl border border-[#DACBB5] bg-white/60 text-left hover:border-[#1D4ED8]/50 hover:bg-white transition-all font-medium text-slate-800 shadow-2xs"
+                    className="p-3 rounded-2xl border border-slate-200 bg-white text-left hover:border-blue-500/50 hover:bg-slate-50/50 transition-all font-medium text-slate-800 shadow-2xs"
                   >
-                    <span className="font-bold block text-[#1D4ED8]">Tomorrow 3:00 PM</span>
+                    <span className="font-bold block text-blue-600">Tomorrow 3:00 PM</span>
                     <span className="text-[11px] text-slate-500">Afternoon window</span>
                   </button>
                 </div>
@@ -708,7 +708,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
                       setRescheduleTargetTime(new Date(e.target.value).toISOString());
                     }
                   }}
-                  className="w-full px-4 py-2.5 text-xs bg-white border border-[#D5C4AC] rounded-full focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/20 font-mono text-slate-900 placeholder-slate-400"
+                  className="w-full px-3.5 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-600 font-mono text-slate-900 placeholder-slate-400 shadow-2xs"
                 />
               </div>
 
@@ -721,12 +721,12 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
             </div>
 
             {/* Modal Actions */}
-            <div className="p-4 border-t border-[#EADCBD] bg-[#F2E7D7]/60 flex items-center justify-end gap-2.5">
+            <div className="p-4 border-t border-slate-100 bg-slate-50/80 flex items-center justify-end gap-2.5">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setReschedulingLead(null)}
-                className="text-xs rounded-full"
+                className="text-xs"
               >
                 Cancel
               </Button>
@@ -735,7 +735,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
                 onClick={handleConfirmReschedule}
                 isLoading={isRescheduling}
                 leftIcon={<Calendar className="h-3.5 w-3.5" />}
-                className="bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-bold text-xs shadow-md rounded-full"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm"
               >
                 Confirm Reschedule
               </Button>

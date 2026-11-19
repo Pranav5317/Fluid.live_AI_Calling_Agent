@@ -66,23 +66,23 @@ export const Modal: React.FC<ModalProps> = ({
       {/* Dialog container */}
       <div
         className={cn(
-          'relative w-full rounded-[24px] bg-[#FAF4EB] shadow-[0_25px_60px_rgba(40,25,10,0.15)] border border-[#DFCDB6] text-slate-900 z-10 flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200',
+          'relative w-full rounded-2xl bg-white shadow-2xl border border-slate-200/90 text-slate-900 z-10 flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-150',
           sizes[size]
         )}
       >
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-[#EADCBD] px-6 py-4 bg-white/40">
+        <div className="flex items-start justify-between border-b border-slate-100 px-6 py-4 bg-slate-50/60">
           <div>
-            <h2 id={titleId} className="text-lg font-bold text-slate-950 tracking-tight leading-6 font-sans">{title}</h2>
-            {description && <p className="mt-1 text-xs text-slate-600">{description}</p>}
+            <h2 id={titleId} className="text-base font-bold text-slate-950 tracking-tight leading-6 font-sans">{title}</h2>
+            {description && <p className="mt-1 text-xs text-slate-500">{description}</p>}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="rounded-full p-2 text-slate-400 hover:bg-black/5 hover:text-slate-900 transition-colors"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
@@ -91,7 +91,7 @@ export const Modal: React.FC<ModalProps> = ({
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-3 border-t border-[#EADCBD] bg-[#F2E7D7]/70 px-6 py-4">
+          <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/80 px-6 py-3.5">
             {footer}
           </div>
         )}

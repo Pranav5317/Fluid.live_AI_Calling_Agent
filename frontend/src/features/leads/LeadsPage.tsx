@@ -521,15 +521,14 @@ export const LeadsPage: React.FC = () => {
 
                           <Button
                             size="sm"
-                            variant="outline"
                             disabled={Boolean(lead.doNotCall)}
-                            leftIcon={<Phone className={`h-3.5 w-3.5 ${lead.doNotCall ? 'text-slate-400' : 'text-emerald-600'}`} />}
+                            leftIcon={<Phone className="h-3.5 w-3.5" />}
                             onClick={() => setDirectCallLead(lead)}
                             title={lead.doNotCall ? 'Blocked by Do Not Call (DNC)' : 'Call candidate now'}
-                            className={`rounded-lg text-xs px-2.5 font-semibold ${
+                            className={`rounded-xl text-xs px-3 font-semibold transition-all ${
                               lead.doNotCall
-                                ? 'text-slate-400 border-slate-200 cursor-not-allowed'
-                                : 'text-emerald-700 border-emerald-200 hover:bg-emerald-50'
+                                ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none'
+                                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs hover:shadow-sm'
                             }`}
                           >
                             {lead.doNotCall ? 'DNC' : 'Call Now'}

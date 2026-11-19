@@ -98,7 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={cn(
                 'flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all select-none',
                 isActive
-                  ? 'bg-blue-50/80 text-blue-700 font-semibold border border-blue-200/60 shadow-xs'
+                  ? 'bg-blue-50/90 text-blue-700 font-semibold border border-blue-200/70 shadow-2xs'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               )}
               title={isCollapsed ? item.label : undefined}
@@ -119,7 +119,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={cn(
               'flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-medium transition-all select-none',
               activeRoute === 'settings'
-                ? 'bg-blue-50/80 text-blue-700 font-semibold border border-blue-200/60 shadow-xs'
+                ? 'bg-blue-50/90 text-blue-700 font-semibold border border-blue-200/70 shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
             )}
             title={isCollapsed ? 'Settings' : undefined}
@@ -131,6 +131,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Telephony Connection Status Footer */}
+      {!isCollapsed && (
+        <div className="p-3 border-t border-slate-100 bg-slate-50/60 m-2 rounded-xl">
+          <div className="flex items-center justify-between text-[11px]">
+            <div className="flex items-center gap-1.5 font-semibold text-slate-700">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+              </span>
+              <span>Telephony SIP</span>
+            </div>
+            <span className="text-[10px] font-mono font-bold bg-emerald-100/70 text-emerald-800 px-1.5 py-0.5 rounded">
+              ONLINE
+            </span>
+          </div>
+          <div className="mt-1 font-mono text-[10px] text-slate-500 truncate">
+            +91 79 6586 1007
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -139,7 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          'hidden md:block fixed inset-y-0 left-0 z-30 transition-all duration-200 border-r border-[#DFCDB6]',
+          'hidden md:block fixed inset-y-0 left-0 z-30 transition-all duration-200 border-r border-slate-200/80',
           isCollapsed ? 'w-16' : 'w-64'
         )}
       >

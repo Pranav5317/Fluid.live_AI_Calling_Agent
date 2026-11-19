@@ -439,14 +439,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           </CardHeader>
           <div className="space-y-3 mt-2">
             {recentActivities.map(act => (
-              <div key={act.id} className="flex items-start gap-3 text-xs border-b border-[#EADCBD] pb-3 last:border-0 last:pb-0">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#1D4ED8]/10 border border-[#1D4ED8]/20 text-[#1D4ED8] mt-0.5 shadow-2xs">
+              <div key={act.id} className="flex items-start gap-3 text-xs border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 border border-blue-100 text-blue-600 mt-0.5 shadow-2xs">
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </div>
                 <div>
                   <p className="font-semibold text-slate-900 leading-snug">{act.title}</p>
-                  <p className="text-[11px] text-slate-600 mt-0.5 line-clamp-2">{act.description}</p>
-                  <span className="text-[10px] font-mono text-slate-500 mt-1 block">
+                  <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">{act.description}</p>
+                  <span className="text-[10px] font-mono text-slate-400 mt-1 block">
                     {formatDate(act.timestamp)}
                   </span>
                 </div>
@@ -457,18 +457,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       </div>
 
       {/* Campaign Overview Data Table */}
-      <Card noPadding className="overflow-hidden">
-        <div className="p-5 border-b border-[#EADCBD] flex items-center justify-between">
+      <Card noPadding className="overflow-hidden border-slate-200 shadow-xs">
+        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-slate-950 tracking-tight">Active Campaign Performance</h3>
-            <p className="text-xs text-slate-600">Live progress tracking across assigned AI calling agents</p>
+            <p className="text-xs text-slate-500">Live progress tracking across assigned AI calling agents</p>
           </div>
           <Button
             variant="outline"
             size="sm"
             rightIcon={<ChevronRight className="h-4 w-4" />}
             onClick={() => onNavigate('campaigns')}
-            className="rounded-full"
           >
             View All Campaigns
           </Button>
@@ -476,7 +475,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-700">
-            <thead className="bg-[#F2E7D7]/70 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-[#EADCBD] font-mono">
+            <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-slate-200 font-mono">
               <tr>
                 <th className="px-5 py-3.5">Campaign Name</th>
                 <th className="px-5 py-3.5">Agent</th>
@@ -488,15 +487,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#EADCBD]/60 bg-transparent">
+            <tbody className="divide-y divide-slate-100 bg-white">
               {campaigns.map(cmp => {
                 const progressPct = Math.round((cmp.completedCalls / (cmp.totalLeads || 1)) * 100);
                 return (
-                  <tr key={cmp.id} className="hover:bg-white/50 transition-colors">
+                  <tr key={cmp.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-5 py-3.5 font-bold text-slate-950">{cmp.name}</td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1.5 font-medium text-slate-700">
-                        <Bot className="h-3.5 w-3.5 text-[#1D4ED8]" />
+                        <Bot className="h-3.5 w-3.5 text-blue-600" />
                         <span>{cmp.agentId}</span>
                       </div>
                     </td>
@@ -504,9 +503,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                     <td className="px-5 py-3.5 font-mono text-slate-800">{cmp.callsAttempted}</td>
                     <td className="px-5 py-3.5 w-40">
                       <div className="flex items-center gap-2">
-                        <div className="w-full bg-[#E5D7C3] rounded-full h-2 overflow-hidden">
+                        <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                           <div
-                            className="bg-[#1D4ED8] h-2 rounded-full transition-all shadow-xs"
+                            className="bg-blue-600 h-1.5 rounded-full transition-all"
                             style={{ width: `${Math.min(progressPct, 100)}%` }}
                           />
                         </div>
@@ -535,7 +534,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                         variant="ghost"
                         size="sm"
                         onClick={() => onNavigate('campaigns')}
-                        className="rounded-full"
                       >
                         Details
                       </Button>

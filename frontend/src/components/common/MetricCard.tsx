@@ -26,7 +26,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   return (
     <div
       className={cn(
-        'rounded-[22px] border border-[#E5D7C3] bg-[#FAF4EB]/90 backdrop-blur-md p-6 shadow-[0_10px_30px_rgba(40,25,10,0.04)] flex flex-col justify-between transition-all duration-300 hover:border-[#1D4ED8]/40 hover:shadow-[0_12px_35px_rgba(29,78,216,0.08)] group',
+        'rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs flex flex-col justify-between transition-all duration-200 hover:border-slate-300 hover:shadow-sm group',
         className
       )}
     >
@@ -35,26 +35,26 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           {title}
         </span>
         {icon && (
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#1D4ED8]/10 border border-[#1D4ED8]/20 text-[#1D4ED8] shadow-xs transition-transform group-hover:scale-105">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-blue-600 shadow-2xs transition-transform group-hover:scale-105">
             {icon}
           </div>
         )}
       </div>
 
-      <div className="mt-4">
-        <div className="text-3xl font-extrabold text-slate-950 tracking-tight font-sans">
+      <div className="mt-3">
+        <div className="text-2xl sm:text-3xl font-extrabold text-slate-950 tracking-tight font-sans">
           {value}
         </div>
 
         {(trendPercentage !== undefined || description) && (
-          <div className="mt-2.5 flex items-center gap-2 text-xs">
+          <div className="mt-2 flex items-center gap-2 text-xs">
             {trendPercentage !== undefined && (
               <span
                 className={cn(
-                  'inline-flex items-center font-bold rounded-full px-2.5 py-0.5 text-[11px] font-mono border shadow-2xs',
+                  'inline-flex items-center font-bold rounded-md px-2 py-0.5 text-[10px] font-mono border shadow-2xs',
                   isPositive
-                    ? 'bg-emerald-600/10 text-emerald-800 border-emerald-600/20'
-                    : 'bg-rose-600/10 text-rose-800 border-rose-600/20'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-rose-50 text-rose-700 border-rose-200'
                 )}
               >
                 {isPositive ? (

@@ -156,18 +156,24 @@ export const LeadDirectCallModal: React.FC<LeadDirectCallModalProps> = ({
         </div>
 
         {/* Gateway Telemetry Box */}
-        <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/70 text-xs space-y-1.5 font-mono text-slate-600">
-          <div className="flex justify-between items-center text-[11px]">
-            <span>Voice Engine:</span>
-            <span className="font-semibold text-slate-900">Fluid Voice (Shubh / Samvaad)</span>
+        <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/80 text-xs space-y-2 text-slate-600 shadow-2xs">
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-slate-500 font-medium">Voice Agent:</span>
+            <span className="font-semibold text-slate-900">Fluid Live - Candidate Verification</span>
           </div>
-          <div className="flex justify-between items-center text-[11px]">
-            <span>Outbound Caller ID:</span>
-            <span className="font-semibold text-slate-900">+91 796548 0599</span>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-slate-500 font-medium">Outbound Caller ID:</span>
+            <div className="flex items-center gap-1.5 font-mono font-bold text-slate-900">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>+91 79 6586 1007</span>
+              <Badge variant="success" size="sm" className="text-[9px] py-0 px-1 font-sans">
+                Active Line
+              </Badge>
+            </div>
           </div>
-          <div className="flex justify-between items-center text-[11px]">
-            <span>Carrier Protocol:</span>
-            <span className="font-semibold text-slate-900">Sarvam SIP Trunk Gateway</span>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-slate-500 font-medium">Telephony Carrier:</span>
+            <span className="font-semibold text-slate-800">Sarvam / Vobiz Telephony Gateway</span>
           </div>
         </div>
 

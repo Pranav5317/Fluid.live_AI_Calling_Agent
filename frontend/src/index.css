@@ -14,7 +14,7 @@
   }
 
   body {
-    @apply text-slate-900 font-sans antialiased selection:bg-[#1D4ED8] selection:text-white min-h-screen;
+    @apply text-slate-900 font-sans antialiased selection:bg-blue-600 selection:text-white min-h-screen;
     background-color: #F8FAFC;
     background-image: 
       radial-gradient(100% 80% at 90% 10%, rgba(239, 246, 255, 0.6), transparent 60%),
@@ -27,7 +27,7 @@
   }
 }
 
-/* Luxury warm scrollbars */
+/* Modern refined scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -38,10 +38,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(120, 113, 108, 0.25);
+  background: rgba(148, 163, 184, 0.35);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(120, 113, 108, 0.4);
+  background: rgba(148, 163, 184, 0.55);
 }

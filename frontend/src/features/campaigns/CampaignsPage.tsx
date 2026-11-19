@@ -302,22 +302,22 @@ export const CampaignsPage: React.FC = () => {
 
       {/* Executive Floating Pill Segmented Navigation */}
       <div className="flex items-center">
-        <div className="inline-flex p-1.5 rounded-full bg-[#EFE4D3] border border-[#DFCDB6] shadow-xs gap-1.5">
+        <div className="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200 shadow-2xs gap-1">
           <button
             type="button"
             onClick={() => setActiveTab('campaigns')}
             className={cn(
-              'flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-full transition-all duration-200 select-none cursor-pointer',
+              'flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all duration-150 select-none cursor-pointer',
               activeTab === 'campaigns'
-                ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/25'
-                : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'
+                ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
             )}
           >
-            <Megaphone className={activeTab === 'campaigns' ? 'h-4 w-4 text-white' : 'h-4 w-4 text-slate-500'} />
+            <Megaphone className={activeTab === 'campaigns' ? 'h-4 w-4 text-blue-600' : 'h-4 w-4 text-slate-400'} />
             <span>All Campaigns</span>
             <span className={cn(
               'rounded-full px-2 py-0.5 text-[10px] font-mono font-bold',
-              activeTab === 'campaigns' ? 'bg-white/20 text-white' : 'bg-black/5 text-slate-700'
+              activeTab === 'campaigns' ? 'bg-blue-50 text-blue-700 border border-blue-200/60' : 'bg-slate-200/70 text-slate-600'
             )}>
               {campaigns.length}
             </span>
@@ -327,13 +327,13 @@ export const CampaignsPage: React.FC = () => {
             type="button"
             onClick={() => setActiveTab('scheduler')}
             className={cn(
-              'flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-full transition-all duration-200 select-none cursor-pointer',
+              'flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all duration-150 select-none cursor-pointer',
               activeTab === 'scheduler'
-                ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/25'
-                : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'
+                ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
             )}
           >
-            <CalendarClock className={activeTab === 'scheduler' ? 'h-4 w-4 text-white' : 'h-4 w-4 text-slate-500'} />
+            <CalendarClock className={activeTab === 'scheduler' ? 'h-4 w-4 text-indigo-600' : 'h-4 w-4 text-slate-400'} />
             <span>Autonomous Scheduler</span>
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
           </button>
@@ -342,13 +342,13 @@ export const CampaignsPage: React.FC = () => {
             type="button"
             onClick={() => setActiveTab('cadence')}
             className={cn(
-              'flex items-center gap-2 px-5 py-2 text-xs font-bold rounded-full transition-all duration-200 select-none cursor-pointer',
+              'flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all duration-150 select-none cursor-pointer',
               activeTab === 'cadence'
-                ? 'bg-[#1D4ED8] text-white shadow-md shadow-blue-500/25'
-                : 'text-slate-700 hover:text-slate-950 hover:bg-white/60'
+                ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
             )}
           >
-            <RotateCw className={activeTab === 'cadence' ? 'h-4 w-4 text-white' : 'h-4 w-4 text-slate-500'} />
+            <RotateCw className={activeTab === 'cadence' ? 'h-4 w-4 text-blue-600' : 'h-4 w-4 text-slate-400'} />
             <span>Retry & Cadence Queue</span>
           </button>
         </div>
@@ -387,8 +387,8 @@ export const CampaignsPage: React.FC = () => {
           </div>
 
           {/* Search & Status Filter Strip */}
-          <Card noPadding className="overflow-hidden">
-            <div className="p-5 border-b border-[#EADCBD] bg-[#FAF4EB]/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <Card noPadding className="overflow-hidden border-slate-200 shadow-xs">
+            <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="w-full sm:w-80">
                 <Input
                   placeholder="Search campaigns..."
@@ -427,18 +427,18 @@ export const CampaignsPage: React.FC = () => {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs text-slate-700">
-                  <thead className="bg-[#F2E7D7]/70 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-[#EADCBD] font-mono">
+                  <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-slate-200 font-mono">
                     <tr>
-                      <th className="px-6 py-4">Campaign Name</th>
-                      <th className="px-6 py-4">Agent & Locked Version</th>
-                      <th className="px-6 py-4">Phone Number</th>
-                      <th className="px-6 py-4">Progress</th>
-                      <th className="px-6 py-4">Minutes Used</th>
-                      <th className="px-6 py-4">Lifecycle State</th>
-                      <th className="px-6 py-4 text-right">Execution Controls</th>
+                      <th className="px-6 py-3.5">Campaign Name</th>
+                      <th className="px-6 py-3.5">Agent & Locked Version</th>
+                      <th className="px-6 py-3.5">Phone Number</th>
+                      <th className="px-6 py-3.5">Progress</th>
+                      <th className="px-6 py-3.5">Minutes Used</th>
+                      <th className="px-6 py-3.5">Lifecycle State</th>
+                      <th className="px-6 py-3.5 text-right">Execution Controls</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#EADCBD]/60">
+                  <tbody className="divide-y divide-slate-200/80">
                     {campaigns.map(cmp => {
                       const agentObj = agents.find(a => a.id === cmp.agentId);
                       const phoneObj = phoneNumbers.find(p => p.id === cmp.phoneNumberId);
@@ -476,9 +476,9 @@ export const CampaignsPage: React.FC = () => {
                                 <span>{cmp.completedCalls} / {cmp.totalLeads} leads</span>
                                 <span className="font-bold text-slate-900">{progressPct}%</span>
                               </div>
-                              <div className="w-full bg-[#E5D7C3] rounded-full h-2 overflow-hidden shadow-2xs">
+                              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden shadow-2xs">
                                 <div
-                                  className="bg-[#1D4ED8] h-2 rounded-full transition-all shadow-xs"
+                                  className="bg-blue-600 h-1.5 rounded-full transition-all"
                                   style={{ width: `${Math.min(progressPct, 100)}%` }}
                                 />
                               </div>
@@ -501,7 +501,6 @@ export const CampaignsPage: React.FC = () => {
                               setIsExecutionModalOpen(true);
                             }}
                             title="Open Real-time Telephony Execution Monitor"
-                            className="rounded-full"
                           >
                             Monitor
                           </Button>
@@ -515,7 +514,7 @@ export const CampaignsPage: React.FC = () => {
                                 setTargetCampaign(cmp);
                                 setActionType('start');
                               }}
-                              className="rounded-full text-emerald-800 border-emerald-600/30 hover:bg-emerald-50"
+                              className="text-emerald-800 border-emerald-600/30 hover:bg-emerald-50"
                             >
                               {cmp.status === 'paused' ? 'Resume' : 'Start'}
                             </Button>
@@ -530,7 +529,7 @@ export const CampaignsPage: React.FC = () => {
                                 setTargetCampaign(cmp);
                                 setActionType('pause');
                               }}
-                              className="rounded-full text-amber-900 border-amber-600/30 hover:bg-amber-50"
+                              className="text-amber-900 border-amber-600/30 hover:bg-amber-50"
                             >
                               Pause
                             </Button>
@@ -540,7 +539,7 @@ export const CampaignsPage: React.FC = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-rose-700 hover:bg-rose-50 rounded-full"
+                              className="text-rose-700 hover:bg-rose-50"
                               leftIcon={<Square className="h-3.5 w-3.5" />}
                               onClick={() => {
                                 setTargetCampaign(cmp);

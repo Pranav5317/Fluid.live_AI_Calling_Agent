@@ -68,8 +68,18 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Right items: Business Switcher, Notifications & Profile */}
+      {/* Right items: Telephony Live Pill, Business Switcher, Notifications & Profile */}
       <div className="flex items-center gap-3">
+        {/* Active Telephony Line Badge */}
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200/80 bg-slate-50/70 text-xs font-medium text-slate-700 shadow-2xs">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+          </span>
+          <span className="text-[11px] text-slate-500 font-semibold">Caller ID:</span>
+          <span className="font-mono font-bold text-slate-900">+91 79 6586 1007</span>
+        </div>
+
         {/* Business context switcher */}
         <div className="relative">
           <button

@@ -17,7 +17,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   badge,
 }) => {
   return (
-    <div className="mb-8 pb-6 border-b border-[#E3D3BE]">
+    <div className="mb-8 pb-6 border-b border-slate-200/80">
       {breadcrumbs && breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} />}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
