@@ -175,26 +175,26 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
   const currentMaxAttempts = policy?.maxAttempts ?? 3;
 
   return (
-    <Card noPadding className="border-slate-200/90 shadow-xs overflow-hidden rounded-2xl">
-      {/* Header (Talkaor Deep Royal Navy) */}
-      <div className="p-6 border-b border-blue-900/40 bg-[#0C1D4A] text-white">
+    <Card noPadding className="border-slate-200 shadow-xs overflow-hidden rounded-xl">
+      {/* Header */}
+      <div className="p-6 border-b border-slate-800 bg-slate-900 text-white">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
           <div>
             <div className="flex items-center gap-3">
-              <span className="p-2.5 rounded-2xl bg-white/10 text-blue-200 border border-white/15 shadow-xs">
-                <Layers className="h-6 w-6 text-blue-300" />
+              <span className="p-2.5 rounded-xl bg-white/10 text-slate-200 border border-white/10 shadow-xs">
+                <Layers className="h-5 w-5 text-blue-400" />
               </span>
               <div>
                 <div className="flex items-center gap-2.5">
-                  <h3 className="text-lg font-bold text-white tracking-tight font-sans">
-                    Automated Retry Waterfall & Cadence Engine
+                  <h3 className="text-base font-bold text-white tracking-tight">
+                    Retry Cadence & Callback Queue
                   </h3>
-                  <span className="text-[10px] font-mono font-bold bg-[#1D4ED8]/40 text-blue-200 border border-blue-400/40 px-2.5 py-0.5 rounded-full uppercase">
-                    Customizable Logic
+                  <span className="text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30 px-2 py-0.5 rounded-full uppercase">
+                    Configurable
                   </span>
                 </div>
-                <p className="text-xs text-blue-200/70 mt-1 max-w-2xl leading-relaxed font-sans">
-                  Automates intelligent callback scheduling for busy, unanswered, or dropped calls. Customize spaced delays, dial attempts, and fatigue caps.
+                <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                  Automated retry scheduling for unanswered or busy calls. Configure spacing intervals, dial limits, and retry windows.
                 </p>
               </div>
             </div>
@@ -267,7 +267,7 @@ export const CampaignRetryQueueCard: React.FC<CampaignRetryQueueCardProps> = ({
 
       {/* Cadence Policy Studio Drawer / Expandable Panel */}
       {isStudioOpen && policy && (
-        <div className="bg-[#0C1D4A] border-b border-blue-900/40 p-6 text-white animate-in slide-in-from-top-2 duration-200">
+        <div className="bg-slate-900 border-b border-slate-800 p-6 text-white animate-in slide-in-from-top-2 duration-200">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between pb-4 mb-5 border-b border-white/10 gap-3">
             <div>
               <div className="flex items-center gap-2">

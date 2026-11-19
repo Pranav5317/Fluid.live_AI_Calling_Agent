@@ -83,7 +83,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
-        title="Dashboard Overview"
+        title="Dashboard"
         description="Real-time operational summary, call volume trends, active campaigns and agent performance."
         actions={
           <div className="flex gap-2">
@@ -140,241 +140,238 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         />
       </div>
 
-      {/* Enterprise Conversational Intelligence & Script Audit Summary (Talkaor Deep Royal Navy Contrast Section) */}
+      {/* Call Quality & Script Compliance Insights */}
       {metrics.intelligenceSummary && (
-        <div className="rounded-[24px] border border-blue-950/40 bg-[#0C1D4A] p-6 shadow-xl text-white">
-          <div className="flex items-center justify-between w-full border-b border-white/10 pb-4 mb-4">
+        <Card noPadding className="border-slate-200 overflow-hidden shadow-xs">
+          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-2xl bg-white/10 text-blue-200 border border-white/15 flex items-center justify-center shadow-xs">
-                <Sparkles className="h-5 w-5 text-blue-300" />
+              <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                <Sparkles className="h-4 w-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-white font-sans">
-                  Enterprise Conversational Intelligence & Quality Assurance
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Call Quality & Intent Insights
                 </h3>
-                <p className="text-xs text-blue-200/70">
-                  Real-time conversational dynamics, script compliance audits, and intent signal analytics
+                <p className="text-xs text-slate-500">
+                  Real-time conversational dynamics, compliance score, and detected customer intent
                 </p>
               </div>
             </div>
-            <Badge variant="neutral" size="sm" className="bg-white/10 text-blue-200 border-white/20 rounded-full font-mono">
-              Autonomous Engine
+            <Badge variant="neutral" size="sm">
+              Live Analytics
             </Badge>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
-            {/* Metric 1: Avg Talk-to-Listen Ratio */}
-            <div className="p-4 rounded-2xl border border-white/10 bg-white/[0.05] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-200/80 font-mono">
-                  Talk-to-Listen Ratio
-                </span>
-                <BarChart2 className="h-4 w-4 text-blue-300" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold font-mono text-white">
-                  {metrics.intelligenceSummary.avgTalkListenRatio.agentPct}% / {metrics.intelligenceSummary.avgTalkListenRatio.leadPct}%
-                </span>
-              </div>
-              <div className="h-2 w-full bg-white/15 rounded-full overflow-hidden flex shadow-inner">
-                <div
-                  style={{ width: `${metrics.intelligenceSummary.avgTalkListenRatio.agentPct}%` }}
-                  className="bg-[#2563EB] h-full"
-                  title={`Agent: ${metrics.intelligenceSummary.avgTalkListenRatio.agentPct}%`}
-                />
-                <div
-                  style={{ width: `${metrics.intelligenceSummary.avgTalkListenRatio.leadPct}%` }}
-                  className="bg-emerald-400 h-full"
-                  title={`Lead: ${metrics.intelligenceSummary.avgTalkListenRatio.leadPct}%`}
-                />
-              </div>
-              <div className="flex justify-between text-[10px] text-blue-200/70 font-medium">
-                <span>Agent Airtime</span>
-                <span>Customer Response</span>
-              </div>
-            </div>
-
-            {/* Metric 2: Script Compliance Score */}
-            <div className="p-4 rounded-2xl border border-white/10 bg-white/[0.05] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-200/80 font-mono">
-                  QA Script Audit Score
-                </span>
-                <ShieldCheck className="h-4 w-4 text-emerald-400" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold font-mono text-white">
-                  {metrics.intelligenceSummary.avgQaScore}/100
-                </span>
-                <Badge variant={metrics.intelligenceSummary.avgQaScore >= 80 ? 'success' : 'warning'} size="sm" className="bg-emerald-500/20 text-emerald-300 border-emerald-400/30">
-                  {metrics.intelligenceSummary.avgQaScore >= 90 ? 'Grade A+' : metrics.intelligenceSummary.avgQaScore >= 80 ? 'Grade A' : 'Grade B'}
-                </Badge>
-              </div>
-              <p className="text-[11px] text-blue-200/70">
-                5-point automated script audit: intro, verification, pitch, consent, sign-off
-              </p>
-            </div>
-
-            {/* Metric 3: High-Intent Lead Conversion */}
-            <div className="p-4 rounded-2xl border border-white/10 bg-white/[0.05] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-200/80 font-mono">
-                  High-Intent Lead Rate
-                </span>
-                <Zap className="h-4 w-4 text-amber-300" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold font-mono text-white">
-                  {metrics.intelligenceSummary.highIntentLeadRate}%
-                </span>
-              </div>
-              <p className="text-[11px] text-blue-200/70">
-                Calls exhibiting high-converting intent (WhatsApp/Demo request)
-              </p>
-            </div>
-
-            {/* Metric 4: Positive Dialogue Sentiment */}
-            <div className="p-4 rounded-2xl border border-white/10 bg-white/[0.05] space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-200/80 font-mono">
-                  Positive Sentiment Rate
-                </span>
-                <ThumbsUp className="h-4 w-4 text-emerald-400" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold font-mono text-white">
-                  {metrics.intelligenceSummary.positiveSentimentRate}%
-                </span>
-              </div>
-              <p className="text-[11px] text-blue-200/70">
-                Multi-phase sentiment trajectory (opening → pitch → close)
-              </p>
-            </div>
-          </div>
-
-          {/* Top Buying Signals & Objections Breakdown */}
-          {metrics.intelligenceSummary.topBuyingSignals.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="p-4 rounded-2xl bg-white/[0.05] border border-white/10">
-                <span className="font-bold text-white block mb-2 text-[11px] uppercase tracking-wider font-mono">
-                  Top Detected Intent Signals
-                </span>
-                <div className="space-y-1.5">
-                  {metrics.intelligenceSummary.topBuyingSignals.map((sig, i) => (
-                    <div key={i} className="flex items-center justify-between text-blue-100">
-                      <span className="truncate pr-2 font-medium">• {sig.label}</span>
-                      <span className="font-mono font-bold text-blue-300 shrink-0">{sig.count} calls ({sig.percentage}%)</span>
-                    </div>
-                  ))}
+          <div className="p-5 space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Metric 1: Avg Talk-to-Listen Ratio */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-slate-500">
+                    Talk-to-Listen Ratio
+                  </span>
+                  <BarChart2 className="h-4 w-4 text-slate-400" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-bold text-slate-900">
+                    {metrics.intelligenceSummary.avgTalkListenRatio.agentPct}% / {metrics.intelligenceSummary.avgTalkListenRatio.leadPct}%
+                  </span>
+                </div>
+                <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden flex">
+                  <div
+                    style={{ width: `${metrics.intelligenceSummary.avgTalkListenRatio.agentPct}%` }}
+                    className="bg-blue-600 h-full"
+                    title={`Agent: ${metrics.intelligenceSummary.avgTalkListenRatio.agentPct}%`}
+                  />
+                  <div
+                    style={{ width: `${metrics.intelligenceSummary.avgTalkListenRatio.leadPct}%` }}
+                    className="bg-emerald-500 h-full"
+                    title={`Lead: ${metrics.intelligenceSummary.avgTalkListenRatio.leadPct}%`}
+                  />
+                </div>
+                <div className="flex justify-between text-[11px] text-slate-500 font-medium">
+                  <span>Agent ({metrics.intelligenceSummary.avgTalkListenRatio.agentPct}%)</span>
+                  <span>Lead ({metrics.intelligenceSummary.avgTalkListenRatio.leadPct}%)</span>
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-white/[0.05] border border-white/10">
-                <span className="font-bold text-white block mb-2 text-[11px] uppercase tracking-wider font-mono">
-                  Customer Objections & Hesitation
-                </span>
-                {metrics.intelligenceSummary.topObjections.length === 0 ? (
-                  <p className="text-blue-200/60 italic text-[11px]">
-                    Zero friction or objections recorded across completed campaigns.
-                  </p>
-                ) : (
+              {/* Metric 2: Script Compliance Score */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-slate-500">
+                    Script Compliance
+                  </span>
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-bold text-slate-900">
+                    {metrics.intelligenceSummary.avgQaScore}<span className="text-xs font-normal text-slate-400">/100</span>
+                  </span>
+                  <Badge variant={metrics.intelligenceSummary.avgQaScore >= 80 ? 'success' : 'warning'} size="sm">
+                    {metrics.intelligenceSummary.avgQaScore >= 90 ? 'Grade A+' : metrics.intelligenceSummary.avgQaScore >= 80 ? 'Grade A' : 'Grade B'}
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Automated checklist: intro, verification, pitch, consent, sign-off
+                </p>
+              </div>
+
+              {/* Metric 3: High-Intent Lead Conversion */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-slate-500">
+                    High-Intent Rate
+                  </span>
+                  <Zap className="h-4 w-4 text-amber-500" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-bold text-slate-900">
+                    {metrics.intelligenceSummary.highIntentLeadRate}%
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Calls exhibiting buying interest or demo requests
+                </p>
+              </div>
+
+              {/* Metric 4: Positive Dialogue Sentiment */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-slate-500">
+                    Positive Sentiment
+                  </span>
+                  <ThumbsUp className="h-4 w-4 text-emerald-600" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-bold text-slate-900">
+                    {metrics.intelligenceSummary.positiveSentimentRate}%
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Positive emotional trajectory across completed dialogue
+                </p>
+              </div>
+            </div>
+
+            {/* Top Buying Signals & Objections Breakdown */}
+            {metrics.intelligenceSummary.topBuyingSignals.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="font-semibold text-slate-900 block mb-2 text-xs">
+                    Top Detected Intent Signals
+                  </span>
                   <div className="space-y-1.5">
-                    {metrics.intelligenceSummary.topObjections.map((obj, i) => (
-                      <div key={i} className="flex items-center justify-between text-blue-100">
-                        <span className="truncate pr-2 font-medium">• {obj.label}</span>
-                        <span className="font-mono font-bold text-amber-300 shrink-0">{obj.count} calls ({obj.percentage}%)</span>
+                    {metrics.intelligenceSummary.topBuyingSignals.map((sig, i) => (
+                      <div key={i} className="flex items-center justify-between text-slate-700">
+                        <span className="truncate pr-2 font-medium">• {sig.label}</span>
+                        <span className="font-mono text-slate-500 shrink-0">{sig.count} calls ({sig.percentage}%)</span>
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Conversational Script Drop-Off Funnel & Waterfall */}
-          {metrics.intelligenceSummary.dropOffFunnel && (
-            <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-1.5 font-mono">
-                    <TrendingDown className="h-4 w-4 text-rose-400" />
-                    <span>Script Drop-Off Waterfall & Dialogue Retention</span>
-                  </h4>
-                  <p className="text-[11px] text-blue-200/70 mt-0.5">
-                    Stage-by-stage conversational retention analysis across {metrics.intelligenceSummary.dropOffFunnel.totalConnectedCalls} active call sessions
-                  </p>
                 </div>
-                <Badge variant="warning" size="sm" className="bg-amber-400/20 text-amber-200 border-amber-300/30">
-                  Top Drop: {metrics.intelligenceSummary.dropOffFunnel.biggestDropOffStage}
-                </Badge>
-              </div>
 
-              {/* 5-Stage Waterfall Funnel Graphic */}
-              <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
-                {metrics.intelligenceSummary.dropOffFunnel.stages.map((stage, idx) => {
-                  const isBiggest = stage.stageName === metrics.intelligenceSummary?.dropOffFunnel?.biggestDropOffStage;
-                  return (
-                    <div
-                      key={stage.stageId}
-                      className={`p-3 rounded-2xl border transition-all ${
-                        isBiggest
-                          ? 'bg-rose-500/20 border-rose-400/40 ring-1 ring-rose-400/30'
-                          : 'bg-white/[0.05] border-white/10'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between text-[10px] text-blue-200/70 font-bold uppercase font-mono">
-                        <span>Step {idx + 1}</span>
-                        {stage.dropOffCount > 0 && (
-                          <span className="text-rose-300 font-mono font-bold">-{stage.dropOffCount} left</span>
-                        )}
-                      </div>
-
-                      <span className="text-xs font-bold text-white block mt-1 line-clamp-1" title={stage.stageName}>
-                        {stage.stageName}
-                      </span>
-
-                      <div className="mt-2 space-y-1">
-                        <div className="flex items-baseline justify-between text-xs">
-                          <span className="text-base font-bold font-mono text-white">
-                            {stage.retentionRate}%
-                          </span>
-                          <span className="text-[10px] text-blue-200/70 font-mono">
-                            {stage.callsReached} calls
-                          </span>
-                        </div>
-                        <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
-                          <div
-                            style={{ width: `${stage.retentionRate}%` }}
-                            className={`h-full rounded-full transition-all ${
-                              isBiggest ? 'bg-rose-400' : 'bg-blue-400'
-                            }`}
-                          />
-                        </div>
-                      </div>
-
-                      <p className="text-[10px] text-blue-200/70 mt-2 line-clamp-2 leading-tight">
-                        {stage.description}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* AI Script Recommendation Banner */}
-              <div className="p-3.5 rounded-2xl bg-white/10 border border-white/15 flex items-start gap-2.5 text-xs text-blue-100">
-                <Lightbulb className="h-4 w-4 text-amber-300 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-bold uppercase tracking-wider text-[10px] text-amber-200 block font-mono">
-                    Autonomous Script Optimization Recommendation
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="font-semibold text-slate-900 block mb-2 text-xs">
+                    Customer Objections & Hesitation
                   </span>
-                  <p className="mt-0.5 text-blue-100 leading-relaxed">
-                    {metrics.intelligenceSummary.dropOffFunnel.scriptRecommendation}
-                  </p>
+                  {metrics.intelligenceSummary.topObjections.length === 0 ? (
+                    <p className="text-slate-400 italic text-xs">
+                      Zero objections recorded across completed campaigns.
+                    </p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {metrics.intelligenceSummary.topObjections.map((obj, i) => (
+                        <div key={i} className="flex items-center justify-between text-slate-700">
+                          <span className="truncate pr-2 font-medium">• {obj.label}</span>
+                          <span className="font-mono text-amber-600 font-semibold shrink-0">{obj.count} calls ({obj.percentage}%)</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+
+            {/* Conversational Script Drop-Off Funnel */}
+            {metrics.intelligenceSummary.dropOffFunnel && (
+              <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
+                      <TrendingDown className="h-4 w-4 text-rose-500" />
+                      <span>Script Drop-Off by Stage</span>
+                    </h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Stage retention across {metrics.intelligenceSummary.dropOffFunnel.totalConnectedCalls} connected calls
+                    </p>
+                  </div>
+                  <Badge variant="warning" size="sm">
+                    Top Drop: {metrics.intelligenceSummary.dropOffFunnel.biggestDropOffStage}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                  {metrics.intelligenceSummary.dropOffFunnel.stages.map((stage, idx) => {
+                    const isBiggest = stage.stageName === metrics.intelligenceSummary?.dropOffFunnel?.biggestDropOffStage;
+                    return (
+                      <div
+                        key={stage.stageId}
+                        className={`p-3 rounded-xl border transition-all ${
+                          isBiggest
+                            ? 'bg-rose-50/70 border-rose-200'
+                            : 'bg-white border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold uppercase">
+                          <span>Step {idx + 1}</span>
+                          {stage.dropOffCount > 0 && (
+                            <span className="text-rose-600 font-medium">-{stage.dropOffCount}</span>
+                          )}
+                        </div>
+
+                        <span className="text-xs font-semibold text-slate-900 block mt-1 line-clamp-1" title={stage.stageName}>
+                          {stage.stageName}
+                        </span>
+
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-baseline justify-between text-xs">
+                            <span className="text-sm font-bold text-slate-900">
+                              {stage.retentionRate}%
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              {stage.callsReached} calls
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              style={{ width: `${stage.retentionRate}%` }}
+                              className={`h-full rounded-full transition-all ${
+                                isBiggest ? 'bg-rose-500' : 'bg-blue-600'
+                              }`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Script Recommendation Banner */}
+                <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-100 flex items-start gap-2.5 text-xs text-blue-900">
+                  <Lightbulb className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold text-blue-950 block">
+                      Script Optimization Tip
+                    </span>
+                    <p className="mt-0.5 text-blue-800 leading-relaxed">
+                      {metrics.intelligenceSummary.dropOffFunnel.scriptRecommendation}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
       )}
 
       {/* Main Overview Grid: Call Activity Chart & Recent System Activity */}

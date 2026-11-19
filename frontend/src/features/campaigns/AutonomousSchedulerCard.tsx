@@ -118,27 +118,27 @@ export const AutonomousSchedulerCard: React.FC<AutonomousSchedulerCardProps> = (
   const runningCampaigns = schedulerData?.runningCampaigns || 0;
 
   return (
-    <Card noPadding className="border-slate-200/90 shadow-xs overflow-hidden rounded-2xl">
-      {/* Top Header (Talkaor Deep Royal Navy) */}
-      <div className="p-6 border-b border-blue-900/40 bg-[#0C1D4A] text-white">
+    <Card noPadding className="border-slate-200 shadow-xs overflow-hidden rounded-xl">
+      {/* Top Header */}
+      <div className="p-6 border-b border-slate-800 bg-slate-900 text-white">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
           <div>
             <div className="flex items-center gap-3">
-              <span className="p-2.5 rounded-2xl bg-white/10 text-blue-200 border border-white/15 shadow-xs">
-                <CalendarClock className="h-6 w-6 text-blue-300" />
+              <span className="p-2.5 rounded-xl bg-white/10 text-slate-200 border border-white/10 shadow-xs">
+                <CalendarClock className="h-5 w-5 text-blue-400" />
               </span>
               <div>
                 <div className="flex items-center gap-2.5">
-                  <h3 className="text-lg font-bold text-white tracking-tight font-sans">
-                    Autonomous Telephony Scheduler & Dispatch Engine
+                  <h3 className="text-base font-bold text-white tracking-tight">
+                    Telephony Dispatch Scheduler
                   </h3>
-                  <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2.5 py-0.5 rounded-full uppercase flex items-center gap-1.5 shadow-xs">
-                    <Radio className="h-2.5 w-2.5 animate-ping text-emerald-400" />
-                    Live Engine
+                  <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full uppercase flex items-center gap-1.5 shadow-xs">
+                    <Radio className="h-2.5 w-2.5 animate-pulse text-emerald-400" />
+                    Active
                   </span>
                 </div>
-                <p className="text-xs text-blue-200/70 mt-1 leading-relaxed max-w-2xl font-sans">
-                  Automatically plans, paces, and executes outbound calls to consumers using dynamic time-shifting, TRAI legal window guardrails, and anti-fatigue backoffs.
+                <p className="text-xs text-slate-400 mt-1 leading-relaxed max-w-2xl">
+                  Automates outbound dialing with TRAI calling hours guardrails, dynamic time-shifting, and anti-fatigue backoffs.
                 </p>
               </div>
             </div>

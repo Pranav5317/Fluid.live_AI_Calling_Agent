@@ -356,22 +356,22 @@ export const CampaignsPage: React.FC = () => {
 
       {activeTab === 'campaigns' && (
         <div className="space-y-6">
-          {/* Quick Engine Telemetry Banner (Talkaor Deep Royal Navy Contrast) */}
-          <div className="relative overflow-hidden p-6 rounded-[24px] bg-[#0C1D4A] border border-blue-900/40 text-white shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-            <div className="flex items-center gap-4">
-              <span className="p-3 rounded-2xl bg-white/10 text-blue-200 border border-white/15 shadow-xs">
-                <CalendarClock className="h-6 w-6 text-blue-300" />
+          {/* Dispatch Engine Banner */}
+          <div className="p-4 rounded-xl border border-slate-200 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+            <div className="flex items-center gap-3.5">
+              <span className="p-2.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-100">
+                <CalendarClock className="h-5 w-5" />
               </span>
               <div>
-                <div className="flex items-center gap-2.5">
-                  <p className="font-bold text-white text-base font-sans">Autonomous Dynamic Dispatch Engine</p>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center gap-1.5 shadow-xs">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    Live & Guarded
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-slate-900 text-sm">Campaign Dispatch Engine</p>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Active
                   </span>
                 </div>
-                <p className="text-xs text-blue-200/70 mt-1">
-                  TRAI Legal Window (10:00 AM – 7:30 PM IST) • Anti-Fatigue 24h Guard • Dynamic Concurrency Pacing
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Calling hours (10:00 AM – 7:30 PM IST) • 24h retry guard • Dynamic concurrency pacing
                 </p>
               </div>
             </div>
@@ -380,9 +380,9 @@ export const CampaignsPage: React.FC = () => {
               variant="outline"
               onClick={() => setActiveTab('scheduler')}
               rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
-              className="border-white/20 bg-white/10 text-white hover:bg-white/20 text-xs shrink-0 font-semibold rounded-full"
+              className="text-xs shrink-0 font-medium"
             >
-              Configure Scheduler
+              Scheduler Settings
             </Button>
           </div>
 
