@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar, NavRoute } from './Sidebar';
 import { Header } from './Header';
 import { NotificationDrawer } from './NotificationDrawer';
+import { CommandMenu } from '../common/CommandMenu';
 import { cn } from '../../lib/utils';
 
 export interface AppShellProps {
@@ -18,6 +19,20 @@ export const AppShell: React.FC<AppShellProps> = ({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [commandMenuOpen, setCommandMenuOpen] = useState(false);
+
+  // Global Keyboard Shortcut: ⌘K or Ctrl+K to toggle Command Palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCommandMenuOpen(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col font-sans">
@@ -43,6 +58,7 @@ export const AppShell: React.FC<AppShellProps> = ({
           onMobileSidebarToggle={() => setMobileSidebarOpen(!mobileSidebarOpen)}
           onNotificationToggle={() => setNotificationOpen(!notificationOpen)}
           onRouteChange={onRouteChange}
+          onOpenCommandMenu={() => setCommandMenuOpen(true)}
         />
 
         {/* Dynamic Page Content */}
@@ -50,6 +66,13 @@ export const AppShell: React.FC<AppShellProps> = ({
           {children}
         </main>
       </div>
+
+      {/* Global Command Menu (⌘K / Ctrl+K) */}
+      <CommandMenu
+        isOpen={commandMenuOpen}
+        onClose={() => setCommandMenuOpen(false)}
+        onNavigate={onRouteChange}
+      />
 
       {/* Slide-over Notifications */}
       <NotificationDrawer

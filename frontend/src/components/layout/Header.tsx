@@ -25,6 +25,7 @@ export interface HeaderProps {
   onMobileSidebarToggle: () => void;
   onNotificationToggle: () => void;
   onRouteChange?: (route: NavRoute) => void;
+  onOpenCommandMenu?: () => void;
   unreadCount?: number;
 }
 
@@ -32,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
   onMobileSidebarToggle,
   onNotificationToggle,
   onRouteChange,
+  onOpenCommandMenu,
   unreadCount = 2,
 }) => {
   const [business, setBusiness] = useState<Business | null>(null);
@@ -95,15 +97,18 @@ export const Header: React.FC<HeaderProps> = ({
           <Menu className="h-5 w-5" />
         </button>
 
-        {/* Global Search Bar */}
-        <div className="relative hidden sm:block w-72 md:w-96">
-          <Search className="pointer-events-none absolute inset-y-0 left-0 my-auto ml-3.5 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search candidates, applications, calls... (⌘K)"
-            className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2 pl-10 pr-4 text-xs text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-2xs transition-all"
-          />
-        </div>
+        {/* Global Search Bar (Spotlight Command Trigger) */}
+        <button
+          type="button"
+          onClick={onOpenCommandMenu}
+          className="relative hidden sm:flex items-center w-72 md:w-96 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-slate-100/70 hover:border-slate-300 py-2 pl-10 pr-3 text-xs text-left text-slate-400 shadow-2xs transition-all cursor-pointer group"
+        >
+          <Search className="pointer-events-none absolute inset-y-0 left-0 my-auto ml-3.5 h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
+          <span className="flex-1 truncate">Search candidates, applications, calls...</span>
+          <kbd className="hidden lg:inline-flex items-center gap-0.5 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono font-medium text-slate-500 shadow-2xs">
+            ⌘K
+          </kbd>
+        </button>
       </div>
 
       {/* Right items: Telephony Live Pill, Active Call Pill, Business Switcher, Notifications & Profile */}
