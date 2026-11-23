@@ -12,7 +12,9 @@ import {
   Zap,
 } from 'lucide-react';
 import { businessService } from '../../services/businessService';
-import { Business } from '../../types';
+import { callService } from '../../services/callService';
+import { Business, Call } from '../../types';
+import { formatDuration } from '../../lib/formatters';
 import { NavRoute } from './Sidebar';
 import { WorkspaceSecurityModal } from './WorkspaceSecurityModal';
 import { DocumentationModal } from './DocumentationModal';
@@ -41,9 +43,45 @@ export const Header: React.FC<HeaderProps> = ({
   const [isDocsModalOpen, setIsDocsModalOpen] = useState(false);
   const [isSignOutModalOpen, setIsSignOutModalOpen] = useState(false);
 
+  // Live Calling Monitor state
+  const [activeLiveCall, setActiveLiveCall] = useState<Call | null>(null);
+  const [elapsedCallSeconds, setElapsedCallSeconds] = useState(0);
+
   useEffect(() => {
     businessService.getBusinessProfile().then(setBusiness);
   }, []);
+
+  useEffect(() => {
+    const checkActiveCalls = async () => {
+      try {
+        const calls = await callService.getCalls();
+        const active = calls.find(c => c.status === 'in-progress' || c.status === 'initiated');
+        if (active) {
+          setActiveLiveCall(active);
+          const start = new Date(active.startedAt).getTime();
+          const now = Date.now();
+          const elapsed = Math.max(0, Math.floor((now - start) / 1000));
+          setElapsedCallSeconds(elapsed);
+        } else {
+          setActiveLiveCall(null);
+        }
+      } catch (e) {
+        // silent
+      }
+    };
+
+    checkActiveCalls();
+    const interval = setInterval(checkActiveCalls, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!activeLiveCall) return;
+    const timer = setInterval(() => {
+      setElapsedCallSeconds(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [activeLiveCall]);
 
   return (
     <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/80 px-4 sm:px-6 backdrop-blur-md shadow-xs text-slate-800">
@@ -68,8 +106,28 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Right items: Telephony Live Pill, Business Switcher, Notifications & Profile */}
+      {/* Right items: Telephony Live Pill, Active Call Pill, Business Switcher, Notifications & Profile */}
       <div className="flex items-center gap-3">
+        {/* Active Call Live Presence Pill */}
+        {activeLiveCall && (
+          <button
+            type="button"
+            onClick={() => onRouteChange?.('calls')}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-blue-300 bg-blue-50/90 text-xs font-semibold text-blue-900 shadow-xs hover:bg-blue-100 transition-all cursor-pointer animate-pulse"
+            title="Click to view live call"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+            </span>
+            <span className="font-bold">In Call:</span>
+            <span className="max-w-[110px] truncate">{activeLiveCall.leadName || activeLiveCall.leadPhone || 'Candidate'}</span>
+            <span className="font-mono text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded text-[10px]">
+              {formatDuration(elapsedCallSeconds)}
+            </span>
+          </button>
+        )}
+
         {/* Active Telephony Line Badge */}
         <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200/80 bg-slate-50/70 text-xs font-medium text-slate-700 shadow-2xs">
           <span className="relative flex h-2 w-2">

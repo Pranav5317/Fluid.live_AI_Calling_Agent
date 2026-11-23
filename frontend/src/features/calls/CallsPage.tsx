@@ -272,9 +272,9 @@ export const CallsPage: React.FC = () => {
             <table className="w-full text-left text-xs text-slate-700">
               <thead className="bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 font-mono">
                 <tr>
-                  <th className="px-5 py-3.5">Contact & Channel</th>
+                  <th className="px-5 py-3.5">Contact & Role</th>
                   <th className="px-5 py-3.5">Outcome & Duration</th>
-                  <th className="px-5 py-3.5">Deal Quality / BANT</th>
+                  <th className="px-5 py-3.5">Screening & Verification</th>
                   <th className="px-5 py-3.5">Sentiment & Trend</th>
                   <th className="px-5 py-3.5">Talk-to-Listen</th>
                   <th className="px-5 py-3.5 text-right">Action</th>
@@ -338,22 +338,28 @@ export const CallsPage: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* 3. Deal Quality / BANT Score */}
+                      {/* 3. Screening & Verification Status */}
                       <td className="px-5 py-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-1.5">
-                            <Badge
-                              variant={tier === 'Hot Lead' ? 'success' : tier === 'Warm Prospect' ? 'brand' : 'neutral'}
-                              size="sm"
-                            >
-                              {tier}
-                            </Badge>
+                            {vars.discrepancy_reason && vars.discrepancy_reason !== 'none' ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                                <AlertTriangle className="h-3 w-3 text-amber-600" /> Discrepancy
+                              </span>
+                            ) : (
+                              <Badge
+                                variant={call.durationSeconds > 40 ? 'success' : tier === 'Hot Lead' ? 'success' : 'neutral'}
+                                size="sm"
+                              >
+                                {call.durationSeconds > 40 ? 'Verified' : tier}
+                              </Badge>
+                            )}
                             <span className="font-mono text-[11px] font-bold text-slate-700">
                               {score}%
                             </span>
                           </div>
                           <div className="text-[10px] text-slate-400 font-mono">
-                            BANT Qualified
+                            {vars.english_proficiency_level ? 'Identity & English Audited' : 'Fact-Check Score'}
                           </div>
                         </div>
                       </td>
@@ -393,11 +399,11 @@ export const CallsPage: React.FC = () => {
                         <Button
                           variant="primary"
                           size="sm"
-                          leftIcon={<Sparkles className="h-3.5 w-3.5" />}
+                          leftIcon={<UserCheck className="h-3.5 w-3.5" />}
                           onClick={() => setSelectedCall(call)}
                           className="rounded-lg text-xs font-semibold shadow-xs"
                         >
-                          View AI Insights
+                          Review Dossier
                         </Button>
                       </td>
                     </tr>

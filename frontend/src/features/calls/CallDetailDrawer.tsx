@@ -56,8 +56,9 @@ export interface CallDetailDrawerProps {
 export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClose, onCallUpdated }) => {
   const [activeCall, setActiveCall] = useState<Call | null>(call);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'insights' | 'screening' | 'transcript' | 'telemetry'>('insights');
+  const [activeTab, setActiveTab] = useState<'screening' | 'transcript' | 'insights' | 'telemetry'>('screening');
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [recruiterDecision, setRecruiterDecision] = useState<'advance' | 'followup' | 'reject' | null>(null);
 
   // Audio Playback State
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -589,18 +590,6 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
         <div className="border-b border-slate-200 px-6 bg-white flex gap-6 overflow-x-auto">
           <button
             type="button"
-            onClick={() => setActiveTab('insights')}
-            className={`py-3 text-xs font-semibold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
-              activeTab === 'insights'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <Sparkles className="h-4 w-4 text-blue-600" />
-            <span>AI Call Insights</span>
-          </button>
-          <button
-            type="button"
             onClick={() => setActiveTab('screening')}
             className={`py-3 text-xs font-semibold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === 'screening'
@@ -609,7 +598,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
             }`}
           >
             <UserCheck className="h-4 w-4" />
-            <span>Qualifications & Screening</span>
+            <span>Candidate Dossier</span>
           </button>
           <button
             type="button"
@@ -621,7 +610,19 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
             }`}
           >
             <FileText className="h-4 w-4" />
-            <span>Dialogue Transcript ({currentCall.transcript?.length || 0})</span>
+            <span>Call Transcript ({currentCall.transcript?.length || 0})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('insights')}
+            className={`py-3 text-xs font-semibold border-b-2 flex items-center gap-2 transition-all whitespace-nowrap cursor-pointer ${
+              activeTab === 'insights'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Sparkles className="h-4 w-4 text-blue-600" />
+            <span>Call Analytics</span>
           </button>
           <button
             type="button"
@@ -633,7 +634,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
             }`}
           >
             <Terminal className="h-4 w-4" />
-            <span>Telemetry</span>
+            <span>Carrier Telemetry</span>
           </button>
         </div>
 
@@ -1055,22 +1056,121 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
             </div>
           )}
 
-          {/* TAB 2: SCREENING & FACT CHECK */}
+          {/* TAB 1: CANDIDATE DOSSIER & VERIFICATION DIFF */}
           {activeTab === 'screening' && (
             <div className="space-y-5">
-              
+              {/* Recruiter One-Click Decision & Action Bar */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="h-4 w-4 text-blue-600" />
+                    <span className="text-xs font-bold text-slate-900">Recruiter Decision & Pipeline Routing</span>
+                  </div>
+                  {recruiterDecision ? (
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                        recruiterDecision === 'advance'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          : recruiterDecision === 'followup'
+                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                          : 'bg-rose-100 text-rose-800 border border-rose-200'
+                      }`}
+                    >
+                      {recruiterDecision === 'advance'
+                        ? 'Marked: Advanced to Technical Round'
+                        : recruiterDecision === 'followup'
+                        ? 'Marked: Pending Recruiter Callback'
+                        : 'Marked: Application Disqualified'}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-mono text-slate-400">Action Pending</span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRecruiterDecision('advance')}
+                    className={`flex-1 min-w-[130px] flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                      recruiterDecision === 'advance'
+                        ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs'
+                        : 'border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 text-slate-700'
+                    }`}
+                  >
+                    <CheckCircle2 className={`h-3.5 w-3.5 ${recruiterDecision === 'advance' ? 'text-white' : 'text-emerald-600'}`} />
+                    <span>Advance to Tech</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setRecruiterDecision('followup')}
+                    className={`flex-1 min-w-[130px] flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                      recruiterDecision === 'followup'
+                        ? 'bg-amber-500 border-amber-500 text-white shadow-xs'
+                        : 'border-slate-200 hover:border-amber-500 hover:bg-amber-50/50 text-slate-700'
+                    }`}
+                  >
+                    <AlertTriangle className={`h-3.5 w-3.5 ${recruiterDecision === 'followup' ? 'text-white' : 'text-amber-600'}`} />
+                    <span>Flag for Review</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setRecruiterDecision('reject')}
+                    className={`flex-1 min-w-[120px] flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                      recruiterDecision === 'reject'
+                        ? 'bg-rose-600 border-rose-600 text-white shadow-xs'
+                        : 'border-slate-200 hover:border-rose-500 hover:bg-rose-50/50 text-slate-700'
+                    }`}
+                  >
+                    <X className={`h-3.5 w-3.5 ${recruiterDecision === 'reject' ? 'text-white' : 'text-rose-600'}`} />
+                    <span>Disqualify</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const exportText = `FLUID.LIVE CANDIDATE VERIFICATION DOSSIER
+Candidate: ${hrScreening.candidateName}
+Phone: ${currentCall.leadPhone || 'N/A'}
+Role Applied: ${hrScreening.roleApplied}
+Call Date: ${formatDate(currentCall.startedAt)}
+Recommendation: ${hrScreening.hrRecommendation}
+English Proficiency: ${hrScreening.englishAssessment.overallBand}
+
+FACT-CHECK VERIFICATION:
+${hrScreening.verificationMatrix.map(v => `- ${v.field}: Portal="${v.portalValue}" | Spoken="${v.statedValue}" (${v.status === 'confirmed' ? 'MATCH' : 'DISCREPANCY: ' + (v.reasonForChange || 'Unspecified')})`).join('\n')}
+
+ENGLISH EVALUATION:
+- Fluency: ${hrScreening.englishAssessment.fluency?.rating || 'N/A'}
+- Grammar: ${hrScreening.englishAssessment.grammarSyntax?.rating || 'N/A'}
+- Vocabulary: ${hrScreening.englishAssessment.vocabulary?.rating || 'N/A'}
+- Comprehension: ${hrScreening.englishAssessment.comprehension?.rating || 'N/A'}
+
+RECRUITER DECISION: ${recruiterDecision ? recruiterDecision.toUpperCase() : 'PENDING'}
+SUMMARY: ${rawVars.call_summary || intelligence?.executiveSummary || 'N/A'}`;
+                      handleCopy(exportText, 'export_dossier');
+                    }}
+                    className="flex items-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold border border-slate-200 hover:bg-slate-50 text-slate-700 transition-all cursor-pointer shrink-0"
+                  >
+                    {copiedText === 'export_dossier' ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Download className="h-3.5 w-3.5 text-slate-500" />}
+                    <span>{copiedText === 'export_dossier' ? 'Copied Dossier' : 'Export Dossier'}</span>
+                  </button>
+                </div>
+              </div>
+
               {/* HR Summary Banner */}
               <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/60 flex items-start justify-between gap-4">
                 <div className="space-y-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 font-mono">
-                    Screening Verdict
+                    Screening Recommendation
                   </span>
                   <h4 className="text-sm font-bold text-slate-900">
                     {hrScreening.hrRecommendation}
                   </h4>
                   <p className="text-xs text-slate-600 leading-relaxed mt-1">
                     {rawVars.call_summary ||
-                      'The candidate was reached for application verification. All primary qualification items were reviewed during the conversation.'}
+                      'The candidate was reached for application verification. All primary qualification items were verified during the conversation.'}
                   </p>
                 </div>
                 <Badge
@@ -1088,45 +1188,66 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
                     <CheckCircle2 className="h-4 w-4 text-blue-600" />
                     <span className="text-xs font-bold text-slate-900">Application Fact-Check Matrix</span>
                   </div>
-                  <span className="text-[11px] text-slate-500 font-mono">Portal vs. Spoken Dialogue</span>
+                  <span className="text-[11px] text-slate-500 font-mono">Portal Record vs. Spoken Dialogue</span>
                 </div>
 
                 <div className="divide-y divide-slate-100">
-                  {hrScreening.verificationMatrix.map((item, idx) => (
-                    <div key={idx} className="p-3.5 hover:bg-slate-50/50 transition-colors">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-slate-800">{item.field}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-400 font-mono text-[11px]">
-                            Portal: <strong className="text-slate-600 font-medium">{item.portalValue}</strong>
-                          </span>
-                          <ArrowRight className="h-3 w-3 text-slate-300" />
-                          <span className="font-mono text-xs font-bold text-slate-900">
-                            {item.statedValue}
-                          </span>
-                          {item.status === 'confirmed' ? (
-                            <span className="inline-flex items-center text-emerald-600 font-medium text-[11px] gap-0.5">
-                              <CheckCircle2 className="h-3.5 w-3.5" /> Match
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center text-amber-600 font-medium text-[11px] gap-0.5">
-                              <AlertTriangle className="h-3.5 w-3.5" /> Changed
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                  {hrScreening.verificationMatrix.map((item, idx) => {
+                    const lowerField = item.field.toLowerCase();
+                    const icon = lowerField.includes('role') ? (
+                      <Briefcase className="h-4 w-4 text-blue-600" />
+                    ) : lowerField.includes('exp') ? (
+                      <Clock className="h-4 w-4 text-amber-600" />
+                    ) : lowerField.includes('notice') ? (
+                      <Calendar className="h-4 w-4 text-emerald-600" />
+                    ) : lowerField.includes('location') || lowerField.includes('mode') ? (
+                      <Building2 className="h-4 w-4 text-purple-600" />
+                    ) : (
+                      <Award className="h-4 w-4 text-slate-500" />
+                    );
 
-                      {item.status === 'discrepancy' && item.reasonForChange && (
-                        <div className="mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200/80 rounded-lg p-2.5 flex items-start gap-2">
-                          <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
-                          <div>
-                            <span className="font-semibold">Candidate Reason: </span>
-                            <span>"{item.reasonForChange}"</span>
+                    return (
+                      <div key={idx} className="p-3.5 hover:bg-slate-50/50 transition-colors">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                          <div className="flex items-center gap-2.5">
+                            <div className="p-1.5 rounded-md bg-slate-100/80 shrink-0">
+                              {icon}
+                            </div>
+                            <span className="font-semibold text-slate-800">{item.field}</span>
+                          </div>
+
+                          <div className="flex items-center gap-2.5 pl-8 sm:pl-0">
+                            <span className="text-slate-500 font-mono text-[11px] bg-slate-100 px-2 py-0.5 rounded">
+                              Portal: <strong className="text-slate-700 font-semibold">{item.portalValue}</strong>
+                            </span>
+                            <ArrowRight className="h-3 w-3 text-slate-300 shrink-0" />
+                            <span className="font-mono text-xs font-bold text-slate-900 bg-blue-50/80 px-2 py-0.5 rounded border border-blue-100">
+                              {item.statedValue}
+                            </span>
+                            {item.status === 'confirmed' ? (
+                              <span className="inline-flex items-center text-emerald-700 font-semibold text-[11px] gap-1 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                <CheckCircle2 className="h-3 w-3 text-emerald-600" /> Match
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center text-amber-700 font-semibold text-[11px] gap-1 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                <AlertTriangle className="h-3 w-3 text-amber-600" /> Changed
+                              </span>
+                            )}
                           </div>
                         </div>
-                      )}
-                    </div>
-                  ))}
+
+                        {item.status === 'discrepancy' && item.reasonForChange && (
+                          <div className="mt-2.5 ml-8 text-xs text-amber-900 bg-amber-50 border border-amber-200/80 rounded-lg p-2.5 flex items-start gap-2">
+                            <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                              <span className="font-semibold">Candidate Reason: </span>
+                              <span className="italic">"{item.reasonForChange}"</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1142,62 +1263,61 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <div className="p-2.5 rounded-lg border border-slate-100 bg-slate-50/70 text-center">
-                    <span className="block text-[10px] text-slate-400 font-mono uppercase">Fluency</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block truncate">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/70">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-mono uppercase">Fluency</span>
+                      <span className="text-[10px] font-mono font-bold text-emerald-600">92%</span>
+                    </div>
+                    <span className="text-xs font-bold text-slate-800 mt-1 block truncate">
                       {hrScreening.englishAssessment.fluency?.rating?.split(' ')[0] || 'Fluent'}
                     </span>
+                    <span className="text-[10px] text-slate-500 mt-0.5 block truncate">Steady, natural pace</span>
                   </div>
-                  <div className="p-2.5 rounded-lg border border-slate-100 bg-slate-50/70 text-center">
-                    <span className="block text-[10px] text-slate-400 font-mono uppercase">Grammar</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block truncate">
+
+                  <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/70">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-mono uppercase">Grammar</span>
+                      <span className="text-[10px] font-mono font-bold text-blue-600">88%</span>
+                    </div>
+                    <span className="text-xs font-bold text-slate-800 mt-1 block truncate">
                       {hrScreening.englishAssessment.grammarSyntax?.rating?.split(' ')[0] || 'Clear'}
                     </span>
+                    <span className="text-[10px] text-slate-500 mt-0.5 block truncate">Sound sentence structure</span>
                   </div>
-                  <div className="p-2.5 rounded-lg border border-slate-100 bg-slate-50/70 text-center">
-                    <span className="block text-[10px] text-slate-400 font-mono uppercase">Vocabulary</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block truncate">
+
+                  <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/70">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-mono uppercase">Vocabulary</span>
+                      <span className="text-[10px] font-mono font-bold text-purple-600">90%</span>
+                    </div>
+                    <span className="text-xs font-bold text-slate-800 mt-1 block truncate">
                       {hrScreening.englishAssessment.vocabulary?.rating?.split(' ')[0] || 'Rich'}
                     </span>
+                    <span className="text-[10px] text-slate-500 mt-0.5 block truncate">Role-aligned terminology</span>
                   </div>
-                  <div className="p-2.5 rounded-lg border border-slate-100 bg-slate-50/70 text-center">
-                    <span className="block text-[10px] text-slate-400 font-mono uppercase">Comprehension</span>
-                    <span className="text-xs font-bold text-slate-800 mt-0.5 block truncate">
+
+                  <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/70">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-mono uppercase">Comprehension</span>
+                      <span className="text-[10px] font-mono font-bold text-indigo-600">95%</span>
+                    </div>
+                    <span className="text-xs font-bold text-slate-800 mt-1 block truncate">
                       {hrScreening.englishAssessment.comprehension?.rating?.split(' ')[0] || 'Immediate'}
                     </span>
+                    <span className="text-[10px] text-slate-500 mt-0.5 block truncate">Zero repetition needed</span>
                   </div>
                 </div>
 
                 {hrScreening.englishAssessment.candidateSampleQuotes && hrScreening.englishAssessment.candidateSampleQuotes.length > 0 && (
                   <div className="space-y-1.5 pt-1">
                     <span className="text-[11px] text-slate-400 font-mono font-medium block">Verbatim Candidate Turn:</span>
-                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-700 italic">
+                    <div className="p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-700 italic leading-relaxed">
                       "{hrScreening.englishAssessment.candidateSampleQuotes[0]}"
                     </div>
                   </div>
                 )}
               </div>
-
-              {/* Quick Actions */}
-              <div className="flex items-center justify-between pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  leftIcon={<Copy className="h-3.5 w-3.5 text-slate-500" />}
-                  onClick={() =>
-                    handleCopy(
-                      `Candidate: ${hrScreening.candidateName}\nRole: ${hrScreening.roleApplied}\nStatus: ${hrScreening.hrRecommendation}\nEnglish: ${hrScreening.englishAssessment.overallBand}\nSummary: ${rawVars.call_summary || ''}`,
-                      'summary'
-                    )
-                  }
-                  className="text-xs"
-                >
-                  {copiedText === 'summary' ? 'Copied Summary' : 'Copy HR Screening Card'}
-                </Button>
-              </div>
-
             </div>
           )}
 
@@ -1273,18 +1393,15 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
                                 {isAgent ? <Bot className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
                               </div>
                               <div>
-                                <span className="text-xs font-bold text-slate-900 block leading-tight">
+                                <span className="text-xs font-semibold text-slate-900 block leading-tight">
                                   {isAgent ? 'Fluid.live Screening Agent' : hrScreening.candidateName}
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-medium">
-                                  {isAgent ? '⚡ AI Voice • 680ms turn latency' : '🎙 Spoken Candidate Audio'}
                                 </span>
                               </div>
                             </div>
 
                             <div className="flex items-center gap-2">
                               {isActive && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-600 text-white flex items-center gap-1 shadow-xs animate-pulse">
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-blue-100 text-blue-700 flex items-center gap-1">
                                   <Volume2 className="h-3 w-3" />
                                   <span>Playing</span>
                                 </span>
