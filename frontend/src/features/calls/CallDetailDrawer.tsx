@@ -35,6 +35,11 @@ import {
   Smile,
   ShieldCheck,
   ExternalLink,
+  Download,
+  FastForward,
+  Rewind,
+  Search,
+  RotateCcw,
 } from 'lucide-react';
 import { Call, CallIntelligence, HRCandidateScreening } from '../../types';
 import { formatDate, formatDuration } from '../../lib/formatters';
@@ -59,9 +64,11 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
-  const [playbackSpeed, setPlaybackSpeed] = useState<1 | 1.5 | 2>(1);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const [audioLoading, setAudioLoading] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [transcriptSearch, setTranscriptSearch] = useState('');
 
   const turnRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -234,6 +241,36 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
     recommendationReason: 'Candidate confirmed all application details and demonstrated solid English proficiency.',
   };
 
+  const effectiveDuration = audioDuration || currentCall.durationSeconds || 0;
+
+  // 54 interactive waveform bars derived from call duration and transcript speech segments
+  const waveformBars = useMemo(() => {
+    const barsCount = 54;
+    const duration = effectiveDuration || 60;
+    const turns = currentCall?.transcript || [];
+
+    return Array.from({ length: barsCount }, (_, i) => {
+      const barTime = (i / barsCount) * duration;
+      const activeTurn = turns.find((t, idx) => {
+        const nextT = turns[idx + 1];
+        const end = nextT ? nextT.timestampSeconds : duration;
+        return barTime >= t.timestampSeconds && barTime < end;
+      });
+
+      const pseudoWave = Math.sin(i * 0.85) * 0.25 + Math.cos(i * 1.6) * 0.35 + 0.55;
+      const height = activeTurn
+        ? Math.max(25, Math.min(95, Math.round(pseudoWave * 70 + 25)))
+        : Math.max(12, Math.round(pseudoWave * 20));
+
+      return {
+        id: i,
+        time: barTime,
+        heightPct: height,
+        speaker: activeTurn?.speaker || 'none',
+      };
+    });
+  }, [effectiveDuration, currentCall?.transcript]);
+
   const togglePlayAudio = () => {
     if (!currentCall || currentCall.durationSeconds === 0) return;
 
@@ -259,7 +296,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
       });
 
       audio.addEventListener('error', () => {
-        setAudioError('Audio recording still processing on carrier gateway.');
+        setAudioError('Audio recording is still processing on carrier gateway.');
         setIsPlayingAudio(false);
         setAudioLoading(false);
       });
@@ -284,28 +321,79 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
     }
   };
 
+  const seekToTime = (time: number) => {
+    const clamped = Math.max(0, Math.min(effectiveDuration, time));
+    if (audioRef.current) {
+      audioRef.current.currentTime = clamped;
+    }
+    setCurrentTime(clamped);
+  };
+
+  const playFromTimestamp = (seconds: number) => {
+    if (!currentCall || currentCall.durationSeconds === 0) return;
+    const clamped = Math.max(0, Math.min(effectiveDuration, seconds));
+    if (!audioRef.current) {
+      const audio = new Audio(`/api/calls/${currentCall.id}/audio`);
+      audio.playbackRate = playbackSpeed;
+      audioRef.current = audio;
+
+      audio.addEventListener('timeupdate', () => setCurrentTime(audio.currentTime));
+      audio.addEventListener('loadedmetadata', () => {
+        if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+          setAudioDuration(audio.duration);
+        }
+        setAudioLoading(false);
+      });
+      audio.addEventListener('ended', () => {
+        setIsPlayingAudio(false);
+        setCurrentTime(0);
+      });
+      audio.addEventListener('error', () => {
+        setAudioError('Audio recording is still processing on carrier gateway.');
+        setIsPlayingAudio(false);
+        setAudioLoading(false);
+      });
+
+      audio.currentTime = clamped;
+      setCurrentTime(clamped);
+      setAudioLoading(true);
+      audio.play().then(() => {
+        setIsPlayingAudio(true);
+        setAudioLoading(false);
+      }).catch(() => {
+        setIsPlayingAudio(false);
+        setAudioLoading(false);
+      });
+    } else {
+      audioRef.current.currentTime = clamped;
+      setCurrentTime(clamped);
+      if (!isPlayingAudio) {
+        audioRef.current.play().then(() => {
+          setIsPlayingAudio(true);
+        }).catch(console.warn);
+      }
+    }
+  };
+
+  const skipSeconds = (delta: number) => {
+    seekToTime(currentTime + delta);
+  };
+
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isConnected || currentCall.durationSeconds === 0) return;
+    if (!isConnected || effectiveDuration === 0) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const totalDur = audioDuration || currentCall.durationSeconds;
-    const targetTime = percent * totalDur;
-
-    if (audioRef.current) {
-      audioRef.current.currentTime = targetTime;
-    }
-    setCurrentTime(targetTime);
+    seekToTime(percent * effectiveDuration);
   };
 
   const handleSpeedToggle = () => {
-    const nextSpeed: 1 | 1.5 | 2 = playbackSpeed === 1 ? 1.5 : playbackSpeed === 1.5 ? 2 : 1;
+    const speeds = [0.75, 1, 1.25, 1.5, 2];
+    const nextSpeed = speeds[(speeds.indexOf(playbackSpeed) + 1) % speeds.length];
     setPlaybackSpeed(nextSpeed);
     if (audioRef.current) {
       audioRef.current.playbackRate = nextSpeed;
     }
   };
-
-  const effectiveDuration = audioDuration || currentCall.durationSeconds || 0;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -367,43 +455,133 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
           </div>
         </div>
 
-        {/* Integrated Clean Audio Player Bar */}
+        {/* Enterprise Audio Waveform Player Bar */}
         {isConnected && currentCall.durationSeconds > 0 && (
-          <div className="border-b border-slate-200 bg-slate-50/70 px-6 py-3 flex items-center gap-4">
-            <button
-              type="button"
-              onClick={togglePlayAudio}
-              disabled={audioLoading}
-              className="h-9 w-9 rounded-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shrink-0 shadow-xs transition-transform active:scale-95"
-            >
-              {isPlayingAudio ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
-            </button>
+          <div className="border-b border-slate-200 bg-slate-50/90 px-6 py-3.5 space-y-2.5">
+            <div className="flex items-center justify-between gap-3">
+              {/* Transport Controls */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => skipSeconds(-5)}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                  title="Rewind 5s"
+                >
+                  <Rewind className="h-3.5 w-3.5" />
+                </button>
 
-            <div className="flex-1 flex flex-col gap-1">
-              <div
-                onClick={handleSeek}
-                className="relative h-2 w-full bg-slate-200 rounded-full cursor-pointer overflow-hidden group"
-              >
-                <div
-                  className="h-full bg-blue-600 rounded-full transition-all duration-100"
-                  style={{
-                    width: `${effectiveDuration > 0 ? (currentTime / effectiveDuration) * 100 : 0}%`,
-                  }}
-                />
+                <button
+                  type="button"
+                  onClick={togglePlayAudio}
+                  disabled={audioLoading}
+                  className="h-8 w-8 rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shrink-0 shadow-xs transition-transform active:scale-95 cursor-pointer"
+                  title={isPlayingAudio ? 'Pause' : 'Play'}
+                >
+                  {audioLoading ? (
+                    <RotateCw className="h-4 w-4 animate-spin" />
+                  ) : isPlayingAudio ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4 ml-0.5" />
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => skipSeconds(5)}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                  title="Forward 5s"
+                >
+                  <FastForward className="h-3.5 w-3.5" />
+                </button>
+
+                <div className="ml-2 font-mono text-xs font-semibold text-slate-800">
+                  <span>{formatDuration(Math.floor(currentTime))}</span>
+                  <span className="text-slate-400 mx-1">/</span>
+                  <span className="text-slate-500">{formatDuration(effectiveDuration)}</span>
+                </div>
               </div>
-              <div className="flex items-center justify-between text-[11px] font-mono text-slate-500">
-                <span>{formatDuration(Math.floor(currentTime))}</span>
-                <span>{formatDuration(effectiveDuration)}</span>
+
+              {/* Speaker Legend */}
+              <div className="hidden sm:flex items-center gap-3 text-[11px] font-medium text-slate-500">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-blue-600" />
+                  AI Agent
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Candidate
+                </span>
+              </div>
+
+              {/* Utility Controls */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSpeedToggle}
+                  className="px-2 py-1 rounded-md text-xs font-mono font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                  title="Playback Speed"
+                >
+                  {playbackSpeed}x
+                </button>
+
+                <a
+                  href={`/api/calls/${currentCall.id}/audio`}
+                  download={`call_${currentCall.id}.wav`}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 transition-colors cursor-pointer"
+                  title="Download Recording Audio"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </a>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleSpeedToggle}
-              className="px-2 py-1 rounded-md text-[11px] font-mono font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors"
+            {/* Scrubbable Waveform Visualizer */}
+            <div
+              onClick={handleSeek}
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                setHoverTime(pct * effectiveDuration);
+              }}
+              onMouseLeave={() => setHoverTime(null)}
+              className="relative h-10 w-full bg-white rounded-lg border border-slate-200 px-3 py-1 flex items-center justify-between gap-1 cursor-pointer overflow-hidden group shadow-2xs select-none"
             >
-              {playbackSpeed}x
-            </button>
+              {waveformBars.map((bar) => {
+                const isPlayed = currentTime >= bar.time;
+                const isAgent = bar.speaker === 'agent';
+                return (
+                  <div
+                    key={bar.id}
+                    style={{ height: `${bar.heightPct}%` }}
+                    className={`flex-1 min-w-[2px] rounded-full transition-all duration-75 ${
+                      isPlayed
+                        ? isAgent
+                          ? 'bg-blue-600'
+                          : 'bg-emerald-500'
+                        : 'bg-slate-200 group-hover:bg-slate-300'
+                    }`}
+                  />
+                );
+              })}
+
+              {/* Hover Cursor Tooltip */}
+              {hoverTime !== null && (
+                <div
+                  style={{ left: `${(hoverTime / (effectiveDuration || 1)) * 100}%` }}
+                  className="absolute -top-7 -translate-x-1/2 pointer-events-none px-1.5 py-0.5 rounded bg-slate-900 text-white font-mono text-[10px] shadow-md z-20 whitespace-nowrap"
+                >
+                  {formatDuration(Math.floor(hoverTime))}
+                </div>
+              )}
+            </div>
+
+            {audioError && (
+              <p className="text-[11px] text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200 flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                <span>{audioError}</span>
+              </p>
+            )}
           </div>
         )}
 
@@ -1023,52 +1201,137 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
             </div>
           )}
 
-          {/* TAB 2: INTERACTIVE TRANSCRIPT */}
+          {/* TAB 2: INTERACTIVE SYNCHRONIZED TRANSCRIPT */}
           {activeTab === 'transcript' && (
-            <div className="space-y-3">
-              {currentCall.transcript && currentCall.transcript.length > 0 ? (
-                currentCall.transcript.map(turn => {
-                  const isAgent = turn.speaker === 'agent';
-                  const isActive = activeTurnId === turn.id;
-
-                  return (
-                    <div
-                      key={turn.id}
-                      ref={el => { turnRefs.current[turn.id] = el; }}
-                      className={`p-3.5 rounded-xl border transition-all ${
-                        isActive
-                          ? 'border-blue-400 bg-blue-50/80 shadow-xs ring-2 ring-blue-500/20'
-                          : isAgent
-                          ? 'border-slate-200 bg-white'
-                          : 'border-slate-200 bg-slate-50/80'
-                      }`}
+            <div className="space-y-4">
+              {/* Transcript Search & Action Header */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute inset-y-0 left-0 my-auto ml-3 h-3.5 w-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={transcriptSearch}
+                    onChange={e => setTranscriptSearch(e.target.value)}
+                    placeholder="Search dialogue (e.g. notice, experience, Pune)..."
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50/60 py-1.5 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs"
+                  />
+                  {transcriptSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setTranscriptSearch('')}
+                      className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600"
                     >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                              isAgent ? 'bg-blue-600 text-white' : 'bg-slate-700 text-white'
-                            }`}
-                          >
-                            {isAgent ? 'AI' : 'C'}
-                          </div>
-                          <span className="text-xs font-bold text-slate-900">
-                            {isAgent ? 'Fluid.live Screening Agent' : hrScreening.candidateName}
-                          </span>
-                        </div>
-                        <span className="text-[10px] font-mono text-slate-400">
-                          {formatDuration(turn.timestampSeconds)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-700 leading-relaxed pl-7">{turn.text}</p>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-center py-12 text-slate-400 text-xs">
-                  No transcript recorded for this call session yet.
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
-              )}
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const fullText = (currentCall.transcript || [])
+                      .map(t => `[${formatDuration(t.timestampSeconds)}] ${t.speaker === 'agent' ? 'Fluid AI' : hrScreening.candidateName}: ${t.text}`)
+                      .join('\n\n');
+                    handleCopy(fullText, 'transcript');
+                  }}
+                  leftIcon={copiedText === 'transcript' ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                  className="text-xs shrink-0"
+                >
+                  {copiedText === 'transcript' ? 'Copied' : 'Copy All'}
+                </Button>
+              </div>
+
+              {/* Turn Cards */}
+              <div className="space-y-3">
+                {currentCall.transcript && currentCall.transcript.length > 0 ? (
+                  currentCall.transcript
+                    .filter(t => !transcriptSearch || t.text.toLowerCase().includes(transcriptSearch.toLowerCase()))
+                    .map(turn => {
+                      const isAgent = turn.speaker === 'agent';
+                      const isActive = activeTurnId === turn.id;
+
+                      return (
+                        <div
+                          key={turn.id}
+                          ref={el => { turnRefs.current[turn.id] = el; }}
+                          className={`p-3.5 rounded-xl border transition-all duration-200 group relative ${
+                            isActive
+                              ? 'border-blue-500 bg-blue-50/80 shadow-xs ring-2 ring-blue-500/20'
+                              : isAgent
+                              ? 'border-slate-200 bg-white hover:border-slate-300'
+                              : 'border-slate-200 bg-slate-50/70 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-bold shadow-2xs ${
+                                  isAgent ? 'bg-blue-600 text-white' : 'bg-emerald-600 text-white'
+                                }`}
+                              >
+                                {isAgent ? <Bot className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
+                              </div>
+                              <div>
+                                <span className="text-xs font-bold text-slate-900 block leading-tight">
+                                  {isAgent ? 'Fluid.live Screening Agent' : hrScreening.candidateName}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  {isAgent ? '⚡ AI Voice • 680ms turn latency' : '🎙 Spoken Candidate Audio'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {isActive && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-600 text-white flex items-center gap-1 shadow-xs animate-pulse">
+                                  <Volume2 className="h-3 w-3" />
+                                  <span>Playing</span>
+                                </span>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => playFromTimestamp(turn.timestampSeconds)}
+                                className="px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors flex items-center gap-1 cursor-pointer"
+                                title="Play audio from this turn"
+                              >
+                                <Play className="h-3 w-3 fill-current" />
+                                <span>{formatDuration(turn.timestampSeconds)}</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(turn.text, `turn_${turn.id}`)}
+                                className="p-1 rounded text-slate-400 hover:text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Copy turn text"
+                              >
+                                {copiedText === `turn_${turn.id}` ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                              </button>
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-slate-700 leading-relaxed pl-8">
+                            {transcriptSearch ? (
+                              <span dangerouslySetInnerHTML={{
+                                __html: turn.text.replace(
+                                  new RegExp(`(${transcriptSearch.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi'),
+                                  '<mark class="bg-amber-200 text-slate-900 px-0.5 rounded font-medium">$1</mark>'
+                                )
+                              }} />
+                            ) : (
+                              turn.text
+                            )}
+                          </p>
+                        </div>
+                      );
+                    })
+                ) : (
+                  <div className="text-center py-12 text-slate-400 text-xs">
+                    {transcriptSearch ? 'No dialogue turns matched your search.' : 'No transcript recorded for this call session yet.'}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
