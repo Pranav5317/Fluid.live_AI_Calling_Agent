@@ -418,7 +418,7 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
 
                   <a
                     href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                      `Namaste ${lead.name} ji, thank you for connecting with Fluid.live! Here are the details about our AI voice calling solutions.`
+                      `Hello ${lead.name}, thank you for speaking with Fluid.live regarding your application! Here are the details and next steps.`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"

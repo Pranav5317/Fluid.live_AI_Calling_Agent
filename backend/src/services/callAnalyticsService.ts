@@ -519,7 +519,7 @@ export class CallAnalyticsService {
         actionTitle: `Dispatch WhatsApp Demo & One-Pager to ${leadName}`,
         actionType: 'dispatch_whatsapp',
         priority: 'urgent',
-        suggestedMessage: `Namaste ${leadName} ji, thank you for speaking with Fluid.live! As requested, here is our 1-minute video demo and enterprise pricing brochure for AI Voice Calling. Let us know if you would like to test a sample workflow!`,
+        suggestedMessage: `Hello ${leadName}, thank you for speaking with Fluid.live! As requested, here are the screening verification details and next steps. Please let us know if you have any questions!`,
       };
     }
 
@@ -532,7 +532,7 @@ export class CallAnalyticsService {
         actionTitle: `Schedule Solution Architect Live Demo with ${leadName}`,
         actionType: 'book_demo',
         priority: 'high',
-        suggestedMessage: `Namaste ${leadName} ji, following our conversation, our team would love to show you how Fluid.live automates 10,000+ customer calls daily. When is a convenient time for a 10-minute walkthrough?`,
+        suggestedMessage: `Hello ${leadName}, following our screening conversation regarding your application with Fluid.live, our recruitment team would like to schedule your engineering round. When is a convenient time?`,
       };
     }
 
@@ -542,7 +542,7 @@ export class CallAnalyticsService {
         actionTitle: `Auto-Schedule Follow-up Call for ${leadName}`,
         actionType: 'schedule_callback',
         priority: 'medium',
-        suggestedMessage: `Namaste ${leadName} ji, sorry to have caught you at a busy moment! We will reach out again tomorrow at a better time. Have a wonderful day ahead!`,
+        suggestedMessage: `Hello ${leadName}, sorry to have caught you at a busy moment! We will follow up via email regarding your application with Fluid.live. Have a great day!`,
       };
     }
 
@@ -746,7 +746,7 @@ export class CallAnalyticsService {
     let scriptRecommendation = '';
     if (biggestDrop.stageId === 'verification') {
       scriptRecommendation =
-        'Primary drop-off occurs during initial Contact Verification. Prospects remained silent or hung up during the opening monologue. Recommendation: Shorten the initial greeting from 4 sentences to 1 concise prompt ("Namaste Pranav ji?") to solicit an immediate response before pitching.';
+        'Primary drop-off occurs during initial Contact Verification. Prospects remained silent or hung up during the opening monologue. Recommendation: Shorten the initial greeting to a concise direct check before proceeding.';
     } else if (biggestDrop.stageId === 'pitch') {
       scriptRecommendation =
         'Primary drop-off occurs during the Value Proposition. Recommendation: Shorten the explanation to under 15 words and immediately follow with an engaging discovery question.';

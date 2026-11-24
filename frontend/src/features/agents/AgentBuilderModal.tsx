@@ -23,7 +23,7 @@ import {
   Info,
 } from 'lucide-react';
 import { agentService } from '../../services/agentService';
-import { AgentSandboxSimulator } from './AgentSandboxSimulator';
+import { AgentTestCallModal } from './AgentTestCallModal';
 
 export interface AgentBuilderModalProps {
   isOpen: boolean;
@@ -46,10 +46,10 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
   // Normalize initial configuration safely
   const normalizeAgentConfig = (cfg?: Partial<AgentConfig>): AgentConfig => ({
     voiceModel: cfg?.voiceModel || 'Shubh - Friendly Verification Indian Male',
-    language: cfg?.language || 'hi-IN',
+    language: cfg?.language || 'en-IN',
     systemPrompt: cfg?.systemPrompt || '',
-    openingLine: cfg?.openingLine || 'नमस्ते! मैं Fluid.live से बात कर रहा हूँ।',
-    closingBehavior: cfg?.closingBehavior || 'धन्यवाद, आपका दिन शुभ हो!',
+    openingLine: cfg?.openingLine || 'Hello, I am calling from Fluid.live regarding your job application. I have a few quick questions that will take just two minutes. Am I speaking with {user_name}?',
+    closingBehavior: cfg?.closingBehavior || 'Thank you for confirming these details. Our HR team will review your application and reach out via email with the next steps. Have a great day!',
     sarvamAppId: cfg?.sarvamAppId || 'Fluid-Live--4408a194-967d',
     sarvamConnectionId: cfg?.sarvamConnectionId || '7efd8897-87-220da5aa-1d5e',
     flowNodes: cfg?.flowNodes || [],
@@ -92,8 +92,8 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
     }
   }, [initialData, isOpen]);
 
-  // Simulated Live Preview State
-  const [isPreviewActive, setIsPreviewActive] = useState(false);
+  // Real Phone Test Call Modal State
+  const [isTestCallModalOpen, setIsTestCallModalOpen] = useState(false);
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -137,10 +137,10 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
         ? 'meera'
         : 'arvind';
 
-      const sampleText = 'नमस्ते! मैं Fluid.live से बात कर रहा हूँ। How can I assist you today?';
+      const sampleText = 'Hello, I am calling from Fluid.live regarding your job application. Could you confirm your availability?';
       const audioBase64 = await agentService.previewVoice({
         speaker: speakerName,
-        languageCode: config.language || 'hi-IN',
+        languageCode: config.language || 'en-IN',
         text: sampleText,
       });
 
@@ -183,10 +183,10 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
           <Button
             variant="outline"
             size="sm"
-            leftIcon={<Play className="h-4 w-4 text-emerald-600" />}
-            onClick={() => setIsPreviewActive(!isPreviewActive)}
+            leftIcon={<PhoneCall className="h-4 w-4 text-emerald-600" />}
+            onClick={() => setIsTestCallModalOpen(true)}
           >
-            {isPreviewActive ? 'Hide Live Audio Test' : 'Test Live Voice Preview'}
+            Dispatch Live Phone Test
           </Button>
 
           <div className="flex gap-2">
@@ -335,10 +335,10 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
               />
               <Select
                 label="Primary Speech Language"
-                value={config.language}
+                value={config.language || 'en-IN'}
                 options={[
+                  { value: 'en-IN', label: 'English (India) - Candidate Screening (Strictly English)' },
                   { value: 'hi-IN', label: 'Hindi (India)' },
-                  { value: 'en-IN', label: 'English (India)' },
                   { value: 'mr-IN', label: 'Marathi (India)' },
                   { value: 'bn-IN', label: 'Bengali (India)' },
                   { value: 'gu-IN', label: 'Gujarati (India)' },
@@ -363,7 +363,7 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
                   </Badge>
                 </div>
                 <p className="text-xs text-slate-300 italic">
-                  "नमस्ते! मैं Fluid.live से बात कर रहा हूँ। How can I assist you today?"
+                  "Hello, I am calling from Fluid.live regarding your job application. Could you confirm your availability?"
                 </p>
                 <div className="flex items-center gap-2 pt-1">
                   <Button
@@ -538,17 +538,24 @@ export const AgentBuilderModal: React.FC<AgentBuilderModalProps> = ({
           )}
         </div>
 
-        {/* Live Simulator Sidebar (Interactive voice test) */}
-        {isPreviewActive && (
-          <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-slate-200 pt-4 lg:pt-0 lg:pl-6">
-            <AgentSandboxSimulator
-              agentName={name || 'Agent'}
-              config={config}
-              onClose={() => setIsPreviewActive(false)}
-            />
-          </div>
-        )}
       </div>
+
+      {/* Live Phone Testing Modal (Real outbound telephony dialer via Sarvam SIP) */}
+      {isTestCallModalOpen && (
+        <AgentTestCallModal
+          agent={{
+            id: (initialData as any)?.id || 'agent_fluid_screening_v1',
+            name: name || 'Fluid Live- Candidate Verification',
+            useCase: useCase || 'Candidate verification calling agent',
+            status: 'active',
+            currentVersionId: (initialData as any)?.currentVersionId || 'agv_sarvam_prod_v1',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }}
+          isOpen={isTestCallModalOpen}
+          onClose={() => setIsTestCallModalOpen(false)}
+        />
+      )}
     </Modal>
   );
 };

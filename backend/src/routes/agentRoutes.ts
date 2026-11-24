@@ -104,7 +104,7 @@ agentRoutes.post('/voice-preview', async (req, res) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        inputs: [text || 'Namaste! Main Shubh bol raha hoon Fluid.live se. How can I assist you today?'],
+        inputs: [text || 'Hello, I am calling from Fluid.live regarding your job application. Could you confirm your availability?'],
         target_language_code: languageCode || 'en-IN',
         speaker: (speaker || 'shubh').toLowerCase(),
         model: 'bulbul:v1',
