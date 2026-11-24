@@ -1,7 +1,7 @@
 {
   "name": "fluid-live-calling-platform",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.2",
   "type": "module",
   "scripts": {
     "dev": "concurrently -k -p \"[{name}]\" -n \"SERVER,FRONTEND\" -c \"cyan,magenta\" \"npm run server\" \"vite\"",
