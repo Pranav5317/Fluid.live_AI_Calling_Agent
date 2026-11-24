@@ -22,7 +22,6 @@ import {
   Languages,
   CheckCircle2,
   AlertTriangle,
-  ChevronRight,
   Clock,
   Sparkles,
   TrendingUp,
@@ -366,12 +365,6 @@ export const CallsPage: React.FC = () => {
                       </div>
                       <span className="text-[10px] font-mono text-slate-400">{agentPct}/{leadPct}</span>
                     </div>
-                  </div>
-
-                  {/* 3. Friendly Call to Action indicator */}
-                  <div className="flex items-center gap-1.5 shrink-0 text-blue-600 font-semibold text-xs group-hover:text-blue-700">
-                    <span>View Analysis</span>
-                    <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1 text-slate-400 group-hover:text-blue-600" />
                   </div>
                 </div>
               );
