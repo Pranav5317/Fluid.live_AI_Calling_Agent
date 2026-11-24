@@ -198,7 +198,7 @@ Pooja Reddy,+919845012345,pooja@example.in,QA Automation Lead,5 Years,15 Days,Pu
 
                       <div className="flex items-center gap-1.5">
                         <span className="text-[11px] font-medium text-slate-400 group-hover:text-indigo-600 flex items-center gap-0.5">
-                          <span>View Dossier</span>
+                          <span>View Analysis</span>
                           <ArrowRight className="h-3 w-3" />
                         </span>
                       </div>

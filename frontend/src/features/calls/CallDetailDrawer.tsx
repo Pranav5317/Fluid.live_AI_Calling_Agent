@@ -598,7 +598,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
             }`}
           >
             <UserCheck className="h-4 w-4" />
-            <span>Candidate Dossier</span>
+            <span>Candidate Analysis</span>
           </button>
           <button
             type="button"
@@ -1130,7 +1130,7 @@ export const CallDetailDrawer: React.FC<CallDetailDrawerProps> = ({ call, onClos
                   <button
                     type="button"
                     onClick={() => {
-                      const exportText = `FLUID.LIVE CANDIDATE VERIFICATION DOSSIER
+                      const exportText = `FLUID.LIVE CANDIDATE VERIFICATION ANALYSIS
 Candidate: ${hrScreening.candidateName}
 Phone: ${currentCall.leadPhone || 'N/A'}
 Role Applied: ${hrScreening.roleApplied}
@@ -1154,7 +1154,7 @@ SUMMARY: ${rawVars.call_summary || intelligence?.executiveSummary || 'N/A'}`;
                     className="flex items-center gap-1.5 py-2 px-3 rounded-lg text-xs font-semibold border border-slate-200 hover:bg-slate-50 text-slate-700 transition-all cursor-pointer shrink-0"
                   >
                     {copiedText === 'export_dossier' ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Download className="h-3.5 w-3.5 text-slate-500" />}
-                    <span>{copiedText === 'export_dossier' ? 'Copied Dossier' : 'Export Dossier'}</span>
+                    <span>{copiedText === 'export_dossier' ? 'Copied Analysis' : 'Export Summary'}</span>
                   </button>
                 </div>
               </div>

@@ -268,149 +268,114 @@ export const CallsPage: React.FC = () => {
             description="Calls will appear here once conversations are dispatched or when you click Sync Sarvam Telemetry."
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-700">
-              <thead className="bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 font-mono">
-                <tr>
-                  <th className="px-5 py-3.5">Contact & Role</th>
-                  <th className="px-5 py-3.5">Outcome & Duration</th>
-                  <th className="px-5 py-3.5">Screening & Verification</th>
-                  <th className="px-5 py-3.5">Sentiment & Trend</th>
-                  <th className="px-5 py-3.5">Talk-to-Listen</th>
-                  <th className="px-5 py-3.5 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {filteredCalls.map(call => {
-                  const vars = (call.extractedVariables || {}) as Record<string, any>;
-                  const intel = vars.intelligence;
-                  const candidateName = call.leadName || vars.user_name || 'Contact';
-                  const roleApplied = vars.role_applied || vars.applied_role || (call as any).campaign?.name || 'Inbound / Outbound Lead';
-                  
-                  const leadScore = intel?.leadScore;
-                  const tier = leadScore?.tier || (call.durationSeconds > 60 ? 'Warm Prospect' : 'Cold / Disqualified');
-                  const score = leadScore?.overallScore ?? (call.durationSeconds > 60 ? 70 : 30);
-                  
-                  const sentiment = intel?.sentimentTrajectory;
-                  const overallSent = sentiment?.overallSentiment || (call.durationSeconds > 30 ? 'positive' : 'neutral');
-                  
-                  const talk = intel?.talkToListen;
-                  const agentPct = talk?.agentTalkPercentage ?? 60;
-                  const leadPct = talk?.leadTalkPercentage ?? 40;
+          <div className="divide-y divide-slate-100 bg-white">
+            {filteredCalls.map(call => {
+              const vars = (call.extractedVariables || {}) as Record<string, any>;
+              const intel = vars.intelligence;
+              const candidateName = call.leadName || vars.user_name || 'Contact';
+              const roleApplied = vars.role_applied || vars.applied_role || (call as any).campaign?.name || 'Applicant';
+              
+              const leadScore = intel?.leadScore;
+              const tier = leadScore?.tier || (call.durationSeconds > 60 ? 'Warm Prospect' : 'Cold / Disqualified');
+              const score = leadScore?.overallScore ?? (call.durationSeconds > 60 ? 70 : 30);
+              
+              const sentiment = intel?.sentimentTrajectory;
+              const overallSent = sentiment?.overallSentiment || (call.durationSeconds > 30 ? 'positive' : 'neutral');
+              
+              const talk = intel?.talkToListen;
+              const agentPct = talk?.agentTalkPercentage ?? 60;
+              const leadPct = talk?.leadTalkPercentage ?? 40;
 
-                  return (
-                    <tr key={call.id} className="hover:bg-slate-50/70 transition-colors">
-                      {/* 1. Contact & Channel */}
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-700 font-bold flex items-center justify-center text-xs shrink-0 border border-blue-100">
-                            {candidateName.slice(0, 2).toUpperCase()}
-                          </div>
-                          <div>
-                            <span className="font-bold text-slate-900 block text-xs">
-                              {candidateName}
-                            </span>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-[11px] text-slate-500">{roleApplied}</span>
-                              {call.leadPhone && (
-                                <>
-                                  <span className="text-slate-300">•</span>
-                                  <span className="text-[11px] font-mono text-slate-400">{call.leadPhone}</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* 2. Outcome & Duration */}
-                      <td className="px-5 py-4">
-                        <div className="flex flex-col gap-1 items-start">
-                          <Badge variant={getOutcomeBadgeVariant(call.outcome)} dot size="sm">
-                            {call.outcome ? call.outcome.replace('_', ' ') : 'initiated'}
+              return (
+                <div
+                  key={call.id}
+                  onClick={() => setSelectedCall(call)}
+                  className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50/80 transition-all cursor-pointer group select-none"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedCall(call);
+                    }
+                  }}
+                >
+                  {/* 1. Contact & Role */}
+                  <div className="flex items-center gap-3.5 min-w-0 md:w-1/3">
+                    <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-700 font-bold flex items-center justify-center text-sm shrink-0 border border-blue-100 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-colors">
+                      {candidateName.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 text-sm truncate group-hover:text-blue-600 transition-colors">
+                          {candidateName}
+                        </span>
+                        {vars.discrepancy_reason && vars.discrepancy_reason !== 'none' ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                            <AlertTriangle className="h-3 w-3 text-amber-600" /> Discrepancy
+                          </span>
+                        ) : (
+                          <Badge
+                            variant={call.durationSeconds > 40 ? 'success' : 'neutral'}
+                            size="sm"
+                          >
+                            {call.durationSeconds > 40 ? 'Verified' : 'Screened'}
                           </Badge>
-                          <span className="text-[11px] font-mono text-slate-500 flex items-center gap-1">
-                            <Clock className="h-3 w-3 text-slate-400" />
-                            <span>{formatDuration(call.durationSeconds)}</span>
-                            <span>•</span>
-                            <span>{formatDate(call.startedAt)}</span>
-                          </span>
-                        </div>
-                      </td>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
+                        <span className="truncate">{roleApplied}</span>
+                        {call.leadPhone && (
+                          <>
+                            <span className="text-slate-300">•</span>
+                            <span className="font-mono text-[11px] text-slate-400">{call.leadPhone}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
-                      {/* 3. Screening & Verification Status */}
-                      <td className="px-5 py-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1.5">
-                            {vars.discrepancy_reason && vars.discrepancy_reason !== 'none' ? (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                                <AlertTriangle className="h-3 w-3 text-amber-600" /> Discrepancy
-                              </span>
-                            ) : (
-                              <Badge
-                                variant={call.durationSeconds > 40 ? 'success' : tier === 'Hot Lead' ? 'success' : 'neutral'}
-                                size="sm"
-                              >
-                                {call.durationSeconds > 40 ? 'Verified' : tier}
-                              </Badge>
-                            )}
-                            <span className="font-mono text-[11px] font-bold text-slate-700">
-                              {score}%
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-mono">
-                            {vars.english_proficiency_level ? 'Identity & English Audited' : 'Fact-Check Score'}
-                          </div>
-                        </div>
-                      </td>
+                  {/* 2. Timing, Outcome & Key Indicators */}
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs">
+                    <div className="flex items-center gap-1.5 text-slate-500 font-mono text-[11px]">
+                      <Clock className="h-3.5 w-3.5 text-slate-400" />
+                      <span>{formatDuration(call.durationSeconds)}</span>
+                      <span>•</span>
+                      <span>{formatDate(call.startedAt)}</span>
+                    </div>
 
-                      {/* 4. Sentiment & Trend */}
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                            overallSent === 'positive'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : overallSent === 'negative'
-                              ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                              : 'bg-slate-100 text-slate-700 border border-slate-200'
-                          }`}>
-                            <Sparkles className="h-3 w-3" />
-                            <span className="capitalize">{overallSent}</span>
-                          </span>
-                        </div>
-                      </td>
+                    <Badge variant={getOutcomeBadgeVariant(call.outcome)} dot size="sm">
+                      {call.outcome ? call.outcome.replace('_', ' ') : 'initiated'}
+                    </Badge>
 
-                      {/* 5. Talk-to-Listen Airtime */}
-                      <td className="px-5 py-4">
-                        <div className="space-y-1 w-28">
-                          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
-                            <div className="h-full bg-blue-600" style={{ width: `${agentPct}%` }} />
-                            <div className="h-full bg-emerald-500" style={{ width: `${leadPct}%` }} />
-                          </div>
-                          <div className="flex justify-between text-[10px] font-mono text-slate-400">
-                            <span>{agentPct}% AI</span>
-                            <span>{leadPct}% Lead</span>
-                          </div>
-                        </div>
-                      </td>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                      overallSent === 'positive'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : overallSent === 'negative'
+                        ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                        : 'bg-slate-100 text-slate-700 border border-slate-200'
+                    }`}>
+                      <Sparkles className="h-3 w-3" />
+                      <span className="capitalize">{overallSent}</span>
+                    </span>
 
-                      {/* 6. Action */}
-                      <td className="px-5 py-4 text-right">
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          leftIcon={<UserCheck className="h-3.5 w-3.5" />}
-                          onClick={() => setSelectedCall(call)}
-                          className="rounded-lg text-xs font-semibold shadow-xs"
-                        >
-                          Review Dossier
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                    <div className="hidden lg:flex items-center gap-2">
+                      <div className="w-20 bg-slate-100 rounded-full h-1.5 overflow-hidden flex">
+                        <div className="h-full bg-blue-600" style={{ width: `${agentPct}%` }} />
+                        <div className="h-full bg-emerald-500" style={{ width: `${leadPct}%` }} />
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-400">{agentPct}/{leadPct}</span>
+                    </div>
+                  </div>
+
+                  {/* 3. Friendly Call to Action indicator */}
+                  <div className="flex items-center gap-1.5 shrink-0 text-blue-600 font-semibold text-xs group-hover:text-blue-700">
+                    <span>View Analysis</span>
+                    <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1 text-slate-400 group-hover:text-blue-600" />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </Card>
