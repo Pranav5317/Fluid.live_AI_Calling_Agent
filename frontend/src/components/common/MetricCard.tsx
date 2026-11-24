@@ -21,41 +21,40 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   description,
   className,
 }) => {
-  const hasTrend = trendPercentage !== undefined && trendPercentage !== 0;
-  const isPositive = trendPercentage !== undefined && trendPercentage > 0;
+  const isPositive = trendPercentage !== undefined && trendPercentage >= 0;
 
   return (
     <div
       className={cn(
-        'rounded-xl border border-slate-200 bg-white p-4.5 shadow-xs flex flex-col justify-between transition-all duration-150 hover:border-slate-300 hover:shadow-sm',
+        'rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs flex flex-col justify-between transition-all duration-200 hover:border-slate-300 hover:shadow-sm group',
         className
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-slate-500 truncate">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 font-mono">
           {title}
         </span>
         {icon && (
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100/80 text-slate-500">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 border border-blue-100 text-blue-600 shadow-2xs transition-transform group-hover:scale-105">
             {icon}
           </div>
         )}
       </div>
 
-      <div className="mt-2.5">
-        <div className="text-2xl font-bold text-slate-900 tracking-tight">
+      <div className="mt-3">
+        <div className="text-2xl sm:text-3xl font-extrabold text-slate-950 tracking-tight font-sans">
           {value}
         </div>
 
-        {(hasTrend || description) && (
-          <div className="mt-2 flex items-center gap-1.5 text-xs">
-            {hasTrend && (
+        {(trendPercentage !== undefined || description) && (
+          <div className="mt-2 flex items-center gap-2 text-xs">
+            {trendPercentage !== undefined && (
               <span
                 className={cn(
-                  'inline-flex items-center font-semibold rounded px-1.5 py-0.5 text-[11px]',
+                  'inline-flex items-center font-bold rounded-md px-2 py-0.5 text-[10px] font-mono border shadow-2xs',
                   isPositive
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : 'bg-rose-50 text-rose-700'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-rose-50 text-rose-700 border-rose-200'
                 )}
               >
                 {isPositive ? (
@@ -66,8 +65,8 @@ export const MetricCard: React.FC<MetricCardProps> = ({
                 {isPositive ? `+${trendPercentage}%` : `${trendPercentage}%`}
               </span>
             )}
-            <span className="text-[11px] text-slate-400">
-              {description || (hasTrend ? trendLabel : '')}
+            <span className="text-[11px] text-slate-500">
+              {description || trendLabel}
             </span>
           </div>
         )}

@@ -50,7 +50,7 @@ export const themeTokens = {
     },
   },
   fontFamily: {
-    display: ['"Plus Jakarta Sans"', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+    display: ['"Playfair Display"', 'Georgia', 'serif'],
     sans: [
       '"Plus Jakarta Sans"',
       '"DM Sans"',

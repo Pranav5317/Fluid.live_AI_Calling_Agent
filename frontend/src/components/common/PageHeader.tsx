@@ -17,18 +17,18 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   badge,
 }) => {
   return (
-    <div className="mb-6 pb-5 border-b border-slate-200">
+    <div className="mb-8 pb-6 border-b border-slate-200/80">
       {breadcrumbs && breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} />}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-3xl sm:text-5xl font-display font-semibold tracking-tight text-slate-950">
               {title}
             </h1>
             {badge}
           </div>
           {description && (
-            <p className="mt-1 text-sm text-slate-500 max-w-3xl leading-relaxed">
+            <p className="mt-2 text-sm text-slate-600 max-w-3xl leading-relaxed font-sans">
               {description}
             </p>
           )}

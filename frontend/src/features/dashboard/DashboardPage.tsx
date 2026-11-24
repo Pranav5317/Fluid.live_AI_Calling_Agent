@@ -97,8 +97,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     <div className="space-y-6">
       {/* Page Header */}
       <PageHeader
-        title="HR Candidate Verification Dashboard"
-        description="Automated candidate phone screening, application fact-check results, and interview pipeline status."
+        title="Dashboard Overview"
+        description="Real-time operational summary, call volume trends, active campaigns and agent performance."
         actions={
           <div className="flex gap-2">
             <Button
@@ -107,14 +107,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               leftIcon={<Users className="h-4 w-4" />}
               onClick={() => onNavigate('leads')}
             >
-              Candidate Directory
+              Manage Leads
             </Button>
             <Button
               size="sm"
               leftIcon={<Megaphone className="h-4 w-4" />}
               onClick={() => onNavigate('campaigns')}
             >
-              Screening Campaigns
+              Launch Campaign
             </Button>
           </div>
         }
@@ -123,31 +123,31 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       {/* 5 Core Required Product Metrics (MetricCards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <MetricCard
-          title="Total Candidates"
+          title="Number of Leads"
           value={formatNumber(metrics.totalLeads)}
           trendPercentage={metrics.leadsTrendPercentage}
           icon={<Users className="h-4 w-4" />}
         />
         <MetricCard
-          title="Pending Screening"
+          title="Untouched Leads"
           value={formatNumber(metrics.untouchedLeads)}
           trendPercentage={metrics.untouchedTrendPercentage}
           icon={<UserCheck className="h-4 w-4" />}
         />
         <MetricCard
-          title="Active Campaigns"
+          title="Campaigns Built"
           value={formatNumber(metrics.campaignsBuilt)}
           trendPercentage={metrics.campaignsTrendPercentage}
           icon={<Megaphone className="h-4 w-4" />}
         />
         <MetricCard
-          title="Verification Calls"
+          title="Calls Attempted"
           value={formatNumber(metrics.callsAttempted)}
           trendPercentage={metrics.callsTrendPercentage}
           icon={<PhoneCall className="h-4 w-4" />}
         />
         <MetricCard
-          title="Screening Airtime"
+          title="Minutes Utilized"
           value={`${metrics.minutesUtilized.toFixed(1)}m`}
           trendPercentage={metrics.minutesTrendPercentage}
           icon={<Clock className="h-4 w-4" />}
