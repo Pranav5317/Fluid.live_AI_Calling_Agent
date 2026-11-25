@@ -430,7 +430,7 @@ export const CampaignsPage: React.FC = () => {
                   <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-600 border-b border-slate-200 font-mono">
                     <tr>
                       <th className="px-6 py-3.5">Campaign Name</th>
-                      <th className="px-6 py-3.5">Agent & Locked Version</th>
+                      <th className="px-6 py-3.5">Agent & Version</th>
                       <th className="px-6 py-3.5">Phone Number</th>
                       <th className="px-6 py-3.5">Progress</th>
                       <th className="px-6 py-3.5">Minutes Used</th>
@@ -460,7 +460,14 @@ export const CampaignsPage: React.FC = () => {
                               </div>
                               <div className="flex items-center gap-1 text-[11px] text-slate-500 font-mono">
                                 <History className="h-3 w-3 text-slate-400" />
-                                <span>Locked Version: <strong className="text-slate-700">{cmp.agentVersionId}</strong></span>
+                                <span>
+                                  Version:{' '}
+                                  <strong className="text-slate-700">
+                                    {/v\d+$/i.test(cmp.agentVersionId)
+                                      ? cmp.agentVersionId.match(/v\d+$/i)?.[0].toLowerCase()
+                                      : 'v1'}
+                                  </strong>
+                                </span>
                               </div>
                             </div>
                           </td>
@@ -624,11 +631,11 @@ export const CampaignsPage: React.FC = () => {
             </div>
           )}
 
-          {/* Step 1: Basics & Explicit AgentVersion Selection */}
+          {/* Step 1: Basics & Agent Selection */}
           {wizardStep === 1 && (
             <div className="space-y-4">
               <h4 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
-                1. Campaign Details & Agent Version Selection
+                1. Campaign Details & Agent
               </h4>
               <Input
                 label="Campaign Name *"
@@ -643,16 +650,16 @@ export const CampaignsPage: React.FC = () => {
                 options={agents.map(a => ({ value: a.id, label: `${a.name} (${a.useCase})` }))}
                 onChange={e => handleAgentSelect(e.target.value)}
               />
-              {agentVersions.length > 0 && (
+              {agentVersions.length > 1 && (
                 <Select
-                  label="Select Explicit Agent Version (Locked to Campaign) *"
+                  label="Agent Version *"
                   value={formData.agentVersionId}
                   options={agentVersions.map(v => ({
                     value: v.id,
-                    label: `Version ${v.versionNumber} (${v.id}) - ${v.notes || 'Configured'}`,
+                    label: `v${v.versionNumber} — ${v.notes || 'Saved version'}`,
                   }))}
                   onChange={e => setFormData({ ...formData, agentVersionId: e.target.value })}
-                  helperText="This exact prompt version will remain locked to this campaign even if the agent is updated later."
+                  helperText="This campaign will keep using this version even if you edit the agent later."
                 />
               )}
             </div>
