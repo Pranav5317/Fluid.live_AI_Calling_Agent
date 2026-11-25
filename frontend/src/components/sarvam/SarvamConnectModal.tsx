@@ -5,7 +5,7 @@ import { Input } from '../common/Input';
 import { Badge } from '../common/Badge';
 import { sarvamService } from '../../services/sarvamService';
 import { SarvamAccountStatus } from '../../types';
-import { Zap, CheckCircle2, AlertCircle, Eye, EyeOff, Activity, ShieldCheck } from 'lucide-react';
+import { Zap, CheckCircle2, AlertCircle, Eye, EyeOff, Activity } from 'lucide-react';
 
 export interface SarvamConnectModalProps {
   isOpen: boolean;
@@ -256,13 +256,6 @@ export const SarvamConnectModal: React.FC<SarvamConnectModalProps> = ({
             value={agentPhoneNumber}
             onChange={e => setAgentPhoneNumber(e.target.value)}
           />
-
-          <div className="flex items-center gap-2 p-2.5 rounded bg-slate-50 border border-slate-200 text-slate-600 text-[11px]">
-            <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
-            <span>
-              Credentials are securely managed by the Fluid.live server bridge. API keys are never exposed in client bundles.
-            </span>
-          </div>
         </div>
       </div>
     </Modal>
