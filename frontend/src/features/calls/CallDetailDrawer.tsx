@@ -1478,24 +1478,6 @@ SUMMARY: ${rawVars.call_summary || intelligence?.executiveSummary || 'N/A'}`;
                   </div>
                 </div>
               </div>
-
-              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
-                    Extracted Variables JSON
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(JSON.stringify(rawVars, null, 2), 'json')}
-                    className="text-[11px] text-blue-600 hover:text-blue-700 font-semibold"
-                  >
-                    {copiedText === 'json' ? 'Copied' : 'Copy JSON'}
-                  </button>
-                </div>
-                <pre className="p-3 bg-slate-900 text-slate-200 rounded-lg text-[11px] font-mono overflow-x-auto max-h-60 leading-relaxed">
-                  {JSON.stringify(rawVars, null, 2)}
-                </pre>
-              </div>
             </div>
           )}
 
