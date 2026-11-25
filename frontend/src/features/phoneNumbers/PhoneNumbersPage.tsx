@@ -13,7 +13,7 @@ import { agentService } from '../../services/agentService';
 import { sarvamService } from '../../services/sarvamService';
 import { PhoneNumber, Agent, SarvamAccountStatus } from '../../types';
 import { formatDate } from '../../lib/formatters';
-import { Plus, Zap, Bot, RefreshCw, Trash2, Phone, ShieldCheck } from 'lucide-react';
+import { Plus, Bot, RefreshCw, Trash2, Phone, ShieldCheck } from 'lucide-react';
 
 export const PhoneNumbersPage: React.FC = () => {
   const [numbers, setNumbers] = useState<PhoneNumber[]>([]);
@@ -178,26 +178,6 @@ export const PhoneNumbersPage: React.FC = () => {
           </button>
         </div>
       )}
-
-      {/* Provider Notice */}
-      <div className="p-4 rounded-lg bg-slate-900 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded bg-amber-400/20 text-amber-400 flex items-center justify-center shrink-0">
-            <Zap className="h-5 w-5" />
-          </div>
-          <div>
-            <span className="font-bold block text-sm">Carrier SIP Trunk & Telephony DID Architecture</span>
-            <span className="text-slate-300">
-              Outbound calls route through registered Indian DID lines (e.g.{' '}
-              <code className="text-amber-300 font-mono">+917965861007</code>) and Carrier connection ID{' '}
-              <code className="text-amber-300 font-mono">{sarvamStatus?.connectionId?.slice(0, 16) || '7efd8897...'}...</code>.
-            </span>
-          </div>
-        </div>
-        <Badge variant="brand" size="sm">
-          Telephony Active
-        </Badge>
-      </div>
 
       {loading ? (
         <LoadingState label="Fetching telephony phone numbers..." />
