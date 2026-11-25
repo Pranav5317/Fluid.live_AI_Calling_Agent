@@ -57,11 +57,16 @@ export const Header: React.FC<HeaderProps> = ({
     const checkActiveCalls = async () => {
       try {
         const calls = await callService.getCalls();
-        const active = calls.find(c => c.status === 'in-progress' || c.status === 'initiated');
+        const now = Date.now();
+        const maxActiveAgeMs = 15 * 60 * 1000; // Ignore stale calls older than 15 minutes
+        const active = calls.find(c => {
+          if (c.status !== 'in-progress' && c.status !== 'initiated') return false;
+          const start = new Date(c.startedAt).getTime();
+          return now - start >= 0 && now - start < maxActiveAgeMs;
+        });
         if (active) {
           setActiveLiveCall(active);
           const start = new Date(active.startedAt).getTime();
-          const now = Date.now();
           const elapsed = Math.max(0, Math.floor((now - start) / 1000));
           setElapsedCallSeconds(elapsed);
         } else {
@@ -118,7 +123,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={() => onRouteChange?.('calls')}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-blue-300 bg-blue-50/90 text-xs font-semibold text-blue-900 shadow-xs hover:bg-blue-100 transition-all cursor-pointer animate-pulse"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-blue-300 bg-blue-50/90 text-xs font-semibold text-blue-900 shadow-xs hover:bg-blue-100 transition-all cursor-pointer animate-pulse whitespace-nowrap shrink-0"
             title="Click to view live call"
           >
             <span className="relative flex h-2 w-2">
