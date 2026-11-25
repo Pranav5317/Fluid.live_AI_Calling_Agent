@@ -3,6 +3,7 @@ import { Sidebar, NavRoute } from './Sidebar';
 import { Header } from './Header';
 import { NotificationDrawer } from './NotificationDrawer';
 import { CommandMenu } from '../common/CommandMenu';
+import { campaignService } from '../../services/campaignService';
 import { cn } from '../../lib/utils';
 
 export interface AppShellProps {
@@ -32,6 +33,23 @@ export const AppShell: React.FC<AppShellProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Global Autonomous Scheduler Heartbeat (runs every 60s while dashboard is open)
+  useEffect(() => {
+    const runBackgroundTick = async () => {
+      try {
+        const status = await campaignService.getSchedulerStatus();
+        if (status?.windowInfo?.isOpen && (status?.dueNowForDialing > 0 || status?.runningCampaigns > 0)) {
+          await campaignService.triggerSchedulerTick({ dryRun: false });
+        }
+      } catch {
+        // Silent background check
+      }
+    };
+
+    const interval = setInterval(runBackgroundTick, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   return (

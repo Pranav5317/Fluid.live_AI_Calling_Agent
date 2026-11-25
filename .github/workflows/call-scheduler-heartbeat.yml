@@ -2,8 +2,8 @@ name: Autonomous Call Scheduler Heartbeat
 
 on:
   schedule:
-    # Runs every 10 minutes from 04:30 to 15:30 UTC (10:00 AM to 9:00 PM IST), Monday to Saturday (TRAI calling window)
-    - cron: '*/10 4-15 * * 1-6'
+    # Runs every 5 minutes from 04:30 to 15:30 UTC (10:00 AM to 9:00 PM IST), Monday to Saturday (TRAI calling window)
+    - cron: '*/5 4-15 * * 1-6'
   workflow_dispatch:
     inputs:
       dry_run:

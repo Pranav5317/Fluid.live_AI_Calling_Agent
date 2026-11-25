@@ -403,10 +403,25 @@ export class CallSchedulerService {
         };
       }
 
-      // 3. Query Due Campaign Leads
-      // Leads with a scheduled slot (nextAttemptAt) are due when nextAttemptAt <= now.
+      // 3. Activate any scheduled campaigns whose start time has arrived, then query due leads
       const now = new Date();
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 3600000);
+
+      if (!isDryRun) {
+        const activated = await prisma.campaign.updateMany({
+          where: {
+            status: 'scheduled',
+            scheduledAt: { lte: now },
+          },
+          data: {
+            status: 'running',
+            startedAt: now,
+          },
+        });
+        if (activated.count > 0) {
+          console.log(`[Dynamic Scheduler] Auto-started ${activated.count} scheduled campaign(s).`);
+        }
+      }
 
       const dueLeads = await prisma.campaignLead.findMany({
         where: {
@@ -417,7 +432,7 @@ export class CallSchedulerService {
           OR: [
             { nextAttemptAt: { lte: now } },
             { nextAttemptAt: null, status: 'queued' },
-            { nextAttemptAt: null, status: 'untouched', attemptCount: 0 },
+            { nextAttemptAt: null, status: 'untouched' },
             { status: 'retry_scheduled', nextAttemptAt: { lte: now } },
             { status: 'callback', nextAttemptAt: { lte: now } },
           ],
@@ -721,7 +736,7 @@ export class CallSchedulerService {
           OR: [
             { nextAttemptAt: { lte: now } },
             { nextAttemptAt: null, status: 'queued' },
-            { nextAttemptAt: null, status: 'untouched', attemptCount: 0 },
+            { nextAttemptAt: null, status: 'untouched' },
           ],
         },
       }),
