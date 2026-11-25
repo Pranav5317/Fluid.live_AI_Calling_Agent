@@ -147,6 +147,8 @@ export const CampaignsPage: React.FC = () => {
       name: prev.name || 'Outreach Campaign ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       agentId: defaultAgentId,
       phoneNumberId: defaultPhoneId,
+      totalLeads: availableLeads.length || 1,
+      selectedLeadIds: prev.selectedLeadIds.length > 0 ? prev.selectedLeadIds : availableLeads.map(l => l.id),
     }));
 
     if (defaultAgentId) {
@@ -173,6 +175,11 @@ export const CampaignsPage: React.FC = () => {
       setWizardStep(2);
       return;
     }
+    if (availableLeads.length > 0 && formData.selectedLeadIds.length === 0) {
+      setWizardError('Please select at least 1 candidate to call in Step 2.');
+      setWizardStep(2);
+      return;
+    }
 
     setIsSubmittingWizard(true);
     try {
@@ -184,7 +191,7 @@ export const CampaignsPage: React.FC = () => {
         agentId: formData.agentId,
         agentVersionId: effectiveVersionId,
         phoneNumberId: formData.phoneNumberId,
-        totalLeads: formData.totalLeads,
+        totalLeads: formData.selectedLeadIds.length > 0 ? formData.selectedLeadIds.length : Math.max(1, formData.totalLeads),
         selectedLeadIds: formData.selectedLeadIds.length > 0 ? formData.selectedLeadIds : undefined,
         scheduledAt: formData.scheduleDate || undefined,
       });
@@ -669,7 +676,7 @@ export const CampaignsPage: React.FC = () => {
           {wizardStep === 2 && (
             <div className="space-y-4">
               <h4 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
-                2. Phone Number & Lead Audience Assignment
+                2. Phone Number & Candidate Selection
               </h4>
               <Select
                 label="Outbound Caller ID Phone Number *"
@@ -680,13 +687,72 @@ export const CampaignsPage: React.FC = () => {
                 }))}
                 onChange={e => setFormData({ ...formData, phoneNumberId: e.target.value })}
               />
-              <Input
-                label="Target Lead Audience Size (Auto-enroll from pool)"
-                type="number"
-                value={formData.totalLeads}
-                onChange={e => setFormData({ ...formData, totalLeads: Number(e.target.value) })}
-                helperText={`Pool contains ${availableLeads.length} total consumer contacts available for campaign enrollment.`}
-              />
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 font-mono">
+                    Select Candidates to Call * ({formData.selectedLeadIds.length} of {availableLeads.length})
+                  </label>
+                  {availableLeads.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allSelected = formData.selectedLeadIds.length === availableLeads.length;
+                        setFormData({
+                          ...formData,
+                          selectedLeadIds: allSelected ? [] : availableLeads.map(l => l.id),
+                          totalLeads: allSelected ? 0 : availableLeads.length,
+                        });
+                      }}
+                      className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+                    >
+                      {formData.selectedLeadIds.length === availableLeads.length ? 'Clear All' : 'Select All'}
+                    </button>
+                  )}
+                </div>
+
+                {availableLeads.length === 0 ? (
+                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-500 text-center">
+                    No candidates found. Add candidates in the Leads tab first.
+                  </div>
+                ) : (
+                  <div className="max-h-52 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 bg-white">
+                    {availableLeads.map(lead => {
+                      const isChecked = formData.selectedLeadIds.includes(lead.id);
+                      const role = (lead.metadata as any)?.role || 'Candidate';
+                      return (
+                        <label
+                          key={lead.id}
+                          className="flex items-center justify-between gap-3 px-3.5 py-2.5 hover:bg-slate-50 cursor-pointer transition-colors"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {
+                                const next = isChecked
+                                  ? formData.selectedLeadIds.filter(id => id !== lead.id)
+                                  : [...formData.selectedLeadIds, lead.id];
+                                setFormData({
+                                  ...formData,
+                                  selectedLeadIds: next,
+                                  totalLeads: next.length,
+                                });
+                              }}
+                              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <div className="min-w-0">
+                              <span className="text-xs font-semibold text-slate-900 block truncate">{lead.name}</span>
+                              <span className="text-[11px] text-slate-500 block truncate">{role}</span>
+                            </div>
+                          </div>
+                          <span className="text-[11px] font-mono text-slate-500 shrink-0">{lead.phone}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -707,9 +773,9 @@ export const CampaignsPage: React.FC = () => {
                 <span className="font-bold text-slate-900 block">Campaign Execution Summary:</span>
                 <div className="grid grid-cols-2 gap-2 text-slate-600">
                   <div>Name: <strong className="text-slate-800">{formData.name}</strong></div>
-                  <div>Audience Size: <strong className="text-slate-800">{formData.totalLeads} leads</strong></div>
+                  <div>Candidates: <strong className="text-slate-800">{formData.selectedLeadIds.length} selected</strong></div>
                   <div>Agent: <strong className="text-slate-800">{agents.find(a => a.id === formData.agentId)?.name || formData.agentId || 'Not selected'}</strong></div>
-                  <div>Locked Version: <strong className="text-slate-800 font-mono">{formData.agentVersionId || 'Default'}</strong></div>
+                  <div>Version: <strong className="text-slate-800 font-mono">{/v\d+$/i.test(formData.agentVersionId) ? formData.agentVersionId.match(/v\d+$/i)?.[0].toLowerCase() : 'v1'}</strong></div>
                   <div>Phone Number: <strong className="text-slate-800 font-mono">{phoneNumbers.find(p => p.id === formData.phoneNumberId)?.phoneNumber || formData.phoneNumberId || 'Not selected'}</strong></div>
                   <div>Status: <strong className="text-slate-800">{formData.scheduleDate ? 'Scheduled' : 'Ready to Launch'}</strong></div>
                 </div>
