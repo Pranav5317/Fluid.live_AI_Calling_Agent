@@ -142,13 +142,14 @@ export const CampaignsPage: React.FC = () => {
     const defaultAgentId = formData.agentId || (agents.length > 0 ? agents[0].id : '');
     const defaultPhoneId = formData.phoneNumberId || (phoneNumbers.length > 0 ? phoneNumbers[0].id : '');
     
+    const callableLeads = availableLeads.filter(l => !l.doNotCall);
     setFormData(prev => ({
       ...prev,
       name: prev.name || 'Outreach Campaign ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       agentId: defaultAgentId,
       phoneNumberId: defaultPhoneId,
-      totalLeads: availableLeads.length || 1,
-      selectedLeadIds: prev.selectedLeadIds.length > 0 ? prev.selectedLeadIds : availableLeads.map(l => l.id),
+      totalLeads: callableLeads.length || 1,
+      selectedLeadIds: prev.selectedLeadIds.length > 0 ? prev.selectedLeadIds : callableLeads.map(l => l.id),
     }));
 
     if (defaultAgentId) {

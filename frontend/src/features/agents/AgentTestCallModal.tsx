@@ -190,26 +190,6 @@ export const AgentTestCallModal: React.FC<AgentTestCallModalProps> = ({
             >
               Pranav L (+91 99229 35920)
             </button>
-            <button
-              type="button"
-              onClick={() =>
-                handleSelectPreset(
-                  'Rohnit Roy',
-                  '+917522911068',
-                  'Frontend Developer',
-                  '2 Years',
-                  '30 Days',
-                  'On Site, Pune'
-                )
-              }
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                phoneNumber.includes('7522911068')
-                  ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-2xs'
-                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              Rohnit Roy (+91 7522 911 068)
-            </button>
           </div>
         </div>
 

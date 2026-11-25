@@ -509,7 +509,7 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
               <Input
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
-                placeholder="+91 7522 911 068"
+                placeholder="+91 99229 35920"
                 leftIcon={<Phone className="h-4 w-4 text-slate-400" />}
                 required
               />
